@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenAbility.Logging\OpenAbility.Logging\OpenAbility.Logging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="content_src\data_builtin\" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(Configuration)' == 'Development' ">
+    <Folder Include="Development\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTK.Graphics" Version="5.0.0-pre.13" />
+    <PackageReference Include="OpenTK.Windowing.GraphicsLibraryFramework" Version="5.0.0-pre.13" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        
+        <PackageId>OpenAbility.Logging</PackageId>
+        <Company>OpenAbility</Company>
+        <Product>OpenAbility.Logging</Product>
+        <ProductName>OpenAbility.Logging</ProductName>
+        <ProductVersion>1.1.1</ProductVersion>
+        <Authors>khhs</Authors>
+        <PackageVersion>1.1.1</PackageVersion>
+
+        <Description>
+            OpenAbility.Logging is a super simple logging system. It is currently in a stable release, but far from complete.
+        </Description>
+        
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <PackageProjectUrl>https://github.com/OpenAbility/OpenAbility.Logging</PackageProjectUrl>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/OpenAbility/OpenAbility.Logging.git</RepositoryUrl>
+        <Copyright>OpenAbility 2023</Copyright>
+        <Configurations>Debug;Release;Development</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+</Project>
