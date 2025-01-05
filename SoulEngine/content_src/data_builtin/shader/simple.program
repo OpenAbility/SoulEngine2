@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<Shader>
+    
+    <Defines backend="OPENGL">
+        <Define name="FRAGMENT_COLOR">vec4(1, 1, 1, 1)</Define>
+    </Defines>
+    
+    <Vertex backend="OPENGL" src="shader/shared/simple.vert"/>
+    <Vertex backend="VULKAN" src="shader/shared/simple2.vert"/>
+
+    <!-- language=glsl -->
+    <Fragment backend="OPENGL"
+              src_string="
+out vec4 f_color;
+        
+void main() {
+    f_color = FRAGMENT_COLOR;
+}
+"/>
+    
+</Shader> 

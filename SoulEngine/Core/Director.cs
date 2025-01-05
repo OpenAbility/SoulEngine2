@@ -1,6 +1,6 @@
 namespace SoulEngine.Core;
 
-public class Director
+public abstract class Director
 {
-    
+    public abstract void Update(float deltaTime);
 }

@@ -37,10 +37,13 @@
   </ItemGroup>
   
   <ItemGroup Condition=" '$(Configuration)' == 'Development' ">
-    <Folder Include="Development\" />
     <Content Include="content_src\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  
+  <ItemGroup  Condition=" '$(Configuration)' != 'Development' ">
+    <Compile Remove="Development\**" />
   </ItemGroup>
 
 </Project>

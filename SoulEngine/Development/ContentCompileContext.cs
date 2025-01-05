@@ -56,6 +56,11 @@ public class ContentCompileContext
                 continue;
             
             string outputPath = Path.Combine(output, compiler.GetCompiledPath(relative));
+
+            string outputPathDir = Path.GetDirectoryName(outputPath)!;
+            if (!Directory.Exists(outputPathDir))
+                Directory.CreateDirectory(outputPathDir);
+            
             DateTime lastOutput = File.GetLastWriteTimeUtc(outputPath);
             
             Logger.Info("Testing file {}({} => {})", relative, inputFile, outputPath);

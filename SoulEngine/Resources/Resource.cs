@@ -1,3 +1,5 @@
+using SoulEngine.Content;
+
 namespace SoulEngine.Resources;
 
 /// <summary>
@@ -5,5 +7,5 @@ namespace SoulEngine.Resources;
 /// </summary>
 public abstract class Resource
 {
-    public abstract void Load(ResourceManager resourceManager, string id);
+    public abstract Task Load(ResourceManager resourceManager, string id, ContentContext content);
 }
