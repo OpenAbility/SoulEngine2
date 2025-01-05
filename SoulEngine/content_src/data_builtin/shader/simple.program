@@ -3,19 +3,21 @@
 <Shader>
     
     <Defines backend="OPENGL">
-        <Define name="FRAGMENT_COLOR">vec4(1, 1, 1, 1)</Define>
+        <Define name="FRAGMENT_COLOUR">vec4(1, 1, 1, 1)</Define>
     </Defines>
     
     <Vertex backend="OPENGL" src="shader/shared/simple.vert"/>
     <Vertex backend="VULKAN" src="shader/shared/simple2.vert"/>
-
-    <!-- language=glsl -->
+    
     <Fragment backend="OPENGL"
               src_string="
-out vec4 f_color;
+in vec4 v_colour;
+
+out vec4 f_colour;
+
         
 void main() {
-    f_color = FRAGMENT_COLOR;
+    f_colour = v_colour * FRAGMENT_COLOUR;
 }
 "/>
     

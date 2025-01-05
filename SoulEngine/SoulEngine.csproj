@@ -29,6 +29,12 @@
   <ItemGroup>
     <ProjectReference Include="..\OpenAbility.Logging\OpenAbility.Logging\OpenAbility.Logging.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <Content Include="runtimes/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

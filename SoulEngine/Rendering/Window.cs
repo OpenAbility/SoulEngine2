@@ -5,6 +5,8 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SoulEngine.Core;
+using SoulEngine.Events;
+using Vector2 = System.Numerics.Vector2;
 
 namespace SoulEngine.Rendering;
 
@@ -35,17 +37,28 @@ public unsafe class Window : IRenderSurface
 
     public readonly GLFWwindow* Handle;
 
+    private readonly Game Game;
+
     private readonly GLDebugProc DebugProc;
-    
+
+    private readonly GLFWCallbacks.CursorPosCallback cursorPosCallback;
+    private readonly GLFWCallbacks.MouseButtonCallback mouseButtonCallback;
+    private readonly GLFWCallbacks.KeyCallback keyCallback;
+    private readonly GLFWCallbacks.CharCallback charCallback;
+    private readonly GLFWCallbacks.ScrollCallback scrollCallback;
+
     /// <summary>
     /// Create a new window
     /// </summary>
+    /// <param name="game">The game that owns this window</param>
     /// <param name="width">The window width</param>
     /// <param name="height">The window height</param>
     /// <param name="title">The window title</param>
     /// <param name="parent">The parent window, for context sharing etc</param>
     public Window(Game game, int width, int height, string title, Window? parent)
     {
+        Game = game;
+        
         GLFW.WindowHint(WindowHintBool.Resizable, game.EngineVar.GetBool("e_resizable"));
         GLFW.WindowHint(WindowHintBool.Visible, false);
         GLFW.WindowHint(WindowHintClientApi.ClientApi, ClientApi.OpenGlApi);
@@ -66,6 +79,40 @@ public unsafe class Window : IRenderSurface
             throw new NullReferenceException("Window pointer is null!");
         
         GLFW.MakeContextCurrent(Handle);
+        
+        cursorPosCallback = (window, x, y) =>
+        {
+            Game.InputBus.Event(new CursorEvent(new Vector2((float)x, (float)y)));
+        };
+        GLFW.SetCursorPosCallback(Handle, cursorPosCallback);
+
+        mouseButtonCallback = (window, button, action, mods) =>
+        {
+            Game.InputBus.Event(new MouseEvent(mods, button, action));
+        };
+        GLFW.SetMouseButtonCallback(Handle, mouseButtonCallback);
+
+        keyCallback = (window, key, code, action, mods) =>
+        {
+            Game.InputBus.Event(new KeyEvent(mods, key, action));
+        };
+        GLFW.SetKeyCallback(Handle, keyCallback);
+
+        charCallback = (window, codepoint) =>
+        {
+            Game.InputBus.Event(new TypeEvent(codepoint));
+        };
+        GLFW.SetCharCallback(Handle, charCallback);
+
+        scrollCallback = (window, x, y) =>
+        {
+            Game.InputBus.Event(new ScrollEvent(new Vector2((float)x, (float)y)));
+        };
+        GLFW.SetScrollCallback(Handle, scrollCallback);
+        
+        GLFW.SwapInterval(1);
+        
+        
         GLLoader.LoadBindings(new GLFWBindingsContext());
 
         int majorVersion = GL.GetInteger(GetPName.MajorVersion);
@@ -102,6 +149,8 @@ public unsafe class Window : IRenderSurface
         GL.DebugMessageCallback(DebugProc, IntPtr.Zero);
         
 #endif
+        
+        GL.Enable(EnableCap.FramebufferSrgb);
     }
 
     /// <summary>

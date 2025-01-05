@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Xml;
 using OpenAbility.Logging;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 using SoulEngine.Content;
 using SoulEngine.Core;
 using SoulEngine.Resources;
@@ -157,5 +158,27 @@ public class Shader : Resource
             handle = -1;
         });
 
+    }
+
+    private Dictionary<string, int> locations = new Dictionary<string, int>();
+    private int UniformLocation(string name)
+    {
+        if (locations.TryGetValue(name, out int value))
+            return value;
+        value = GL.GetUniformLocation(handle, name);
+        locations[name] = value;
+        return value;
+    }
+
+    public void Matrix(string name, Matrix4 matrix, bool transpose)
+    {
+        int loc = UniformLocation(name);
+        GL.UniformMatrix4f(loc, 1, transpose, in matrix);
+    }
+    
+    public void Uniform1i(string name, int value)
+    {
+        int loc = UniformLocation(name);
+        GL.Uniform1i(loc, value);
     }
 }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using OpenAbility.Logging;
 using SoulEngine.Content;
 using SoulEngine.Data;
@@ -7,6 +8,7 @@ using SoulEngine.Rendering;
 using SoulEngine.Resources;
 using SoulEngine.Util;
 #if DEVELOPMENT
+using ImGuiNET;
 using SoulEngine.Development;
 #endif
 
@@ -30,6 +32,7 @@ public abstract class Game
     
 #if DEVELOPMENT
     public readonly DataRegistry DevelopmentRegistry;
+    private readonly ImGuiRenderer ImGuiRenderer;
 #endif
 
     public readonly string PersistentDataPath;
@@ -37,6 +40,7 @@ public abstract class Game
     public readonly GameData GameData;
 
     public readonly EventBus<GameEvent> EventBus;
+    public readonly EventBus<InputEvent> InputBus;
 
     private SceneRenderer? sceneRenderer;
     private Scene? scene;
@@ -44,12 +48,15 @@ public abstract class Game
     public readonly Window MainWindow;
     public readonly Thread MainThread;
 
+
+
     public Game(GameData data)
     {
         MainThread = Thread.CurrentThread;
         
         GameData = data;
         EventBus = new EventBus<GameEvent>();
+        InputBus = new EventBus<InputEvent>();
 
         PersistentDataPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             data.Developer, data.Name);
@@ -90,6 +97,11 @@ public abstract class Game
         ResourceManager = new ResourceManager(this);
 
         MainWindow = new Window(this, 1280, 720, data.Name, null);
+        
+#if DEVELOPMENT
+        ImGuiRenderer = new ImGuiRenderer(ResourceManager);
+        InputBus.BeginListen(ImGuiRenderer.OnInputEvent);
+#endif
     }
     
 #if DEVELOPMENT
@@ -109,9 +121,7 @@ public abstract class Game
     public void Run()
     {
         EarlyLoad();
-        
-        SetScene(new Scene());
-        
+
         MainLoop();
     }
 
@@ -124,6 +134,9 @@ public abstract class Game
     {
         
     }
+
+    private LinkedList<float> fpsHistogram = new LinkedList<float>();
+    private LinkedList<float> msHistogram = new LinkedList<float>();
 
     private void MainLoop()
     {
@@ -139,6 +152,49 @@ public abstract class Game
             float deltaTime = (float)elapsed.TotalSeconds;
             EngineVar.SetFloat("dt", deltaTime);
             EngineVar.SetInt("frameDelta", (int)elapsed.TotalMilliseconds);
+
+            fpsHistogram.AddLast(1 / deltaTime);
+            msHistogram.AddLast((float)elapsed.TotalMilliseconds);
+            
+            if(fpsHistogram.Count > 30)
+                fpsHistogram.RemoveFirst();
+            if(msHistogram.Count > 30)
+                msHistogram.RemoveFirst();
+            
+#if DEVELOPMENT
+            ImGuiRenderer.BeginFrame(MainWindow, deltaTime);
+            
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 10);
+
+            float avgFPS = 0;
+            foreach (var sample in fpsHistogram)
+            {
+                avgFPS += sample;
+            }
+
+            avgFPS /= fpsHistogram.Count;
+            
+            float avgMS = 0;
+            foreach (var sample in msHistogram)
+            {
+                avgMS += sample;
+            }
+
+            avgMS /= msHistogram.Count;
+            
+            ImGui.SetNextWindowPos(new Vector2(5, 5), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(new Vector2(100, 49), ImGuiCond.Always);
+            if (ImGui.Begin("Info", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar))
+            {
+                ImGui.Text(" FPS: " + avgFPS.ToString("F0"));
+                ImGui.Text(" MS: " + avgMS.ToString("F2"));
+            }
+            ImGui.End();
+            
+            ImGui.PopStyleVar();
+            
+            
+#endif
             
             UpdateHook();
             scene?.Update(deltaTime);
@@ -151,9 +207,14 @@ public abstract class Game
 
             sceneRenderer?.Render(MainWindow);
             
+#if DEVELOPMENT
+            ImGuiRenderer.EndFrame(MainWindow);
+#endif
+            
             MainWindow.Swap();
             Window.Poll();
             ThreadSafety.RunTasks();
+            InputBus.Dispatch();
         }
     }
 
