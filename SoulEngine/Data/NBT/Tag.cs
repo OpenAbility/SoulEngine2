@@ -1,3 +1,6 @@
+using System.Text;
+using SoulEngine.Util;
+
 namespace SoulEngine.Data.NBT;
 
 /// <summary>
@@ -35,6 +38,16 @@ public abstract class Tag
     /// <param name="writer">The writer to write to</param>
     public abstract void Write(BinaryWriter writer);
 
+    public abstract void Write(SNBTWriter writer);
+
+    public void WriteNamed(SNBTWriter writer)
+    {
+        writer.BeginLine('"' + EngineUtility.JsonEscape(Name!) + '"').Append(": ");
+
+        Write(writer);
+
+    }
+
     public static Tag ReadNamedTag(BinaryReader reader)
     {
         TagType type = (TagType)reader.ReadByte();
@@ -42,7 +55,7 @@ public abstract class Tag
             return new EndTag();
 
         ushort nameLength = reader.ReadUInt16();
-        string name = new string(reader.ReadChars(nameLength));
+        string name = Encoding.UTF8.GetString(reader.ReadBytes(nameLength));
 
         Tag tag = NewTag(type, name);
         tag.Read(reader);

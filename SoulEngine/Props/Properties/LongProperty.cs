@@ -3,19 +3,19 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class LongProperty : PropProperty<long>
+public class LongProperty : SerializedProperty<long>
 {
     public LongProperty(string name, long defaultValue) : base(name, defaultValue)
     {
     }
 
-    #if DEVELOPMENT
+    
     public override unsafe void Edit()
     {
         fixed (long* ptr = &Value)
             ImGui.InputScalar(Name, ImGuiDataType.S64, (IntPtr)ptr);
     }
-    #endif
+    
 
     public override Tag Save()
     {

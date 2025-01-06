@@ -1,3 +1,4 @@
+using System.Reflection;
 using ImGuiNET;
 using Newtonsoft.Json.Linq;
 using SoulEngine.Core;
@@ -11,11 +12,6 @@ namespace SoulEngine.Props;
 public abstract class Prop
 {
     /// <summary>
-    /// The prop type string
-    /// </summary>
-    public readonly string Type;
-
-    /// <summary>
     /// The name of the property
     /// </summary>
     public string Name { get; private set; }
@@ -25,7 +21,9 @@ public abstract class Prop
     /// </summary>
     public readonly Scene Scene;
 
-    private readonly Dictionary<string, PropProperty> properties = new Dictionary<string, PropProperty>();
+    public readonly string Type;
+
+    private readonly Dictionary<string, SerializedProperty> properties = new Dictionary<string, SerializedProperty>();
 
     /// <summary>
     /// Create a new prop
@@ -36,8 +34,8 @@ public abstract class Prop
     public Prop(Scene scene, string type, string name)
     {
         Scene = scene;
-        Type = type;
         Name = name;
+        Type = type;
     }
 
     /// <summary>
@@ -61,10 +59,14 @@ public abstract class Prop
     {
         CompoundTag tag = new CompoundTag(Name);
         
+        tag.SetString("$_type", Type);
+        
         foreach (var p in properties)
         {
             tag[p.Key] = p.Value.Save();
         }
+
+        OnSave(tag);
 
         return tag;
     }
@@ -80,7 +82,16 @@ public abstract class Prop
     }
     
     /// <summary>
-    /// Update inner prop logic
+    /// Called after the prop is finished loading
+    /// </summary>
+    /// <param name="tag">The tag that we loaded from</param>
+    public virtual void OnSave(CompoundTag tag)
+    {
+        
+    }
+    
+    /// <summary>
+    /// Update inner prop logic. Do not update render logic!
     /// </summary>
     /// <param name="deltaTime">The time that has passed since last update</param>
     public virtual void Update(float deltaTime)
@@ -88,8 +99,15 @@ public abstract class Prop
         
     }
     
-    #if DEVELOPMENT
-
+    /// <summary>
+    /// Render this prop. Do not update non-render logic!
+    /// </summary>
+    /// <param name="deltaTime">The time that has passed since last render</param>
+    public virtual void Render(float deltaTime)
+    {
+        
+    }
+    
     public void Edit()
     {
         string n = Name;
@@ -102,12 +120,18 @@ public abstract class Prop
         {
             p.Edit();
         }
+        
+        OnEdit();
+    }
+
+    protected virtual void OnEdit()
+    {
+        
     }
     
-    #endif
     
     
-    protected T Register<T>(T property) where T : PropProperty
+    protected T Register<T>(T property) where T : SerializedProperty
     {
         properties[property.Name] = property;
         return property;

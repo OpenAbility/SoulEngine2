@@ -1,3 +1,5 @@
+using Be.IO;
+
 namespace SoulEngine.Data.NBT;
 
 public class LongArrayTag : ArrayTag<long>
@@ -24,5 +26,33 @@ public class LongArrayTag : ArrayTag<long>
         writer.Write(Value.Length);
         for (int i = 0; i < Value.Length; i++)
             writer.Write(Value[i]);
+    }
+
+    public override void Write(SNBTWriter writer)
+    {
+        writer.EndLine("[L; ");
+        writer.Indent();
+        writer.BeginLine("");
+
+        int timeSinceLineBreak = 0;
+        for (int i = 0; i < Value.Length; i++)
+        {
+            writer.Append(Value[i] + "l");
+
+            if (i != Value.Length - 1)
+                writer.Append(", ");
+
+            timeSinceLineBreak++;
+
+            if (timeSinceLineBreak >= 32)
+            {
+                timeSinceLineBreak = 0;
+                writer.EndLine("").BeginLine("");
+            }
+        }
+
+        writer.PopIndent();
+        
+        writer.EndLine("").BeginLine("]");
     }
 }

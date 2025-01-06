@@ -4,13 +4,13 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class Vector3Property : PropProperty<Vector3>
+public class Vector3Property : SerializedProperty<Vector3>
 {
     public Vector3Property(string name, Vector3 defaultValue) : base(name, defaultValue)
     {
     }
 
-#if DEVELOPMENT
+
     public override unsafe void Edit()
     {
         System.Numerics.Vector3 num = new System.Numerics.Vector3(Value.X, Value.Y, Value.Z);
@@ -21,7 +21,7 @@ public class Vector3Property : PropProperty<Vector3>
             Value.Z = num.Z;
         }
     }
-#endif
+
 
     public override Tag Save()
     {

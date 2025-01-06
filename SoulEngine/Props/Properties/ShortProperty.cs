@@ -3,19 +3,19 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class ShortProperty : PropProperty<short>
+public class ShortProperty : SerializedProperty<short>
 {
     public ShortProperty(string name, short defaultValue) : base(name, defaultValue)
     {
     }
 
-#if DEVELOPMENT
+
     public override unsafe void Edit()
     {
         fixed (void* ptr = &Value)
             ImGui.InputScalar(Name, ImGuiDataType.S16, (IntPtr)ptr);
     }
-#endif
+
 
     public override Tag Save()
     {

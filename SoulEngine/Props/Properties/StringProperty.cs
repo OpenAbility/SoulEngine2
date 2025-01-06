@@ -3,18 +3,18 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class StringProperty : PropProperty<string>
+public class StringProperty : SerializedProperty<string>
 {
     public StringProperty(string name, string defaultValue) : base(name, defaultValue)
     {
     }
 
-#if DEVELOPMENT
+
     public override unsafe void Edit()
     {
         ImGui.InputText(Name, ref Value, 2048);
     }
-#endif
+
 
     public override Tag Save()
     {

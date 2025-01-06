@@ -2,7 +2,7 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class IntArrayProperty : PropProperty<int[]>
+public class IntArrayProperty : SerializedProperty<int[]>
 {
     public IntArrayProperty(string name, int[] defaultValue) : base(name, defaultValue)
     {

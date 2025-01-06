@@ -3,9 +3,9 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class ByteProperty : SerializedProperty<byte>
+public class BoolProperty : SerializedProperty<bool>
 {
-    public ByteProperty(string name, byte defaultValue) : base(name, defaultValue)
+    public BoolProperty(string name, bool defaultValue) : base(name, defaultValue)
     {
     }
 
@@ -19,11 +19,11 @@ public class ByteProperty : SerializedProperty<byte>
 
     public override Tag Save()
     {
-        return new ByteTag(Name, Value);
+        return new ByteTag(Name, Value ? (byte)1 : (byte)0);
     }
 
     public override void Load(Tag tag)
     {
-        Value = ((ByteTag)tag).Data;
+        Value = ((ByteTag)tag).Data > 0;
     }
 }

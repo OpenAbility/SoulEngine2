@@ -15,4 +15,9 @@ public class EndTag : Tag
     {
         throw new NotImplementedException();
     }
+
+    public override void Write(SNBTWriter writer)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -22,4 +22,9 @@ public class LongTag : Tag
     {
         writer.Write(Data);
     }
+
+    public override void Write(SNBTWriter writer)
+    {
+        writer.Append(Data + "L");
+    }
 }

@@ -2,7 +2,7 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class ByteArrayProperty : PropProperty<byte[]>
+public class ByteArrayProperty : SerializedProperty<byte[]>
 {
     public ByteArrayProperty(string name, byte[] defaultValue) : base(name, defaultValue)
     {

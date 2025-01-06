@@ -3,19 +3,19 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class FloatProperty : PropProperty<float>
+public class FloatProperty : SerializedProperty<float>
 {
     public FloatProperty(string name, float defaultValue) : base(name, defaultValue)
     {
     }
 
-#if DEVELOPMENT
+
     public override unsafe void Edit()
     {
         fixed (void* ptr = &Value)
             ImGui.InputScalar(Name, ImGuiDataType.Float, (IntPtr)ptr);
     }
-#endif
+
 
     public override Tag Save()
     {

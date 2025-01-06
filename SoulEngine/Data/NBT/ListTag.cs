@@ -37,6 +37,26 @@ public class ListTag : Tag, IList<Tag>
             tags[i].Write(writer);
     }
 
+    public override void Write(SNBTWriter writer)
+    {
+        writer.EndLine("[");
+        writer.Indent();
+        
+
+        for (int i = 0; i < tags.Count; i++)
+        {
+            Tag tag = tags[i];
+            writer.BeginLine("");
+            tag.Write(writer);
+
+            if (i != tags.Count - 1)
+                writer.EndLine(",");
+        }
+        writer.EndLine("");
+        writer.PopIndent();
+        writer.BeginLine("]");
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Tag ValidateTag(Tag tag)
     {

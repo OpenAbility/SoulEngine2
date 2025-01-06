@@ -32,8 +32,9 @@ public abstract class Game
     
 #if DEVELOPMENT
     public readonly DataRegistry DevelopmentRegistry;
-    private readonly ImGuiRenderer ImGuiRenderer;
 #endif
+    
+    private readonly ImGuiRenderer ImGuiRenderer;
 
     public readonly string PersistentDataPath;
     public readonly string BinaryDataPath;
@@ -47,6 +48,8 @@ public abstract class Game
 
     public readonly Window MainWindow;
     public readonly Thread MainThread;
+    
+    public float DeltaTime { get; private set; }
 
 
 
@@ -121,6 +124,8 @@ public abstract class Game
     public void Run()
     {
         EarlyLoad();
+        
+        LoadScene();
 
         MainLoop();
     }
@@ -131,6 +136,11 @@ public abstract class Game
     }
 
     public virtual void UpdateHook()
+    {
+        
+    }
+
+    protected virtual void LoadScene()
     {
         
     }
@@ -149,11 +159,11 @@ public abstract class Game
             TimeSpan elapsed = stopwatch.Elapsed;
             stopwatch.Restart();
 
-            float deltaTime = (float)elapsed.TotalSeconds;
-            EngineVar.SetFloat("dt", deltaTime);
+            DeltaTime = (float)elapsed.TotalSeconds;
+            EngineVar.SetFloat("dt", DeltaTime);
             EngineVar.SetInt("frameDelta", (int)elapsed.TotalMilliseconds);
 
-            fpsHistogram.AddLast(1 / deltaTime);
+            fpsHistogram.AddLast(1 / DeltaTime);
             msHistogram.AddLast((float)elapsed.TotalMilliseconds);
             
             if(fpsHistogram.Count > 30)
@@ -162,7 +172,7 @@ public abstract class Game
                 msHistogram.RemoveFirst();
             
 #if DEVELOPMENT
-            ImGuiRenderer.BeginFrame(MainWindow, deltaTime);
+            ImGuiRenderer.BeginFrame(MainWindow, DeltaTime);
             
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 10);
 
@@ -197,7 +207,7 @@ public abstract class Game
 #endif
             
             UpdateHook();
-            scene?.Update(deltaTime);
+            scene?.Update(DeltaTime);
             
             
             MainWindow.BindFramebuffer();
@@ -205,7 +215,7 @@ public abstract class Game
             
             RenderHook();
 
-            sceneRenderer?.Render(MainWindow);
+            sceneRenderer?.Render(MainWindow, DeltaTime);
             
 #if DEVELOPMENT
             ImGuiRenderer.EndFrame(MainWindow);

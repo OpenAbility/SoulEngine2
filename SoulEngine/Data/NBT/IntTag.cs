@@ -22,4 +22,9 @@ public class IntTag : Tag
     {
         writer.Write(Data);
     }
+
+    public override void Write(SNBTWriter writer)
+    {
+        writer.Append(Data.ToString());
+    }
 }

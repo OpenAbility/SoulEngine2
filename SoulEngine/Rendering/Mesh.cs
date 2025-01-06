@@ -1,5 +1,6 @@
 using OpenTK.Graphics.OpenGL;
 using SoulEngine.Core;
+using SoulEngine.Util;
 
 namespace SoulEngine.Rendering;
 
@@ -28,7 +29,7 @@ public unsafe class Mesh<T> where T : unmanaged, IVertex
 
         // Since it's a struct type it doesn't need a constructor
         T basicInstance = default(T);
-        vertexArray = basicInstance.CreateVertexArray();
+        vertexArray = game.ThreadSafety.EnsureMain(basicInstance.CreateVertexArray);
         VertexArrays[typeof(T)] = vertexArray;
     }
     
@@ -56,6 +57,9 @@ public unsafe class Mesh<T> where T : unmanaged, IVertex
 
     public void Draw()
     {
+        if(vertexBuffer == -1 || indexBuffer == -1)
+            return;
+        
         GL.VertexArrayVertexBuffer(vertexArray, 0, vertexBuffer, 0, sizeof(T));
         GL.VertexArrayElementBuffer(vertexArray, indexBuffer);
         

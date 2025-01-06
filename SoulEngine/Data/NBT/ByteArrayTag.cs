@@ -22,4 +22,32 @@ public class ByteArrayTag : ArrayTag<byte>
         writer.Write(Value.Length);
         writer.Write(Value);
     }
+
+    public override void Write(SNBTWriter writer)
+    {
+        writer.EndLine("[B; ");
+        writer.Indent();
+        writer.BeginLine("");
+
+        int timeSinceLineBreak = 0;
+        for (int i = 0; i < Value.Length; i++)
+        {
+            writer.Append(Value[i] + "b");
+
+            if (i != Value.Length - 1)
+                writer.Append(", ");
+
+            timeSinceLineBreak++;
+
+            if (timeSinceLineBreak >= 32)
+            {
+                timeSinceLineBreak = 0;
+                writer.EndLine("").BeginLine("");
+            }
+        }
+
+        writer.PopIndent();
+        
+        writer.EndLine("").BeginLine("]");
+    }
 }

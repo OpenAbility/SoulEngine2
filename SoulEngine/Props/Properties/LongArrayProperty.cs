@@ -2,7 +2,7 @@ using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
 
-public class LongArrayProperty : PropProperty<long[]>
+public class LongArrayProperty : SerializedProperty<long[]>
 {
     public LongArrayProperty(string name, long[] defaultValue) : base(name, defaultValue)
     {

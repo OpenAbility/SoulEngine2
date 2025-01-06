@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using SoulEngine.Util;
 
 namespace SoulEngine.Data.NBT;
 
@@ -15,9 +16,12 @@ public class CompoundTag : Tag, IDictionary<string, Tag>, ICollection<Tag>
     public override void Read(BinaryReader reader)
     {
         tags.Clear();
-        Tag tag;
-        while ((tag = ReadNamedTag(reader)).Type != TagType.End)
+        while (true)
         {
+            Tag tag = ReadNamedTag(reader);
+            if(tag.Type == TagType.End)
+                break;
+            
             tags[tag.Name!] = tag;
         }
     }
@@ -29,6 +33,28 @@ public class CompoundTag : Tag, IDictionary<string, Tag>, ICollection<Tag>
             WriteNamedTag(tag, writer);
         }
         writer.Write((byte)TagType.End);
+    }
+
+    public override void Write(SNBTWriter writer)
+    {
+        writer.EndLine("{");
+        writer.Indent();
+
+        Tag[] tagArray = tags.Values.ToArray();
+
+        for (int i = 0; i < tagArray.Length; i++)
+        {
+            Tag tag = tagArray[i];
+            
+            tag.WriteNamed(writer);
+            
+            if (i != tagArray.Length - 1)
+                writer.EndLine(",");
+        }
+
+        writer.EndLine("");
+        writer.PopIndent();
+        writer.BeginLine("}");
     }
 
 
@@ -105,6 +131,7 @@ public class CompoundTag : Tag, IDictionary<string, Tag>, ICollection<Tag>
     public long? GetLong(string name) => GetTag<LongTag>(name)?.Data;
     public float? GetFloat(string name) => GetTag<FloatTag>(name)?.Data;
     public double? GetDouble(string name) => GetTag<DoubleTag>(name)?.Data;
+    public string? GetString(string name) => GetTag<StringTag>(name)?.Data;
     public byte[]? GetByteArray(string name) => GetTag<ByteArrayTag>(name)?.Value;
     public int[]? GetIntArray(string name) => GetTag<IntArrayTag>(name)?.Value;
     public long[]? GetLongArray(string name) => GetTag<LongArrayTag>(name)?.Value;

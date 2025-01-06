@@ -1,3 +1,6 @@
+using System.Text;
+using SoulEngine.Util;
+
 namespace SoulEngine.Data.NBT;
 
 public class StringTag : Tag
@@ -16,12 +19,17 @@ public class StringTag : Tag
     public override void Read(BinaryReader reader)
     {
         short length = reader.ReadInt16();
-        Data = new string(reader.ReadChars(length));
+        Data = Encoding.UTF8.GetString(reader.ReadBytes(length));
     }
 
     public override void Write(BinaryWriter writer)
     {
         writer.Write((short)Data.Length);
         writer.Write(Data.ToCharArray());
+    }
+
+    public override void Write(SNBTWriter writer)
+    {
+        writer.Append('"' + EngineUtility.JsonEscape(Data) + '"');
     }
 }

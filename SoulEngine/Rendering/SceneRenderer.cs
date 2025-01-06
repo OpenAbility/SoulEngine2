@@ -1,4 +1,3 @@
-using OpenTK.Graphics.OpenGL;
 using SoulEngine.Core;
 
 namespace SoulEngine.Rendering;
@@ -15,8 +14,14 @@ public class SceneRenderer
         Scene = scene;
     }
 
-    public void Render(IRenderSurface surface)
+    public void Render(IRenderSurface surface, float deltaTime)
     {
         surface.BindFramebuffer();
+
+        foreach (var prop in Scene.Props.Values)
+        {
+            prop.Render(deltaTime);
+        }
+        
     }
 }

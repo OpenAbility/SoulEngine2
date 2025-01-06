@@ -52,6 +52,14 @@ public class ResourceManager
         Task loadingTask = Task.Run(() => resourceInstance.Load(this, id, Game.Content));
         resourceLoadingTasks[id] = (resourceInstance, loadingTask);
 
+        loadingTask.ContinueWith(t =>
+        {
+            if (t.Exception != null)
+            {
+                Logger.Error("Loading '{}' threw: \n{}", id, t.Exception);
+            }
+        }, TaskContinuationOptions.OnlyOnFaulted);
+
         return Task.Run(async () =>
         {
             await loadingTask;
@@ -77,6 +85,14 @@ public class ResourceManager
 
         return GetLoadTask(id, factory, false);
     }
+
+    /// <summary>
+    /// Asynchronously loads a resource
+    /// </summary>
+    /// <param name="id">The resource ID to load</param>
+    /// <typeparam name="T">The type of the resource</typeparam>
+    /// <returns>The loading task</returns>
+    public Task<T> LoadAsync<T>(string id) where T : Resource, new() => LoadAsync(id, () => new T());
     
     /// <summary>
     /// Synchronously loads a resource
@@ -96,6 +112,14 @@ public class ResourceManager
         
         return GetLoadTask(id, factory, true).Result;
     }
+    
+    /// <summary>
+    /// Asynchronously loads a resource
+    /// </summary>
+    /// <param name="id">The resource ID to load</param>
+    /// <typeparam name="T">The type of the resource</typeparam>
+    /// <returns>The loading task</returns>
+    public T Load<T>(string id) where T : Resource, new() => Load(id, () => new T());
 }
 
 public delegate T ResourceFactory<out T>() where T : Resource;
