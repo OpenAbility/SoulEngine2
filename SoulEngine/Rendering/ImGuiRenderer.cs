@@ -44,7 +44,7 @@ public unsafe class ImGuiRenderer
         IO.Fonts.AddFontDefault();
 
         IO.BackendFlags = ImGuiBackendFlags.RendererHasVtxOffset;
-        IO.ConfigFlags = ImGuiConfigFlags.DockingEnable | ImGuiConfigFlags.IsSRGB;
+        IO.ConfigFlags = ImGuiConfigFlags.DockingEnable;
 
         BuildFontTexture();
 
@@ -167,7 +167,6 @@ public unsafe class ImGuiRenderer
         GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         GL.Disable(EnableCap.CullFace);
         GL.Disable(EnableCap.DepthTest);
-        GL.Disable(EnableCap.FramebufferSrgb);
 
         Vector2i surfaceSize = surface.FramebufferSize;
 
@@ -218,7 +217,6 @@ public unsafe class ImGuiRenderer
 
         GL.Disable(EnableCap.ScissorTest);
         GL.Disable(EnableCap.Blend);
-        GL.Enable(EnableCap.FramebufferSrgb);
 
     }
 

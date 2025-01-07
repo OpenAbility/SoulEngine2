@@ -6,7 +6,7 @@ public class CopyCompiler : ContentCompiler
 {
     public override bool ShouldRecompile(DateTime lastOutput, string path, DataRegistry registry)
     {
-        return File.GetLastWriteTimeUtc(path) >= lastOutput;
+        return File.GetLastWriteTime(path) >= lastOutput;
     }
 
     public override void Recompile(string path, string output, DataRegistry registry)

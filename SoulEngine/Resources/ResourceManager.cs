@@ -107,7 +107,8 @@ public class ResourceManager
         {
             if (loaded.TryGetTarget(out Resource? loadedTarget))
                 return (T)loadedTarget;
-            resourceCache.Remove(id);
+            else
+                resourceCache.Remove(id);
         }
         
         return GetLoadTask(id, factory, true).Result;
@@ -120,6 +121,24 @@ public class ResourceManager
     /// <typeparam name="T">The type of the resource</typeparam>
     /// <returns>The loading task</returns>
     public T Load<T>(string id) where T : Resource, new() => Load(id, () => new T());
+
+    public void ReloadAll()
+    {
+        Game.State = GameState.ReloadingAssets;
+
+        List<Task> tasks = new List<Task>();
+        foreach (var asset in resourceCache)
+        {
+            if (asset.Value.TryGetTarget(out Resource? loadedTarget))
+                tasks.Add(loadedTarget.Load(this, asset.Key, Game.Content));
+        }
+
+        Task.WhenAll(tasks).ContinueWith(t =>
+        {
+            Game.State = GameState.Running;
+        });
+
+    }
 }
 
 public delegate T ResourceFactory<out T>() where T : Resource;

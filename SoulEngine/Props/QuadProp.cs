@@ -1,4 +1,5 @@
 using SoulEngine.Core;
+using SoulEngine.Data.NBT;
 using SoulEngine.Rendering;
 using SoulEngine.Util;
 
@@ -12,6 +13,8 @@ public class QuadProp : Prop
     private readonly Mesh<Vertex> Mesh;
     private readonly Shader Shader;
     public readonly BoolProperty Visible;
+    public readonly EnumProperty<QuadMode> Mode;
+    public readonly ResourceProperty<Texture> Texture;
     
     public QuadProp(Scene scene, string type, string name) : base(scene, type, name)
     {
@@ -32,18 +35,35 @@ public class QuadProp : Prop
         });
         
         Visible = Register(new BoolProperty("visible", true));
+        Mode = Register(new EnumProperty<QuadMode>("mode", QuadMode.Visible));
+        Texture = Register(new ResourceProperty<Texture>("texture", "tex/proto_wall_dark01.dds", () => new Texture(scene.Game), scene.Game));
+    }
+
+    public override void OnLoad(CompoundTag tag)
+    {
+        Console.WriteLine(Mode.Value);
     }
 
     public override void Update(float deltaTime)
     {
     }
 
-    public override void Render(float deltaTime)
+    public override void Render(SceneRenderData data, float deltaTime)
     {
         if(!Visible.Value)
             return;
         
+        if(Texture.Value != null)
+            Texture.Value.Bind(0);
         Shader.Bind();
+        Shader.Matrix("um_projection", data.CameraProjectionMatrix, false);
+        Shader.Matrix("um_view", data.CameraViewMatrix, false);
         Mesh.Draw();
+    }
+    
+    public enum QuadMode
+    {
+        Visible = 1,
+        Hidden = 2,
     }
 }

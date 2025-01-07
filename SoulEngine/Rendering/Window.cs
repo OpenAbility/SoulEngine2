@@ -64,7 +64,7 @@ public unsafe class Window : IRenderSurface
         GLFW.WindowHint(WindowHintClientApi.ClientApi, ClientApi.OpenGlApi);
         GLFW.WindowHint(WindowHintInt.ContextVersionMajor, 4);
         GLFW.WindowHint(WindowHintInt.ContextVersionMinor, 5);
-        GLFW.WindowHint(WindowHintBool.SrgbCapable, true);
+        GLFW.WindowHint(WindowHintBool.SrgbCapable, false);
         GLFW.WindowHint(WindowHintBool.ScaleToMonitor, true);
         
         #if !RELEASE
@@ -141,16 +141,19 @@ public unsafe class Window : IRenderSurface
         {
             string msg =
                 $"{source}, {type} ({severity}): {id}: {Encoding.UTF8.GetString(new Span<byte>((byte*)message, length))}";
-            
+
             game.EventBus.Event(new RendererDebugCallback(msg));
-            Logger.Get("Rendering", "OpenGL").Debug(msg);
+
+            var logger = Logger.Get("Rendering", "OpenGL");
+            if(type == DebugType.DebugTypeError)
+                logger.Error(msg);
+            else
+                logger.Debug(msg);
         };
         
         GL.DebugMessageCallback(DebugProc, IntPtr.Zero);
         
 #endif
-        
-        GL.Enable(EnableCap.FramebufferSrgb);
     }
 
     /// <summary>

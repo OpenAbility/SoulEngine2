@@ -32,6 +32,8 @@ public abstract class Game
     
 #if DEVELOPMENT
     public readonly DataRegistry DevelopmentRegistry;
+    public readonly MenuContext MenuContext = new MenuContext();
+    private readonly ContentCompileContext ContentCompileContext;
 #endif
     
     private readonly ImGuiRenderer ImGuiRenderer;
@@ -44,12 +46,16 @@ public abstract class Game
     public readonly EventBus<InputEvent> InputBus;
 
     private SceneRenderer? sceneRenderer;
-    private Scene? scene;
+    public Scene? Scene { get; private set; }
 
     public readonly Window MainWindow;
     public readonly Thread MainThread;
+
+    private Task sceneLoadTask;
     
     public float DeltaTime { get; private set; }
+
+    public GameState State;
 
 
 
@@ -88,8 +94,8 @@ public abstract class Game
         
         DevelopmentRegistry = DataRegistry.CreateData(EventBus, PersistentPath("development.reg"));
         
-        ContentCompileContext contentCompiler = new ContentCompileContext(this);
-        CompileContent(contentCompiler);
+        ContentCompileContext = new ContentCompileContext(this);
+        CompileContent(ContentCompileContext);
 #endif
         
         Content = new ContentContext();
@@ -112,6 +118,13 @@ public abstract class Game
     {
         
     }
+
+    public void RefreshContent()
+    {
+        CompileContent(ContentCompileContext);
+        ResourceManager.ReloadAll();
+    }
+    
 #endif
 
     protected abstract void PopulateContent();
@@ -123,9 +136,11 @@ public abstract class Game
     
     public void Run()
     {
+        State = GameState.Loading;
+        
         EarlyLoad();
         
-        LoadScene();
+        sceneLoadTask = Task.Run(LoadScene);
 
         MainLoop();
     }
@@ -140,9 +155,9 @@ public abstract class Game
         
     }
 
-    protected virtual void LoadScene()
+    protected virtual Task LoadScene()
     {
-        
+        return Task.CompletedTask;
     }
 
     private LinkedList<float> fpsHistogram = new LinkedList<float>();
@@ -192,9 +207,11 @@ public abstract class Game
 
             avgMS /= msHistogram.Count;
             
-            ImGui.SetNextWindowPos(new Vector2(5, 5), ImGuiCond.Always);
+
+            ImGui.SetNextWindowPos(new Vector2(ImGui.GetIO().DisplaySize.X - 5, ImGui.GetIO().DisplaySize.Y - 5), ImGuiCond.Always, new Vector2(1, 1));
             ImGui.SetNextWindowSize(new Vector2(100, 49), ImGuiCond.Always);
-            if (ImGui.Begin("Info", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar))
+            ImGui.SetNextWindowBgAlpha(0.5f);
+            if (ImGui.Begin("Info", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoInputs))
             {
                 ImGui.Text(" FPS: " + avgFPS.ToString("F0"));
                 ImGui.Text(" MS: " + avgMS.ToString("F2"));
@@ -202,20 +219,31 @@ public abstract class Game
             ImGui.End();
             
             ImGui.PopStyleVar();
+
+            if (ImGui.BeginMainMenuBar())
+            {
+                MenuContext.Draw();
+                ImGui.EndMainMenuBar();
+            }
+
+            if (MenuContext.IsPressed("Content", "Refresh All"))
+            {
+                RefreshContent();
+            }
+
+            if (MenuContext.IsPressed("Content", "Pack"))
+            {
+                PackContent();
+            }
             
             
 #endif
-            
-            UpdateHook();
-            scene?.Update(DeltaTime);
-            
-            
-            MainWindow.BindFramebuffer();
-            RenderUtility.Clear(Colour.Black, 0, 0);
-            
-            RenderHook();
-
-            sceneRenderer?.Render(MainWindow, DeltaTime);
+            if(State == GameState.Running)
+                RunningFrame();
+            else if (State == GameState.Loading)
+               LoadingFrame();
+            else if(State == GameState.ReloadingAssets)
+                ReloadingFrame();
             
 #if DEVELOPMENT
             ImGuiRenderer.EndFrame(MainWindow);
@@ -226,6 +254,70 @@ public abstract class Game
             ThreadSafety.RunTasks();
             InputBus.Dispatch();
         }
+    }
+
+    protected virtual void PackContent()
+    {
+        
+    }
+
+    private void LoadingFrame()
+    {
+        
+        ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
+        ImGui.SetNextWindowSize(new Vector2(700, 300));
+        if (ImGui.Begin("LoadingGame", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.Modal))
+        {
+            if (sceneLoadTask.Status is TaskStatus.Running or TaskStatus.WaitingForActivation)
+            {
+                ImGui.Text("Loading Game...");
+            } else if (sceneLoadTask.Status == TaskStatus.Canceled)
+            {
+                ImGui.Text("Game load canceled(???)");
+            } else if (sceneLoadTask.Status == TaskStatus.Faulted)
+            {
+                ImGui.Text("Game load failed!");
+
+                string input = sceneLoadTask.Exception?.ToString() ?? "NO ERROR";
+                ImGui.InputTextMultiline("##", ref input, (uint)input.Length, ImGui.GetContentRegionAvail(),
+                    ImGuiInputTextFlags.ReadOnly);
+            } else if (sceneLoadTask.Status == TaskStatus.RanToCompletion)
+            {
+                ImGui.Text("Starting Game...");
+                State = GameState.Running;
+            }
+            
+        }
+        ImGui.End();
+        
+    }
+
+    private void ReloadingFrame()
+    {
+        Vector2 windowSize = new Vector2(200, 100);
+        
+        ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
+        ImGui.SetNextWindowSize(windowSize);
+        if (ImGui.Begin("ReloadingAssets", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.Modal))
+        {
+            ImGui.Text("Reloading assets!");
+        }
+        ImGui.End();
+        
+    }
+
+    private void RunningFrame()
+    {
+        UpdateHook();
+        Scene?.Update(DeltaTime);
+            
+            
+        MainWindow.BindFramebuffer();
+        RenderUtility.Clear(Colour.Black, 0, 0);
+            
+        RenderHook();
+
+        sceneRenderer?.Render(MainWindow, DeltaTime);
     }
 
     public void FinalizeEngine()
@@ -247,7 +339,7 @@ public abstract class Game
 
     public void SetScene(Scene scene)
     {
-        this.scene = scene;
+        this.Scene = scene;
         this.sceneRenderer = new SceneRenderer(scene);
     }
 }

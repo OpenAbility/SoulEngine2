@@ -15,9 +15,10 @@ in vec4 v_colour;
 
 out vec4 f_colour;
 
+uniform sampler2D ut_albedoTexture;
         
 void main() {
-    f_colour = v_colour * FRAGMENT_COLOUR;
+    f_colour = texture(ut_albedoTexture, v_colour.rg) * FRAGMENT_COLOUR;
 }
 "/>
     

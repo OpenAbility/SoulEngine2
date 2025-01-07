@@ -12,8 +12,7 @@ public class BoolProperty : SerializedProperty<bool>
 
     public override unsafe void Edit()
     {
-        fixed (void* ptr = &Value)
-            ImGui.InputScalar(Name, ImGuiDataType.U8, (IntPtr)ptr);
+        ImGui.Checkbox(Name, ref Value);
     }
 
 

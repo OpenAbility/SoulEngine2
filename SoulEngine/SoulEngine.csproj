@@ -42,12 +42,6 @@
     <PackageReference Include="OpenTK.Windowing.GraphicsLibraryFramework" Version="5.0.0-pre.13" />
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(Configuration)' == 'Development' ">
-    <Content Include="content_src\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  
   <ItemGroup  Condition=" '$(Configuration)' != 'Development' ">
     <Compile Remove="Development\**" />
   </ItemGroup>

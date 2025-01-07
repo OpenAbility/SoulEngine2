@@ -3,6 +3,7 @@ using ImGuiNET;
 using Newtonsoft.Json.Linq;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
+using SoulEngine.Rendering;
 
 namespace SoulEngine.Props;
 
@@ -46,9 +47,14 @@ public abstract class Prop
     {
         foreach (var p in properties)
         {
-            if(tag.TryGetValue(p.Key, out Tag? propertyTag))
+            if (tag.TryGetValue(p.Key, out Tag? propertyTag))
+            {
                 p.Value.Load(propertyTag);
+                p.Value.MakeCurrentReset();
+            }
         }
+        
+        OnLoad(tag);
     }
 
     /// <summary>
@@ -98,12 +104,27 @@ public abstract class Prop
     {
         
     }
-    
+
     /// <summary>
     /// Render this prop. Do not update non-render logic!
     /// </summary>
+    /// <param name="sceneRenderData">The scene render data</param>
     /// <param name="deltaTime">The time that has passed since last render</param>
-    public virtual void Render(float deltaTime)
+    public virtual void Render(SceneRenderData sceneRenderData, float deltaTime)
+    {
+        
+    }
+
+    public void Reset()
+    {
+        foreach (var p in properties.Values)
+        {
+            p.Reset();
+        }
+        OnReset();
+    }
+    
+    protected virtual void OnReset()
     {
         
     }

@@ -10,6 +10,8 @@ public class ContentCompileContext
 
     private readonly Logger Logger;
 
+    private readonly List<Timer> timers = new List<Timer>();
+
     private List<(string pattern, ContentCompiler compiler)> compilers = new ();
     
     public ContentCompileContext(Game game)
@@ -35,14 +37,40 @@ public class ContentCompileContext
         return null;
     }
     
+    private DateTime lastCompileDate = DateTime.UnixEpoch;
+
     public void CompileDirectory(string input, string output)
     {
+
+        var spyDirectory = new DirectoryInfo(input);
+        PerformCompile(input, output);
+
+        Timer refreshTimer = new Timer(o =>
+        {
+            DateTime lastModifyDate = spyDirectory.EnumerateFiles("*", SearchOption.AllDirectories)
+                .OrderByDescending(f => f.LastWriteTime).Select(f => f.LastWriteTime).FirstOrDefault(DateTime.UnixEpoch);
+            
+            if (lastModifyDate >= lastCompileDate)
+            {
+                PerformCompile(input, output);
+                game.ResourceManager.ReloadAll();
+            }
+
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(0.5f));
+        timers.Add(refreshTimer);
+
+    }
+    
+    private void PerformCompile(string input, string output)
+    {
+        
+        lastCompileDate = DateTime.Now;
 
         if (!Directory.Exists(output))
             Directory.CreateDirectory(output);
 
         game.DevelopmentRegistry.SetString("_compilerVersion", EngineData.ContentCompiler.ToString());
-
+            
         var sourceFiles = Directory.GetFiles(input, "*.*", SearchOption.AllDirectories);
 
         foreach (var inputFile in sourceFiles)
@@ -61,7 +89,7 @@ public class ContentCompileContext
             if (!Directory.Exists(outputPathDir))
                 Directory.CreateDirectory(outputPathDir);
             
-            DateTime lastOutput = File.GetLastWriteTimeUtc(outputPath);
+            DateTime lastOutput = File.GetLastWriteTime(outputPath);
             
             Logger.Info("Testing file {}({} => {})", relative, inputFile, outputPath);
 

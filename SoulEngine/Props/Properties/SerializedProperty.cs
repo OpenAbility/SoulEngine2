@@ -13,9 +13,9 @@ public abstract class SerializedProperty
     
     
     public abstract void Edit();
-    
-    
-    
+
+    public abstract void MakeCurrentReset();
+    public abstract void Reset();
     public abstract Tag Save();
     public abstract void Load(Tag tag);
 }
@@ -24,6 +24,7 @@ public abstract class SerializedProperty<T> : SerializedProperty
 {
     public T Value;
     private T defaultValue;
+    private T resetValue;
 
     public SerializedProperty(string name, T defaultValue) : base(name)
     {
@@ -39,5 +40,15 @@ public abstract class SerializedProperty<T> : SerializedProperty
     public T Get()
     {
         return Value;
+    }
+
+    public override void MakeCurrentReset()
+    {
+        resetValue = Get();
+    }
+
+    public override void Reset()
+    {
+        Set(resetValue);
     }
 }
