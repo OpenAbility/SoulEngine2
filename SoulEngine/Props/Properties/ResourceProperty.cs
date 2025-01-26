@@ -8,13 +8,11 @@ namespace SoulEngine.Props;
 public class ResourceProperty<T> : SerializedProperty<T?> where T : Resource
 {
     private readonly Game game;
-    private readonly ResourceFactory<T> factory;
     private string id;
     
-    public ResourceProperty(string name, string defaultValue, ResourceFactory<T> factory, Game game) : base(name, null)
+    public ResourceProperty(string name, string defaultValue, Game game) : base(name, null)
     {
         this.game = game;
-        this.factory = factory;
         id = defaultValue;
 
         LoadResource();
@@ -25,7 +23,7 @@ public class ResourceProperty<T> : SerializedProperty<T?> where T : Resource
         if (id == "")
             Value = null;
         else
-            Value = game.ResourceManager.Load(id, factory);
+            Value = game.ResourceManager.Load<T>(id);
     }
 
     public override void Edit()

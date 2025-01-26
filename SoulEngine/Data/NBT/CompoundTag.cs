@@ -184,7 +184,7 @@ public class CompoundTag : Tag, IDictionary<string, Tag>, ICollection<Tag>
 
     bool ICollection<KeyValuePair<string, Tag>>.IsReadOnly => false;
 
-    public void Add(string key, Tag value) => tags.Add(key, value);
+    public void Add(string key, Tag value) => tags.Add(key, value.SetName(key));
 
     public bool ContainsKey(string key) => tags.ContainsKey(key);
 
@@ -195,10 +195,7 @@ public class CompoundTag : Tag, IDictionary<string, Tag>, ICollection<Tag>
     public Tag this[string key]
     {
         get => tags[key];
-        set
-        {
-            tags[key] = value;
-        }
+        set => tags[key] = value.SetName(key);
     }
 
     public ICollection<string> Keys => tags.Keys;

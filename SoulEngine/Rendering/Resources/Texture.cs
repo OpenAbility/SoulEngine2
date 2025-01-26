@@ -7,6 +7,7 @@ using SoulEngine.Util;
 
 namespace SoulEngine.Rendering;
 
+[Resource(typeof(Loader))]
 public class Texture : Resource
 {
     private int handle;
@@ -17,39 +18,82 @@ public class Texture : Resource
         this.game = game;
     }
     
-    public override async Task Load(ResourceManager resourceManager, string id, ContentContext content)
+    private void Load(ResourceManager resourceManager, string id, ContentContext content)
     {
+        if (id == "null")
+        {
+            game.ThreadSafety.EnsureMain(() =>
+            {
+                handle = GL.CreateTexture(TextureTarget.Texture2d);
+                GL.TextureStorage2D(handle, 1, SizedInternalFormat.Rgba8, 16, 16);
+
+                float[] textureData = new float[16 * 16 * 4];
+                bool coloured = true;
+                int i = 0;
+                for (int y = 0; y < 16; y++)
+                {
+                    for (int x = 0; x < 16; x++)
+                    {
+                        Colour colour = coloured ? Colour.Pink : Colour.Black;
+                        coloured = !coloured;
+
+                        textureData[i * 4 + 0] = colour.R;
+                        textureData[i * 4 + 1] = colour.G;
+                        textureData[i * 4 + 2] = colour.B;
+                        textureData[i * 4 + 3] = colour.A;
+                        i++;
+                    }
+
+                    coloured = !coloured;
+                }
+                
+                GL.TextureSubImage2D(handle, 0, 0, 0, 16, 16, PixelFormat.Rgba, PixelType.Float, textureData);
+                GL.GenerateTextureMipmap(handle);
+                
+                GL.TextureParameteri(handle, TextureParameterName.TextureMinFilter,
+                    (int)TextureMinFilter.LinearMipmapNearest);
+                GL.TextureParameteri(handle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+                GL.TextureParameteri(handle, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
+                GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+                GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+                
+            });
+            
+            return;
+        }
+        
+        
         DdsFileData fileData = new DdsFileData(content.Load(id)!);
         PixelFormatInfo format = new PixelFormatInfo(fileData.FormatDxgi);
 
 
         ThreadSafety ts = game.ThreadSafety;
 
-        handle = await ts.EnsureMainAsync(() => GL.CreateTexture(GetTextureType(fileData)));
+        handle = ts.EnsureMain(() => GL.CreateTexture(GetTextureType(fileData)));
 
         if (fileData.IsVolumeTexture)
         {
-            await ts.EnsureMainAsync(() => GL.TextureStorage3D(handle, fileData.MipMapCount, format.SizedInternalFormat,
+            ts.EnsureMain(() => GL.TextureStorage3D(handle, fileData.MipMapCount, format.SizedInternalFormat,
                 fileData.Width, fileData.Height, fileData.Textures[0].Surfaces.Length));
 
             foreach (var slice in fileData.Textures[0].Surfaces)
             {
                 if (fileData.IsBlockCompressed)
                 {
-                    await ts.EnsureMainAsync(() => GL.CompressedTextureSubImage3D(handle, slice.Level, 0, 0, 0,
+                    ts.EnsureMain(() => GL.CompressedTextureSubImage3D(handle, slice.Level, 0, 0, 0,
                         fileData.Width, fileData.Height, fileData.Depth, format.UnsizedInternalFormat,
                         slice.Data.Length, slice.Data));
                 }
                 else
                 {
-                    await ts.EnsureMainAsync(() => GL.TextureSubImage3D(handle, slice.Level, 0, 0, 0, fileData.Width,
+                    ts.EnsureMain(() => GL.TextureSubImage3D(handle, slice.Level, 0, 0, 0, fileData.Width,
                         fileData.Height, fileData.Depth, format.Format, format.Type, slice.Data));
                 }
             }
             
         } else if (fileData.IsCubemap)
         {;
-            await ts.EnsureMainAsync(() => GL.TextureStorage2D(handle, fileData.MipMapCount, format.SizedInternalFormat,
+            ts.EnsureMain(() => GL.TextureStorage2D(handle, fileData.MipMapCount, format.SizedInternalFormat,
                 fileData.Width, fileData.Height));
             foreach (var slice in fileData.Textures[0].Surfaces)
             {
@@ -60,33 +104,33 @@ public class Texture : Resource
             }
         } else
         {
-            await ts.EnsureMainAsync(() => GL.TextureStorage2D(handle, fileData.MipMapCount, format.SizedInternalFormat,
+            ts.EnsureMain(() => GL.TextureStorage2D(handle, Math.Max(1, fileData.MipMapCount), format.SizedInternalFormat,
                 fileData.Width, fileData.Height));
             foreach (var surface in fileData.Textures[0].Surfaces)
             {
                 if (fileData.IsBlockCompressed)
                 {
-                    await ts.EnsureMainAsync(() => GL.CompressedTextureSubImage2D(handle, surface.Level, 0, 0,
+                    ts.EnsureMain(() => GL.CompressedTextureSubImage2D(handle, surface.Level, 0, 0,
                         surface.Width, surface.Height, format.UnsizedInternalFormat, surface.Data.Length,
                         surface.Data));
                 }
                 else
                 {
-                    await ts.EnsureMainAsync(() => GL.TextureSubImage2D(handle, surface.Level, 0, 0,
-                        fileData.Width, fileData.Height, format.Format, format.Type, surface.Data));
+                    ts.EnsureMain(() => GL.TextureSubImage2D(handle, surface.Level, 0, 0,
+                        surface.Width, surface.Height, format.Format, format.Type, surface.Data));
                 }
             }
         }
 
-        await ts.EnsureMainAsync(() => GL.TextureParameteri(handle, TextureParameterName.TextureMinFilter,
-            (int)TextureMinFilter.LinearMipmapNearest));
-        await ts.EnsureMainAsync(() =>
-            GL.TextureParameteri(handle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Linear));
-
-        await ts.EnsureMainAsync(() =>
-            GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge));
-        await ts.EnsureMainAsync(() =>
-            GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge));
+        ts.EnsureMain(() =>
+        {
+            GL.TextureParameteri(handle, TextureParameterName.TextureMinFilter,
+                (int)TextureMinFilter.LinearMipmapNearest);
+            GL.TextureParameteri(handle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Linear);
+            GL.TextureParameteri(handle, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
+            GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+        });
     }
 
     public void Bind(uint slot)
@@ -114,5 +158,15 @@ public class Texture : Resource
             handle = -1;
         });
 
+    }
+    
+    public class Loader : IResourceLoader<Texture>
+    {
+        public Texture LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        {
+            Texture texture = new Texture(resourceManager.Game);
+            texture.Load(resourceManager, id, content);
+            return texture;
+        }
     }
 }

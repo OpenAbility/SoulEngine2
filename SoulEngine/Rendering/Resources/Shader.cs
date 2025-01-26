@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 using System.Xml;
 using OpenAbility.Logging;
@@ -10,19 +11,83 @@ using SoulEngine.Resources;
 namespace SoulEngine.Rendering;
 
 
+[Resource(typeof(Loader))]
 public class Shader : Resource
 {
     private Logger Logger = Logger.Get<Shader>();
     
     private int handle = -1;
     private Game? game;
+    private Dictionary<string, ShaderParameter> parameters = new Dictionary<string, ShaderParameter>();
     public Shader()
     {
         
     }
+
+    public IEnumerable<ShaderParameter> Parameters => parameters.Values;
+
     
     
-    public override async Task Load(ResourceManager resourceManager, string id, ContentContext content)
+    public void Bind()
+    {
+        if (handle == -1)
+            throw new Exception("Attempted to bound unloaded shader!");
+        GL.UseProgram(handle);
+    }
+
+    ~Shader()
+    {
+        game?.ThreadSafety.EnsureMain(() =>
+        {
+            if(handle != -1)
+                GL.DeleteProgram(handle);
+            handle = -1;
+        });
+
+    }
+    
+    private int UniformLocation(string name)
+    {
+        if (parameters.TryGetValue(name, out ShaderParameter value))
+            return value.Location;
+        return -1;
+    }
+
+    public void Matrix(string name, Matrix4 matrix, bool transpose)
+    {
+        int loc = UniformLocation(name);
+        GL.UniformMatrix4f(loc, 1, transpose, in matrix);
+    }
+    
+    public void Uniform1i(string name, int value)
+    {
+        int loc = UniformLocation(name);
+        GL.Uniform1i(loc, value);
+    }
+    
+    public void Uniform1f(string name, float value)
+    {
+        int loc = UniformLocation(name);
+        GL.Uniform1f(loc, value);
+    }
+    public void Uniform2f(string name, Vector2 value)
+    {
+        int loc = UniformLocation(name);
+        GL.Uniform2f(loc, value.X, value.Y);
+    }
+    public void Uniform3f(string name, Vector3 value)
+    {
+        int loc = UniformLocation(name);
+        GL.Uniform3f(loc, value.X, value.Y, value.Z);
+    }
+    public void Uniform4f(string name, Vector4 value)
+    {
+        int loc = UniformLocation(name);
+        GL.Uniform4f(loc, value.X, value.Y, value.Z, value.W);
+    }
+    
+
+    private void Load(ResourceManager resourceManager, string id, ContentContext content)
     {
         Logger = Logger.Get("Shader", id);
         
@@ -105,7 +170,7 @@ public class Shader : Resource
         fragmentSource = "#version 420 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n#line 0\n" + fragmentSource;
 
 
-        await game.ThreadSafety.EnsureMainAsync(() =>
+        game.ThreadSafety.EnsureMain(() =>
         {
             handle = GL.CreateProgram();
             int vertexHandle = GL.CreateShader(ShaderType.VertexShader);
@@ -139,46 +204,33 @@ public class Shader : Resource
             
             GL.DeleteShader(vertexHandle);
             GL.DeleteShader(fragmentHandle);
+            
+            int uniformCount = GL.GetProgrami(handle, ProgramProperty.ActiveUniforms);
+            for (int i = 0; i < uniformCount; i++)
+            {
+
+                GL.GetActiveUniform(handle, (uint)i, 2000, out int _, out int size, out UniformType type,
+                    out string uniformName);
+                
+                if (!Enum.IsDefined(typeof(ShaderParameterType), (int)type))
+                {
+                    Logger.Error("Unsupported uniform type found! Uniform {}, Size: {}, Type: {}, Name: {}", i, size, type, uniformName);
+                    continue;
+                }
+                
+                ShaderParameter parameter = new ShaderParameter(uniformName, i, size, (ShaderParameterType)type);
+                parameters[uniformName] = parameter;
+            }
         });
     }
     
-    public void Bind()
+    public class Loader : IResourceLoader<Shader>
     {
-        if (handle == -1)
-            throw new Exception("Attempted to bound unloaded shader!");
-        GL.UseProgram(handle);
-    }
-
-    ~Shader()
-    {
-        game?.ThreadSafety.EnsureMain(() =>
+        public Shader LoadResource(ResourceManager resourceManager, string id, ContentContext content)
         {
-            if(handle != -1)
-                GL.DeleteProgram(handle);
-            handle = -1;
-        });
-
-    }
-
-    private Dictionary<string, int> locations = new Dictionary<string, int>();
-    private int UniformLocation(string name)
-    {
-        if (locations.TryGetValue(name, out int value))
-            return value;
-        value = GL.GetUniformLocation(handle, name);
-        locations[name] = value;
-        return value;
-    }
-
-    public void Matrix(string name, Matrix4 matrix, bool transpose)
-    {
-        int loc = UniformLocation(name);
-        GL.UniformMatrix4f(loc, 1, transpose, in matrix);
-    }
-    
-    public void Uniform1i(string name, int value)
-    {
-        int loc = UniformLocation(name);
-        GL.Uniform1i(loc, value);
+            Shader shader = new Shader();
+            shader.Load(resourceManager, id, content);
+            return shader;
+        }
     }
 }

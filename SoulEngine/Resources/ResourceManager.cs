@@ -1,5 +1,8 @@
+using System.Reflection;
 using OpenAbility.Logging;
 using SoulEngine.Core;
+using SoulEngine.Util;
+using ThreadPool = SoulEngine.Processing.ThreadPool;
 
 namespace SoulEngine.Resources;
 
@@ -11,7 +14,9 @@ public class ResourceManager
     private Dictionary<string, WeakReference<Resource>> resourceCache =
         new Dictionary<string, WeakReference<Resource>>();
 
-    private Dictionary<string, (Resource resource, Task loadingTask)> resourceLoadingTasks = new Dictionary<string, (Resource resource, Task loadingTask)>();
+    private Dictionary<Type, object> resourceLoaders = new ();
+    
+    private Dictionary<string, ExecutionPromise> resourceLoadingTasks = new Dictionary<string, ExecutionPromise>();
 
 
     private readonly Lock loadCacheLock = new Lock();
@@ -23,85 +28,101 @@ public class ResourceManager
         Game = game;
     }
 
-    private Task<T> GetLoadTask<T>(string id, ResourceFactory<T> resourceFactory, bool synchronized) where T : Resource
+    private IResourceLoader<T> GetLoader<T>()
+    {
+        if (resourceLoaders.TryGetValue(typeof(T), out object? existing))
+            return (IResourceLoader<T>)existing;
+
+        Type type = typeof(T);
+
+        ResourceAttribute? attribute = type.GetCustomAttribute<ResourceAttribute>();
+        if (attribute == null)
+            throw new Exception("No resource attribute found!");
+
+        if (!attribute.LoaderType.IsAssignableTo(typeof(IResourceLoader<T>)))
+            throw new Exception("Loader type not compatible!");
+
+        if (!attribute.LoaderType.CanInstance())
+            throw new Exception("Loader type is not instantiatable!");
+
+        IResourceLoader<T> loader = attribute.LoaderType.Instantiate<IResourceLoader<T>>()!;
+
+        resourceLoaders[type] = loader;
+
+        return loader;
+    }
+
+    private ExecutionPromise<T> GetLoadTask<T>(string id, bool synchronized) where T : Resource
     {
         using var scope = loadCacheLock.EnterScope();
+
+        IResourceLoader<T> loader = GetLoader<T>();
         
         if (synchronized)
         {
-            Logger.Info("Loading {}", id);
-            T resource = resourceFactory();
-            resource.Load(this, id, Game.Content);
+            T resource = null!;
+            
+            try
+            {
+                resource = loader.LoadResource(this, id, Game.Content);
+                resource.ResourceID = id;
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Loading '{}' threw: \n{}", id, e);
+            }
+            
             resourceCache[id] = new WeakReference<Resource>(resource);
-            return Task.FromResult(resource);
+            return  ExecutionPromise<T>.Completed(resource);
         }
 
         if (resourceLoadingTasks.TryGetValue(id, out var existing))
         {
-            return Task.Run(async () =>
-            {
-                await existing.loadingTask;
-                return (T)existing.resource;
-            });
+            return (ExecutionPromise<T>)existing;
         }
-
-        T resourceInstance = resourceFactory();
-
-        resourceCache[id] = new WeakReference<Resource>(resourceInstance);
-
-        Task loadingTask = Task.Run(() => resourceInstance.Load(this, id, Game.Content));
-        resourceLoadingTasks[id] = (resourceInstance, loadingTask);
-
-        loadingTask.ContinueWith(t =>
+        
+        ExecutionPromise<T> promise = ThreadPool.Global.EnqueuePromise(() =>
         {
-            if (t.Exception != null)
-            {
-                Logger.Error("Loading '{}' threw: \n{}", id, t.Exception);
-            }
-        }, TaskContinuationOptions.OnlyOnFaulted);
+            
+            T instance = loader.LoadResource(this, id, Game.Content);
+            instance.ResourceID = id;
+                    
+            resourceCache[id] = new WeakReference<Resource>(instance);
 
-        return Task.Run(async () =>
-        {
-            await loadingTask;
-            return resourceInstance;
+            return instance;
+
         });
+        
+        resourceLoadingTasks[id] = promise;
+
+        return promise;
     }
 
     /// <summary>
     /// Asynchronously loads a resource
     /// </summary>
     /// <param name="id">The resource ID to load</param>
-    /// <param name="factory">The resource factory</param>
     /// <typeparam name="T">The type of the resource</typeparam>
     /// <returns>The loading task</returns>
-    public Task<T> LoadAsync<T>(string id, ResourceFactory<T> factory) where T : Resource
+    public ExecutionPromise<T> LoadAsync<T>(string id) where T : Resource
     {
         if (resourceCache.TryGetValue(id, out WeakReference<Resource>? loaded))
         {
             if (loaded.TryGetTarget(out Resource? loadedTarget))
-                return Task.FromResult((T)loadedTarget);
+                return ExecutionPromise<T>.Completed((T)loadedTarget);
             resourceCache.Remove(id);
         }
 
-        return GetLoadTask(id, factory, false);
+        return GetLoadTask<T>(id, false);
     }
-
-    /// <summary>
-    /// Asynchronously loads a resource
-    /// </summary>
-    /// <param name="id">The resource ID to load</param>
-    /// <typeparam name="T">The type of the resource</typeparam>
-    /// <returns>The loading task</returns>
-    public Task<T> LoadAsync<T>(string id) where T : Resource, new() => LoadAsync(id, () => new T());
     
     /// <summary>
     /// Synchronously loads a resource
     /// </summary>
     /// <param name="id">The resource ID to load</param>
-    /// <param name="factory">The resource factory</param>
     /// <typeparam name="T">The type of the resource</typeparam>
     /// <returns>The loaded resource</returns>
-    public T Load<T>(string id, ResourceFactory<T> factory) where T : Resource
+    public T Load<T>(string id) where T : Resource
     {
         if (resourceCache.TryGetValue(id, out WeakReference<Resource>? loaded))
         {
@@ -111,34 +132,9 @@ public class ResourceManager
                 resourceCache.Remove(id);
         }
         
-        return GetLoadTask(id, factory, true).Result;
+        return GetLoadTask<T>(id, true).ReturnValue!;
     }
     
-    /// <summary>
-    /// Asynchronously loads a resource
-    /// </summary>
-    /// <param name="id">The resource ID to load</param>
-    /// <typeparam name="T">The type of the resource</typeparam>
-    /// <returns>The loading task</returns>
-    public T Load<T>(string id) where T : Resource, new() => Load(id, () => new T());
-
-    public void ReloadAll()
-    {
-        Game.State = GameState.ReloadingAssets;
-
-        List<Task> tasks = new List<Task>();
-        foreach (var asset in resourceCache)
-        {
-            if (asset.Value.TryGetTarget(out Resource? loadedTarget))
-                tasks.Add(loadedTarget.Load(this, asset.Key, Game.Content));
-        }
-
-        Task.WhenAll(tasks).ContinueWith(t =>
-        {
-            Game.State = GameState.Running;
-        });
-
-    }
 }
 
 public delegate T ResourceFactory<out T>() where T : Resource;

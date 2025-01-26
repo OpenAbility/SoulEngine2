@@ -10,7 +10,16 @@ public abstract class Director
 {
     private readonly Dictionary<string, SerializedProperty> properties = new Dictionary<string, SerializedProperty>();
 
-    
+    public readonly Scene Scene;
+
+    public Game Game => Scene.Game;
+
+    protected Director(Scene scene)
+    {
+        Scene = scene;
+    }
+
+
     protected T Register<T>(T property) where T : SerializedProperty
     {
         properties[property.Name] = property;
@@ -89,4 +98,14 @@ public abstract class Director
     
     
     public abstract void Update(float deltaTime);
+
+    protected IEnumerable<T> FindProps<T>()
+    {
+        return Scene.Props.Where(t => t is T).Cast<T>();
+    }
+    
+    protected T? FindProp<T>()
+    {
+        return Scene.Props.Where(t => t is T).Cast<T>().FirstOrDefault();
+    }
 }

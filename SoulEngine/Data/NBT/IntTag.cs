@@ -1,8 +1,12 @@
 namespace SoulEngine.Data.NBT;
 
-public class IntTag : Tag
+public class IntTag : ValueTag<int>
 {
-    public int Data;
+    public int Data
+    {
+        get => Value;
+        set => Value = value;
+    }
     
     public IntTag(string? name) : base(name, TagType.Int)
     {

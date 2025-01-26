@@ -26,35 +26,6 @@ public class ThreadSafety
         return returnValue;
     }
     
-    public async Task<T> EnsureMainAsync<T>(Func<T> func)
-    {
-        T returnValue = default(T)!;
-        await EnsureMainAsync(() =>
-        {
-            returnValue = func();
-        });
-        return returnValue;
-    }
-
-    public async Task EnsureMainAsync(Action action)
-    {
-        if (OnMain)
-            action();
-        else
-        {
-            bool awaiting = true;
-            tasks.Enqueue(() =>
-            {
-                action();
-                awaiting = false;
-            });
-
-            while (awaiting)
-            {
-                await Task.Delay(1);
-            }
-        }
-    }
 
     public void EnsureMain(Action action)
     {

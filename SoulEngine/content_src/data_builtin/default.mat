@@ -1,0 +1,8 @@
+{
+  "shader": "shader/simple.program",
+  
+  "values": {
+    "uc_albedoColour": [1, 1, 1, 1],
+    "ut_albedoTexture": "null"
+  }
+}

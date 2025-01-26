@@ -1,6 +1,5 @@
 using System.Text;
 using SoulEngine.Core;
-using SoulEngine.Development;
 
 namespace SoulEngine.Content;
 
@@ -8,8 +7,8 @@ public class PackedContent
 {
     private const uint Magic = 0x1BADDA7A;
     private const uint ExpectedVersion = 1;
-    // The soft max limit to an archive - 64 megs
-    private const ulong MaxArchiveSize = 1024 * 1024 * 64;
+    // The soft max limit to an archive - 128 megs
+    private const ulong MaxArchiveSize = 1024 * 1024 * 128;
     // Just to identify the file
     private const uint ArchiveMagic = 0x2BADDA7A;
     
@@ -53,6 +52,12 @@ public class PackedContent
         fileStream.ReadExactly(allocated);
 
         return allocated;
+    }
+
+    public bool Has(string id)
+    {
+        ulong hash = HashString(id);
+        return files.ContainsKey(hash);
     }
  
 
@@ -155,12 +160,12 @@ public class PackedContent
             writer.Write(ArchiveMagic);
             writer.Dispose();
 
-            currentArchiveOffset += sizeof(uint);
+            currentArchiveOffset = sizeof(uint);
         }
 
         private void AddToArchive(Stream stream)
         {
-            if (currentArchiveOffset + (ulong)stream.Length > MaxArchiveSize && currentArchiveOffset != sizeof(uint))
+            if (currentArchiveOffset > MaxArchiveSize)
             {
                 BeginArchive(currentArchiveIndex + 1);
             }

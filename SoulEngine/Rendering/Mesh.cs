@@ -12,11 +12,13 @@ public unsafe class Mesh<T> where T : unmanaged, IVertex
 
     private static readonly Dictionary<Type, int> VertexArrays = new Dictionary<Type, int>();
 
-    private int vertexBuffer = -1;
-    private int indexBuffer = -1;
+    private int bakedVertexBuffer = -1;
+    private int bakedIndexBuffer = -1;
     private int indexCount;
     private readonly int vertexArray;
     private readonly Game game;
+
+    private readonly Lock UpdateLock = new Lock();
 
     public Mesh(Game game)
     {
@@ -32,52 +34,109 @@ public unsafe class Mesh<T> where T : unmanaged, IVertex
         vertexArray = game.ThreadSafety.EnsureMain(basicInstance.CreateVertexArray);
         VertexArrays[typeof(T)] = vertexArray;
     }
-    
+
     /// <summary>
-    /// Updates this mesh 
+    /// Updates this mesh (thread safe)
     /// </summary>
-    /// <param name="vertices"></param>
-    /// <param name="indices"></param>
+    /// <param name="vertices">The vertex data</param>
+    /// <param name="indices">The index data</param>
     public void Update(ReadOnlySpan<T> vertices, ReadOnlySpan<uint> indices)
     {
-        // We don't bother with buffer resizing, just delete 'em
-        if(vertexBuffer != -1) 
-            GL.DeleteBuffer(vertexBuffer);
-        if(indexBuffer != -1) 
-            GL.DeleteBuffer(indexBuffer);
-
-        vertexBuffer = GL.CreateBuffer();
-        indexBuffer = GL.CreateBuffer();
+        int vCount = vertices.Length;
+        int iCount = indices.Length;
+        var d = game.ThreadSafety.EnsureMain(() => BeginUpdate(vCount, iCount));
         
-        GL.NamedBufferData(vertexBuffer, vertices.Length * sizeof(T), vertices, VertexBufferObjectUsage.StaticDraw);
-        GL.NamedBufferData(indexBuffer, indices.Length * sizeof(uint), indices, VertexBufferObjectUsage.StaticDraw);
+        vertices.CopyTo(new Span<T>(d.VertexData, vertices.Length));
+        indices.CopyTo(new Span<uint>(d.IndexData, indices.Length));
+        
+        game.ThreadSafety.EnsureMain(() => EndUpdate(d));
+    }
+    
+    public MeshBuildData<T> BeginUpdate(int vertices, int indices)
+    {
+        // We don't bother with buffer resizing, just delete 'em
+        int vertexBuffer = GL.CreateBuffer();
+        int indexBuffer = GL.CreateBuffer();
+        
+        GL.NamedBufferStorage(vertexBuffer, vertices * sizeof(T), null, BufferStorageMask.DynamicStorageBit | BufferStorageMask.MapWriteBit);
+        GL.NamedBufferStorage(indexBuffer, indices * sizeof(uint), null, BufferStorageMask.DynamicStorageBit | BufferStorageMask.MapWriteBit);
 
-        indexCount = indices.Length;
+        void* vtx = GL.MapNamedBuffer(vertexBuffer, BufferAccess.WriteOnly);
+        void* idx = GL.MapNamedBuffer(indexBuffer, BufferAccess.WriteOnly);
+
+        return new MeshBuildData<T>
+        {
+            IndexData = (uint*)idx,
+            VertexData = (T*)vtx,
+            VertexBuffer = vertexBuffer,
+            IndexBuffer = indexBuffer,
+            
+            VertexCount = vertices,
+            IndexCount = indices
+        };
+    }
+
+    public void EndUpdate(MeshBuildData<T> buildData)
+    {
+        lock (UpdateLock)
+        {
+            
+            if(bakedIndexBuffer != -1)
+                GL.DeleteBuffer(bakedIndexBuffer);
+            if(bakedVertexBuffer != -1)
+                GL.DeleteBuffer(bakedVertexBuffer);
+            
+            GL.UnmapNamedBuffer(buildData.VertexBuffer);
+            GL.UnmapNamedBuffer(buildData.IndexBuffer);
+
+            indexCount = buildData.IndexCount;
+
+            bakedVertexBuffer = buildData.VertexBuffer;
+            bakedIndexBuffer = buildData.IndexBuffer;
+        }
     }
 
     public void Draw()
     {
-        if(vertexBuffer == -1 || indexBuffer == -1)
-            return;
-        
-        GL.VertexArrayVertexBuffer(vertexArray, 0, vertexBuffer, 0, sizeof(T));
-        GL.VertexArrayElementBuffer(vertexArray, indexBuffer);
-        
-        GL.BindVertexArray(vertexArray);
-        
-        GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
-        
-        GL.BindVertexArray(0);
+        lock (UpdateLock)
+        {
+            if (bakedVertexBuffer == -1 || bakedIndexBuffer == -1)
+                return;
+
+            GL.VertexArrayVertexBuffer(vertexArray, 0, bakedVertexBuffer, 0, sizeof(T));
+            GL.VertexArrayElementBuffer(vertexArray, bakedIndexBuffer);
+
+            GL.BindVertexArray(vertexArray);
+
+            GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
+
+            GL.BindVertexArray(0);
+        }
     }
 
     ~Mesh()
     {
         game.ThreadSafety.EnsureMain(() =>
         {
-            if(vertexBuffer != -1) 
-                GL.DeleteBuffer(vertexBuffer);
-            if(indexBuffer != -1) 
-                GL.DeleteBuffer(indexBuffer);
+            if(bakedVertexBuffer != -1) 
+                GL.DeleteBuffer(bakedVertexBuffer);
+            if(bakedIndexBuffer != -1) 
+                GL.DeleteBuffer(bakedIndexBuffer);
         });
     }
+}
+
+public unsafe struct MeshBuildData<T> where T : unmanaged, IVertex
+{
+    public T* VertexData;
+    public uint* IndexData;
+
+    public Span<T> Vertices => new Span<T>(VertexData, VertexCount);
+    public Span<uint> Indices => new Span<uint>(IndexData, IndexCount);
+
+    internal int VertexCount;
+    internal int IndexCount;
+
+    internal int VertexBuffer;
+    internal int IndexBuffer;
 }

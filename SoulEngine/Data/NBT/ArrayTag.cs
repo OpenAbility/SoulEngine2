@@ -3,10 +3,8 @@ using System.Numerics;
 
 namespace SoulEngine.Data.NBT;
 
-public abstract class ArrayTag<T> : Tag, IReadOnlyList<T> where T : unmanaged, INumber<T>
+public abstract class ArrayTag<T> : ValueTag<T[]>, IReadOnlyList<T> where T : unmanaged, INumber<T>
 {
-
-    public T[] Value;
     
     protected ArrayTag(string? name, TagType type) : base(name, type)
     {

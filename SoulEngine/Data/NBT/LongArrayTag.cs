@@ -1,5 +1,3 @@
-using Be.IO;
-
 namespace SoulEngine.Data.NBT;
 
 public class LongArrayTag : ArrayTag<long>

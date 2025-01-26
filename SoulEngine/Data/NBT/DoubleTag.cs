@@ -1,8 +1,12 @@
 namespace SoulEngine.Data.NBT;
 
-public class DoubleTag : Tag
+public class DoubleTag : ValueTag<double>
 {
-    public double Data;
+    public double Data
+    {
+        get => Value;
+        set => Value = value;
+    }
     
     public DoubleTag(string? name) : base(name, TagType.Double)
     {

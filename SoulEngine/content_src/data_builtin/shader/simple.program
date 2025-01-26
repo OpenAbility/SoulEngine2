@@ -1,25 +1,6 @@
 <?xml version="1.0"?>
 
 <Shader>
-    
-    <Defines backend="OPENGL">
-        <Define name="FRAGMENT_COLOUR">vec4(1, 1, 1, 1)</Define>
-    </Defines>
-    
     <Vertex backend="OPENGL" src="shader/shared/simple.vert"/>
-    <Vertex backend="VULKAN" src="shader/shared/simple2.vert"/>
-    
-    <Fragment backend="OPENGL"
-              src_string="
-in vec4 v_colour;
-
-out vec4 f_colour;
-
-uniform sampler2D ut_albedoTexture;
-        
-void main() {
-    f_colour = texture(ut_albedoTexture, v_colour.rg) * FRAGMENT_COLOUR;
-}
-"/>
-    
+    <Fragment backend="OPENGL" src="shader/shared/simple.frag"/>  
 </Shader> 

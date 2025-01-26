@@ -29,6 +29,7 @@ public struct Colour
 	public static readonly Colour Blue = new Colour(0, 0, 1);
 	public static readonly Colour Yellow = new Colour(1, 1, 0);
 	public static readonly Colour Grey  = new Colour(.5f, .5f, .5f);
+	public static readonly Colour Pink = new Colour(1, 0, 1, 1);
 
 	public readonly Colour WithAlpha(float alpha)
 	{

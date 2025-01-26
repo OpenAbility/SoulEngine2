@@ -5,6 +5,7 @@ using SoulEngine.Resources;
 
 namespace SoulEngine.Core;
 
+[Resource(typeof(Loader))]
 public class Scene : Resource
 {
 
@@ -13,7 +14,7 @@ public class Scene : Resource
 
     public Director? Director;
 
-    public Dictionary<string, Prop> Props = new Dictionary<string, Prop>();
+    public List<Prop> Props = new List<Prop>();
 
     public Scene(Game game)
     {
@@ -24,7 +25,7 @@ public class Scene : Resource
     {
         Director?.Reset();
         
-        foreach (var prop in Props.Values)
+        foreach (var prop in Props)
         {
             prop.Reset();
         }
@@ -37,34 +38,56 @@ public class Scene : Resource
         
         Director?.Update(deltaTime);
 
-        foreach (var prop in Props.Values)
+        foreach (var prop in Props)
         {
             prop.Update(deltaTime);
         }
     }
     
     
-    public override Task Load(ResourceManager resourceManager, string id, ContentContext content)
+    public class Loader : IResourceLoader<Scene>
     {
-        Props.Clear();
-        
-        CompoundTag sceneTag = (CompoundTag)TagIO.ReadCompressed(content.Load(id)!, false);
-
-        CompoundTag propsTag = (CompoundTag)sceneTag["props"];
-
-        foreach (string name in propsTag.Keys)
+        public Scene LoadResource(ResourceManager resourceManager, string id, ContentContext content)
         {
-            CompoundTag propTag = (CompoundTag)propsTag[name];
-
-            string propType = propTag.GetString("$_type")!;
-
-            Prop prop = PropLoader.Create(this, propType, name);
+            Scene scene = new Scene(resourceManager.Game);
             
-            prop.Load(propTag);
+            CompoundTag sceneTag = (CompoundTag)TagIO.ReadCompressed(content.Load(id)!, false);
+
+            CompoundTag propsTag = (CompoundTag)sceneTag["props"];
+
+            foreach (string name in propsTag.Keys)
+            {
+                CompoundTag propTag = (CompoundTag)propsTag[name];
+
+                string propType = propTag.GetString("$_type")!;
+
+                Prop prop = PropLoader.Create(scene, propType, name);
             
-            Props.Add(prop.Name, prop);
+                prop.Load(propTag);
+            
+                scene.Props.Add(prop);
+            }
+            
+            CompoundTag directorTag = (CompoundTag)sceneTag["director"];
+            {
+                string directorType = directorTag.GetString("$_type")!;
+
+                Director director = DirectorLoader.Create(scene, directorType);
+            
+                director.Load(directorTag);
+
+                scene.Director = director;
+            }
+
+            return scene;
         }
+    }
 
-        return Task.CompletedTask;
+    public CameraProp? Camera => Props.FirstOrDefault(p => p is CameraProp) as CameraProp;
+
+    public void AddProp(string type, string name)
+    {
+        Prop prop = PropLoader.Create(this, type, name);
+        Props.Add(prop);
     }
 }

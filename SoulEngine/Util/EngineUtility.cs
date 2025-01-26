@@ -4,6 +4,8 @@ using System.Reflection;
 using System.Text;
 using System.Web;
 using OpenAbility.Logging;
+using OpenTK.Mathematics;
+using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Util;
 
@@ -103,6 +105,105 @@ public static class EngineUtility
     public static T PickRandom<T>(this List<T> list)
     {
         return list[Random.Shared.Next(list.Count)];
+    }
+    
+    public static Matrix4 ArrayToMatrix(ReadOnlySpan<float> data)
+    {
+        Matrix4 matrix = new Matrix4();
+        int idx = 0;
+        for (int x = 0; x < 4; x++)
+        {
+            for (int y = 0; y < 4; y++)
+            {
+                matrix[x, y] = data[idx++];
+            }
+        }
+        return matrix;
+    }
+	
+    public static Matrix4 ArrayToMatrix(float[,] data)
+    {
+        Matrix4 matrix = new Matrix4();
+        for (int x = 0; x < 4; x++)
+        {
+            for (int y = 0; y < 4; y++)
+            {
+                matrix[x, y] = data[x, y];
+            }
+        }
+        return matrix;
+    }
+    
+    public static void MatrixToArray(this Matrix4 matrix4, ref float[,] matrix)
+    {
+        for (int x = 0; x < 4; x++)
+        {
+            for (int y = 0; y < 4; y++)
+            {
+                matrix[x, y] = matrix4[x, y];
+            }
+        }
+    }
+	
+    public static void MatrixToArray(this Matrix4 matrix4, ref float[] matrix)
+    {
+        int idx = 0;
+        for (int x = 0; x < 4; x++)
+        {
+            for (int y = 0; y < 4; y++)
+            {
+                matrix[idx++] = matrix4[x, y];
+            }
+        }
+    }
+
+    public static void CopyDirectory(string source, string destination)
+    {
+        var dir = new DirectoryInfo(source);
+
+        if(!dir.Exists)
+            throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+        DirectoryInfo[] dirs = dir.GetDirectories();
+
+        Directory.CreateDirectory(destination);
+
+        foreach (FileInfo file in dir.GetFiles())
+        {
+            string targetFilePath = Path.Combine(destination, file.Name);
+            file.CopyTo(targetFilePath);
+        }
+
+        foreach (DirectoryInfo subDir in dirs)
+        {
+            string newDestination = Path.Combine(destination, subDir.Name);
+            CopyDirectory(subDir.FullName, newDestination);
+        }
+    }
+
+    public static ListTag ToTag(this Matrix4 matrix4, string name)
+    {
+        ListTag matrixTag = new ListTag(name);
+        float[] m = new float[16];
+        
+        matrix4.MatrixToArray(ref m);
+        for (int i = 0; i < 16; i++)
+        {
+            matrixTag.Add(new FloatTag(null, m[i]));
+        }
+
+        return matrixTag;
+    }
+    
+    public static Matrix4 ToMatrix(this ListTag matrixTag)
+    {
+        float[] m = new float[16];
+        for (int i = 0; i < 16; i++)
+        {
+            m[i] = (matrixTag[i] as FloatTag)!.Data;
+        }
+
+        return ArrayToMatrix(m);
     }
 }
 

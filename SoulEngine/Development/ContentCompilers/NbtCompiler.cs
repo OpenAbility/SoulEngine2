@@ -12,15 +12,15 @@ public class NbtCompiler : ContentCompiler
         Extension = extension;
     }
     
-    public override bool ShouldRecompile(DateTime lastOutput, string path, DataRegistry registry)
+    public override bool ShouldRecompile(ContentData contentData)
     {
-        return File.GetLastWriteTime(path) >= lastOutput;
+        return File.GetLastWriteTime(contentData.InputFilePath) >= contentData.LastOutputWrite;
     }
 
-    public override void Recompile(string path, string output, DataRegistry registry)
+    public override void Recompile(ContentData contentData)
     {
-        using FileStream fileStream = File.OpenWrite(output);
-        Tag tag = TagIO.ReadSNBT(File.ReadAllText(path));
+        using FileStream fileStream = File.OpenWrite(contentData.OutputFilePath);
+        Tag tag = TagIO.ReadSNBT(File.ReadAllText(contentData.InputFilePath));
         TagIO.WriteCompressed(tag, fileStream);
     }
 

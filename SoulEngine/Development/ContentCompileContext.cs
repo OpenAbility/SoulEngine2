@@ -1,6 +1,7 @@
 using System.IO.Enumeration;
 using OpenAbility.Logging;
 using SoulEngine.Core;
+using SoulEngine.Data;
 
 namespace SoulEngine.Development;
 
@@ -53,7 +54,6 @@ public class ContentCompileContext
             if (lastModifyDate >= lastCompileDate)
             {
                 PerformCompile(input, output);
-                game.ResourceManager.ReloadAll();
             }
 
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(0.5f));
@@ -90,16 +90,69 @@ public class ContentCompileContext
                 Directory.CreateDirectory(outputPathDir);
             
             DateTime lastOutput = File.GetLastWriteTime(outputPath);
-            
-            Logger.Info("Testing file {}({} => {})", relative, inputFile, outputPath);
 
-            if (!compiler.ShouldRecompile(lastOutput, inputFile, game.DevelopmentRegistry))
+            ContentData contentData =
+                new ContentData(input, output, inputFile, outputPath, lastOutput, game.DevelopmentRegistry);
+            
+            //Logger.Info("Testing file {}({} => {})", relative, inputFile, outputPath);
+
+            if (!compiler.ShouldRecompile(contentData))
                 continue;
             
-            Logger.Info("Compiling!");
+            //Logger.Info("Compiling!");
             
-            compiler.Recompile(inputFile, outputPath, game.DevelopmentRegistry);
+            compiler.Recompile(contentData);
         }
         
+    }
+}
+
+/// <summary>
+/// Specifies all data needed to recompile resources
+/// </summary>
+public struct ContentData
+{
+    /// <summary>
+    /// The input asset directory
+    /// </summary>
+    public readonly string InputDirectory;
+    /// <summary>
+    /// The output asset directory
+    /// </summary>
+    public readonly string OutputDirectory;
+
+    /// <summary>
+    /// The input file path
+    /// </summary>
+    public readonly string InputFilePath;
+    /// <summary>
+    /// The output file path
+    /// </summary>
+    public readonly string OutputFilePath;
+
+    /// <summary>
+    /// The last time the output file was written
+    /// </summary>
+    public readonly DateTime LastOutputWrite;
+
+    /// <summary>
+    /// A registry used to store extra data between steps or even compiles
+    /// </summary>
+    public readonly DataRegistry Registry;
+
+    public ContentData(string inputDirectory, string outputDirectory, string inputFilePath, string outputFilePath, DateTime lastOutputWrite, DataRegistry registry)
+    {
+        InputDirectory = inputDirectory;
+        OutputDirectory = outputDirectory;
+        InputFilePath = inputFilePath;
+        OutputFilePath = outputFilePath;
+        LastOutputWrite = lastOutputWrite;
+        Registry = registry;
+    }
+
+
+    public string FileDataPath(string id)
+    {
+        return "_contentCompile." + EngineData.ContentCompiler + "." + OutputFilePath + "=" + InputFilePath + "." + id;
     }
 }

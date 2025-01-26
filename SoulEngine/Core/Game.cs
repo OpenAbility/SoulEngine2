@@ -1,15 +1,19 @@
 using System.Diagnostics;
-using System.Numerics;
+using ImGuiNET;
 using OpenAbility.Logging;
 using SoulEngine.Content;
 using SoulEngine.Data;
 using SoulEngine.Events;
+using SoulEngine.Input;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
 using SoulEngine.Util;
+using Vector2 = System.Numerics.Vector2;
 #if DEVELOPMENT
-using ImGuiNET;
+using ImGuizmoNET;
+using OpenTK.Mathematics;
 using SoulEngine.Development;
+using SoulEngine.Props;
 #endif
 
 namespace SoulEngine.Core;
@@ -32,11 +36,21 @@ public abstract class Game
     
 #if DEVELOPMENT
     public readonly DataRegistry DevelopmentRegistry;
-    public readonly MenuContext MenuContext = new MenuContext();
     private readonly ContentCompileContext ContentCompileContext;
+
+    private readonly ImGuiWindow GameWindow;
+    private readonly ImGuiWindow SceneWindow;
+
+    private Prop? CurrentProp;
+    
+    private SceneCamera SceneCamera;
+
 #endif
     
+    public readonly MenuContext MenuContext = new MenuContext();
+    
     private readonly ImGuiRenderer ImGuiRenderer;
+
 
     public readonly string PersistentDataPath;
     public readonly string BinaryDataPath;
@@ -45,17 +59,22 @@ public abstract class Game
     public readonly EventBus<GameEvent> EventBus;
     public readonly EventBus<InputEvent> InputBus;
 
+    public readonly InputManager InputManager;
+    public readonly KeyActions Keys;
+
     private SceneRenderer? sceneRenderer;
     public Scene? Scene { get; private set; }
 
     public readonly Window MainWindow;
     public readonly Thread MainThread;
 
-    private Task sceneLoadTask;
+    private readonly RenderContext renderContext;
     
     public float DeltaTime { get; private set; }
 
     public GameState State;
+
+    internal readonly BuiltinActions BuiltinActions;
 
 
 
@@ -107,10 +126,24 @@ public abstract class Game
 
         MainWindow = new Window(this, 1280, 720, data.Name, null);
         
-#if DEVELOPMENT
+        InputManager = new InputManager(this, InputBus);
+
         ImGuiRenderer = new ImGuiRenderer(ResourceManager);
         InputBus.BeginListen(ImGuiRenderer.OnInputEvent);
+        
+
+        renderContext = new RenderContext();
+
+        Keys = new KeyActions(InputManager);
+        BuiltinActions = new BuiltinActions(InputManager);
+        
+#if DEVELOPMENT
+        GameWindow = new ImGuiWindow(this, "Game");
+        SceneWindow = new ImGuiWindow(this, "Scene");
+
+        SceneCamera = new SceneCamera(this);
 #endif
+
     }
     
 #if DEVELOPMENT
@@ -122,7 +155,6 @@ public abstract class Game
     public void RefreshContent()
     {
         CompileContent(ContentCompileContext);
-        ResourceManager.ReloadAll();
     }
     
 #endif
@@ -140,12 +172,14 @@ public abstract class Game
         
         EarlyLoad();
         
-        sceneLoadTask = Task.Run(LoadScene);
+        LoadScene();
+
+        State = GameState.Running;
 
         MainLoop();
     }
 
-    public virtual void RenderHook()
+    public virtual void RenderHook(RenderContext renderContext)
     {
         
     }
@@ -155,9 +189,8 @@ public abstract class Game
         
     }
 
-    protected virtual Task LoadScene()
+    protected virtual void LoadScene()
     {
-        return Task.CompletedTask;
     }
 
     private LinkedList<float> fpsHistogram = new LinkedList<float>();
@@ -186,9 +219,21 @@ public abstract class Game
             if(msHistogram.Count > 30)
                 msHistogram.RemoveFirst();
             
-#if DEVELOPMENT
+            if(BuiltinActions.LeftAlt.Down)
+                Logger.Info("Left alt!");
+            
+            if(BuiltinActions.Enter.Pressed)
+                Logger.Info("Enter!");
+
+            if (Keys.LeftAlt.Down && Keys.Enter.Pressed)
+            {
+                MainWindow.Fullscreen = !MainWindow.Fullscreen;
+            }
+            
             ImGuiRenderer.BeginFrame(MainWindow, DeltaTime);
             
+#if DEVELOPMENT
+             
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 10);
 
             float avgFPS = 0;
@@ -228,7 +273,7 @@ public abstract class Game
 
             if (MenuContext.IsPressed("Content", "Refresh All"))
             {
-                RefreshContent();
+                //RefreshContent();
             }
 
             if (MenuContext.IsPressed("Content", "Pack"))
@@ -245,9 +290,15 @@ public abstract class Game
             else if(State == GameState.ReloadingAssets)
                 ReloadingFrame();
             
-#if DEVELOPMENT
-            ImGuiRenderer.EndFrame(MainWindow);
-#endif
+            RenderPass imguiPass = new RenderPass();
+            imguiPass.Name = "imgui";
+            imguiPass.Surface = MainWindow;
+            imguiPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
+            
+            renderContext.BeginRendering(imguiPass);
+            ImGuiRenderer.EndFrame(MainWindow, !Development);
+            renderContext.RebuildState();
+            renderContext.EndRendering();
             
             MainWindow.Swap();
             Window.Poll();
@@ -263,33 +314,18 @@ public abstract class Game
 
     private void LoadingFrame()
     {
-        
+
         ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
         ImGui.SetNextWindowSize(new Vector2(700, 300));
-        if (ImGui.Begin("LoadingGame", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.Modal))
+        if (ImGui.Begin("LoadingGame",
+                ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar |
+                ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.Modal))
         {
-            if (sceneLoadTask.Status is TaskStatus.Running or TaskStatus.WaitingForActivation)
-            {
-                ImGui.Text("Loading Game...");
-            } else if (sceneLoadTask.Status == TaskStatus.Canceled)
-            {
-                ImGui.Text("Game load canceled(???)");
-            } else if (sceneLoadTask.Status == TaskStatus.Faulted)
-            {
-                ImGui.Text("Game load failed!");
-
-                string input = sceneLoadTask.Exception?.ToString() ?? "NO ERROR";
-                ImGui.InputTextMultiline("##", ref input, (uint)input.Length, ImGui.GetContentRegionAvail(),
-                    ImGuiInputTextFlags.ReadOnly);
-            } else if (sceneLoadTask.Status == TaskStatus.RanToCompletion)
-            {
-                ImGui.Text("Starting Game...");
-                State = GameState.Running;
-            }
-            
+            ImGui.Text("Loading Game...");
         }
+
         ImGui.End();
-        
+
     }
 
     private void ReloadingFrame()
@@ -308,16 +344,199 @@ public abstract class Game
 
     private void RunningFrame()
     {
+#if DEVELOPMENT
+
+        ImGui.DockSpaceOverViewport();
+
+
+        if (MenuContext.IsPressed("Scene View", "Camera", "Free"))
+        {
+            SceneCamera.CameraMode = CameraMode.FreeCamera;
+        }
+        
+        if (MenuContext.IsPressed("Scene View", "Camera", "Fly"))
+        {
+            SceneCamera.CameraMode = CameraMode.FlyCamera;
+        }
+        
+        if (MenuContext.IsPressed("Scene View", "Camera", "Game"))
+        {
+            SceneCamera.CameraMode = CameraMode.GameCamera;
+        }
+        
+        
+        SceneWindow.Draw(false, () =>
+        {
+            ImGuizmo.SetDrawlist();
+            Vector2 size = ImGui.GetContentRegionAvail();
+            Vector2 position = ImGui.GetCursorScreenPos();
+            ImGuizmo.SetRect(position.X, position.Y, size.X, size.Y);
+        }, () =>
+        {
+            if (Scene != null)
+            {
+                float[] view = new float[16];
+                SceneCamera.GetView().MatrixToArray(ref view);
+                
+                float[] projection = new float[16];
+                SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y).MatrixToArray(ref projection);
+
+                if (CurrentProp != null)
+                {
+                    float[] model = new float[16];
+                    CurrentProp.LocalMatrix.MatrixToArray(ref model);
+
+                    ImGuizmo.SetID(CurrentProp.GetHashCode());
+                    if (ImGuizmo.Manipulate(ref view[0], ref projection[0],
+                            OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.LOCAL, ref model[0]))
+                    {
+                        Matrix4 newModel = EngineUtility.ArrayToMatrix(model);
+                        
+                        CurrentProp.Position = newModel.ExtractTranslation();
+                        CurrentProp.Scale = newModel.ExtractScale();
+                        CurrentProp.RotationQuat = newModel.ExtractRotation();
+                    }
+                }
+            }
+            
+            SceneCamera.Update(DeltaTime, ImGui.IsWindowHovered());
+            
+        });
+        GameWindow.Draw(false, null, null);
+        
+        ImGuizmo.Enable(true);
+
+        InputManager.WindowOffset = GameWindow.Position;
+        InputManager.WindowSize = new Vector2(GameWindow.FramebufferSize.X, GameWindow.FramebufferSize.Y);
+
+        if (ImGui.Begin("Debug"))
+        {
+            ImGui.Text("Window Offset: " + InputManager.WindowOffset);
+            ImGui.Text("Window Size: " + InputManager.WindowSize);
+            ImGui.Text("Cursor Pos: " + InputManager.MousePosition);
+            ImGui.Text("Cursor Raw: " + InputManager.RawMousePosition);
+            ImGui.Text("Cursor Inside: " + InputManager.MouseInWindow);
+            ImGui.Text("Cursor Captured: " + MainWindow.MouseCaptured);
+        }
+        ImGui.End();
+
+        if (ImGui.Begin("Inspector"))
+        {
+            if (CurrentProp != null && Scene != null)
+            {
+                CurrentProp.Edit();
+
+                float[] view = new float[16];
+                Scene.Camera!.GetView().MatrixToArray(ref view);
+                
+                float[] projection = new float[16];
+                Scene.Camera!.GetProjection((float)GameWindow.FramebufferSize.X / GameWindow.FramebufferSize.Y).MatrixToArray(ref projection);
+
+                
+
+            }
+            else
+            {
+                ImGui.Text("Select a prop to edit it!");
+            }
+        }
+        ImGui.End();
+
+        if (ImGui.Begin("Scene View"))
+        {
+            if (Scene == null)
+            {
+                ImGui.Text("No scene is loaded!");
+            }
+            else
+            {
+                bool hoveredButton = false;
+                
+                foreach (var prop in new List<Prop>(Scene.Props))
+                {
+                    if (ImGui.Selectable(prop.Name + "##" + prop.GetHashCode(), CurrentProp == prop))
+                        CurrentProp = prop;
+
+                    if (ImGui.IsItemHovered())
+                        hoveredButton = true;
+
+                    if (ImGui.BeginPopupContextItem())
+                    {
+                        if (ImGui.Selectable("Delete"))
+                        {
+                            Scene.Props.Remove(prop);
+                            if (CurrentProp == prop)
+                                CurrentProp = null;
+                        }
+                        
+                        ImGui.EndPopup();
+                    }
+                    
+                }
+
+                if (!hoveredButton && ImGui.BeginPopupContextWindow())
+                {
+                    foreach (var prop in PropLoader.Types)
+                    {
+                        if (ImGui.Selectable(prop))
+                        {
+                            Scene.AddProp(prop, "Prop " + Guid.NewGuid());
+                        }
+                    }
+                    
+                    ImGui.EndPopup();
+                }
+                
+                
+            }
+        }
+        ImGui.End();
+
+        if (ImGui.Begin("Director"))
+        {
+            if (Scene == null)
+            {
+                ImGui.Text("No scene is loaded!");
+            }
+            else if (Scene.Director == null)
+            {
+                ImGui.Text("No director is loaded!");
+            }
+            else
+            {
+                Scene.Director.Edit();
+            }
+            
+        }
+        ImGui.End();
+        
+#else
+        InputManager.WindowOffset = new Vector2(0, 0);
+        InputManager.WindowSize = new Vector2(MainWindow.FramebufferSize.X, MainWindow.FramebufferSize.Y);
+#endif
+        
+        
         UpdateHook();
         Scene?.Update(DeltaTime);
             
-            
-        MainWindow.BindFramebuffer();
-        RenderUtility.Clear(Colour.Black, 0, 0);
-            
-        RenderHook();
+        RenderHook(renderContext);
 
-        sceneRenderer?.Render(MainWindow, DeltaTime);
+#if DEVELOPMENT
+
+        CameraSettings sceneWindowSettings = new CameraSettings();
+        sceneWindowSettings.CameraMode = SceneCamera.CameraMode;
+        sceneWindowSettings.CameraDirection = SceneCamera.Forward;
+        sceneWindowSettings.ProjectionMatrix = SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y);
+        sceneWindowSettings.ViewMatrix = SceneCamera.GetView();
+        sceneWindowSettings.CameraPosition = SceneCamera.Position;
+        sceneWindowSettings.ShowGizmos = true;
+        sceneWindowSettings.SelectedProp = CurrentProp;
+        
+        sceneRenderer?.Render(renderContext, GameWindow, DeltaTime, CameraSettings.Game);
+        sceneRenderer?.Render(renderContext, SceneWindow, DeltaTime, sceneWindowSettings);
+#else
+        sceneRenderer?.Render(renderContext, MainWindow, DeltaTime, CameraSettings.Game);
+#endif
     }
 
     public void FinalizeEngine()

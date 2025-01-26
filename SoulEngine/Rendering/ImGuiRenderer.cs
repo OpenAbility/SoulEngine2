@@ -11,8 +11,6 @@ using SoulEngine.Mathematics;
 using ResourceManager = SoulEngine.Resources.ResourceManager;
 using Vector2 = System.Numerics.Vector2;
 
-#if DEVELOPMENT
-
 namespace SoulEngine.Rendering;
 
 public unsafe class ImGuiRenderer
@@ -48,7 +46,7 @@ public unsafe class ImGuiRenderer
 
         BuildFontTexture();
 
-        shader = resourceManager.Load("shader/imgui.program", () => new Shader());
+        shader = resourceManager.Load<Shader>("shader/imgui.program");
 
         vbo = GL.CreateBuffer();
         ebo = GL.CreateBuffer();
@@ -111,16 +109,20 @@ public unsafe class ImGuiRenderer
         IO.DeltaTime = deltaTime;
 
         ImGui.NewFrame();
+        ImGuizmo.BeginFrame();
     }
 
-    public void EndFrame(IRenderSurface surface)
+    public void EndFrame(IRenderSurface surface, bool hide)
     {
         ImGui.Render();
-        RenderDrawData(ImGui.GetDrawData(), surface);
+        if(!hide)
+            RenderDrawData(ImGui.GetDrawData(), surface);
     }
 
     public void OnInputEvent(InputEvent inputEvent, bool unhandled)
     {
+        if(!unhandled)
+            return;
 
         if (inputEvent is CursorEvent cursorEvent)
         {
@@ -289,5 +291,3 @@ public unsafe class ImGuiRenderer
 
 
 }
-
-#endif

@@ -3,9 +3,13 @@ using SoulEngine.Util;
 
 namespace SoulEngine.Data.NBT;
 
-public class StringTag : Tag
+public class StringTag : ValueTag<string>
 {
-    public string Data;
+    public string Data
+    {
+        get => Value;
+        set => Value = value;
+    }
     
     public StringTag(string? name) : base(name, TagType.String)
     {

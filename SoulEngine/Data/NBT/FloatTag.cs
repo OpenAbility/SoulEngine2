@@ -1,8 +1,12 @@
 namespace SoulEngine.Data.NBT;
 
-public class FloatTag : Tag
+public class FloatTag : ValueTag<float>
 {
-    public float Data;
+    public float Data
+    {
+        get => Value;
+        set => Value = value;
+    }
     
     public FloatTag(string? name) : base(name, TagType.Float)
     {

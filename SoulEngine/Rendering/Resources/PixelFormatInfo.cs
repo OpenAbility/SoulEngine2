@@ -1,5 +1,6 @@
 using Dades;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace SoulEngine.Rendering;
 
@@ -115,28 +116,28 @@ internal struct PixelFormatInfo
                 SizedInternalFormat = SizedInternalFormat.Rgba8;
                 UnsizedInternalFormat = InternalFormat.Rgba8;
                 Format = PixelFormat.Bgra;
-                Type = PixelType.UnsignedInt8888Rev;
+                Type = PixelType.UnsignedByte;
                 break;
 
             case DxgiFormat.B8G8R8A8_UNorm_SRGB:
-                SizedInternalFormat = SizedInternalFormat.Rgba8;
-                UnsizedInternalFormat = InternalFormat.Rgba8;
+                SizedInternalFormat = SizedInternalFormat.Srgb8Alpha8;
+                UnsizedInternalFormat = InternalFormat.Srgb8Alpha8;
                 Format = PixelFormat.Bgra;
-                Type = PixelType.UnsignedInt8888Rev;
+                Type = PixelType.UnsignedByte;
                 break;
 
             case DxgiFormat.B8G8R8X8_UNorm:
                 SizedInternalFormat = SizedInternalFormat.Rgba8;
                 UnsizedInternalFormat = InternalFormat.Rgba8;
                 Format = PixelFormat.Bgra;
-                Type = PixelType.UnsignedInt8888Rev;
+                Type = PixelType.UnsignedByte;
                 break;
 
             case DxgiFormat.B8G8R8X8_UNorm_SRGB:
-                SizedInternalFormat = SizedInternalFormat.Rgba8;
-                UnsizedInternalFormat = InternalFormat.Rgba8;
+                SizedInternalFormat = SizedInternalFormat.Srgb8Alpha8;
+                UnsizedInternalFormat = InternalFormat.Srgb8Alpha8;
                 Format = PixelFormat.Bgra;
-                Type = PixelType.UnsignedInt8888Rev;
+                Type = PixelType.UnsignedByte;
                 break;
 
             case DxgiFormat.R10G10B10A2_UNorm:
@@ -365,8 +366,8 @@ internal struct PixelFormatInfo
             case DxgiFormat.R8G8B8A8_UNorm:
             case DxgiFormat.R8G8B8A8_UInt:
             case DxgiFormat.R8G8B8A8_UNorm_SRGB:
-                SizedInternalFormat = SizedInternalFormat.Rgba8;
-                UnsizedInternalFormat = InternalFormat.Rgba8;
+                SizedInternalFormat = SizedInternalFormat.Srgb8Alpha8;
+                UnsizedInternalFormat = InternalFormat.Srgb8Alpha8;
                 Format = PixelFormat.Rgba;
                 Type = PixelType.UnsignedByte;
                 break;
@@ -378,7 +379,6 @@ internal struct PixelFormatInfo
                 Format = PixelFormat.Rgb;
                 Type = PixelType.UnsignedInt5999Rev;
                 break;
-
             default:
                 throw new NotSupportedException($"DXGI format '{format}' is not supported.");
         }

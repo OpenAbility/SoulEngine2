@@ -7,9 +7,9 @@ namespace SoulEngine.Development;
 /// </summary>
 public abstract class ContentCompiler
 {
-    public abstract bool ShouldRecompile(DateTime lastOutput, string path, DataRegistry registry);
+    public abstract bool ShouldRecompile(ContentData contentData);
     
-    public abstract void Recompile(string path, string output, DataRegistry registry);
+    public abstract void Recompile(ContentData contentData);
 
     public abstract string GetCompiledPath(string path);
 }

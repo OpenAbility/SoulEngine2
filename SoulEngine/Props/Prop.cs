@@ -1,6 +1,7 @@
 using System.Reflection;
 using ImGuiNET;
 using Newtonsoft.Json.Linq;
+using OpenTK.Mathematics;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
 using SoulEngine.Rendering;
@@ -10,7 +11,7 @@ namespace SoulEngine.Props;
 /// <summary>
 /// Scene object such as some static geometry or a moving chair.
 /// </summary>
-public abstract class Prop
+public abstract class Prop : ITransformable
 {
     /// <summary>
     /// The name of the property
@@ -26,6 +27,42 @@ public abstract class Prop
 
     private readonly Dictionary<string, SerializedProperty> properties = new Dictionary<string, SerializedProperty>();
 
+    private readonly Vector3Property positionProperty;
+    
+    public Vector3 Position
+    {
+        get => positionProperty.Value;
+        set => positionProperty.Value = value;
+    }
+
+    private readonly QuaternionProperty rotationProperty;
+
+    public Quaternion RotationQuat
+    {
+        get => rotationProperty.Value;
+        set => rotationProperty.Value = value;
+    }
+
+    public Vector3 RotationEuler
+    {
+        get => rotationProperty.Value.ToEulerAngles();
+        set => rotationProperty.Value = Quaternion.FromEulerAngles(value);
+    }
+
+    private readonly Vector3Property scaleProperty;
+    
+    public Vector3 Scale
+    {
+        get => scaleProperty.Value;
+        set => scaleProperty.Value = value;
+    }
+
+    public Matrix4 LocalMatrix => Matrix4.CreateScale(Scale) * Matrix4.CreateFromQuaternion(RotationQuat) *
+                                  Matrix4.CreateTranslation(Position);
+
+    public ITransformable? Parent;
+    public Matrix4 GlobalMatrix => Parent?.GlobalMatrix ?? Matrix4.Identity * LocalMatrix;
+    
     /// <summary>
     /// Create a new prop
     /// </summary>
@@ -37,6 +74,10 @@ public abstract class Prop
         Scene = scene;
         Name = name;
         Type = type;
+
+        positionProperty = Register(new Vector3Property("position", new Vector3(0, 0, 0)));
+        rotationProperty = Register(new QuaternionProperty("rotation", Quaternion.Identity));
+        scaleProperty = Register(new Vector3Property("scale", Vector3.One));
     }
 
     /// <summary>
@@ -108,9 +149,10 @@ public abstract class Prop
     /// <summary>
     /// Render this prop. Do not update non-render logic!
     /// </summary>
+    /// <param name="renderContext"></param>
     /// <param name="sceneRenderData">The scene render data</param>
     /// <param name="deltaTime">The time that has passed since last render</param>
-    public virtual void Render(SceneRenderData sceneRenderData, float deltaTime)
+    public virtual void Render(RenderContext renderContext, SceneRenderData sceneRenderData, float deltaTime)
     {
         
     }
@@ -146,6 +188,11 @@ public abstract class Prop
     }
 
     protected virtual void OnEdit()
+    {
+        
+    }
+
+    public virtual void RenderGizmo(GizmoContext context)
     {
         
     }

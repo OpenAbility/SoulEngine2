@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using System.Text;
-using Be.IO;
+using SoulEngine.Util;
 
 namespace SoulEngine.Data.NBT;
 
@@ -9,28 +9,28 @@ public static class TagIO
     public static void WriteCompressed(Tag tag, Stream output, bool leaveOpen = true)
     {
         using GZipStream zipStream = new GZipStream(output, CompressionMode.Compress, leaveOpen);
-        using BeBinaryWriter writer = new BeBinaryWriter(zipStream, Encoding.UTF8, false);
+        using NetworkBinaryWriter writer = new NetworkBinaryWriter(zipStream, Encoding.UTF8, false);
         
         Tag.WriteNamedTag(tag, writer);
     }
     
     public static void WriteUncompressed(Tag tag, Stream output, bool leaveOpen = true)
     {
-        using BeBinaryWriter writer = new BeBinaryWriter(output, Encoding.UTF8, leaveOpen);
+        using NetworkBinaryWriter writer = new NetworkBinaryWriter(output, Encoding.UTF8, leaveOpen);
         Tag.WriteNamedTag(tag, writer);
     }
     
     public static Tag ReadCompressed(Stream input, bool leaveOpen = true)
     {
         using GZipStream zipStream = new GZipStream(input, CompressionMode.Decompress, leaveOpen);
-        using BeBinaryReader reader = new BeBinaryReader(zipStream, Encoding.UTF8, false);
+        using NetworkBinaryReader reader = new NetworkBinaryReader(zipStream, Encoding.UTF8, false);
 
         return Tag.ReadNamedTag(reader);
     }
     
     public static Tag ReadUncompressed(Stream input, bool leaveOpen = true)
     {
-        using BeBinaryReader reader = new BeBinaryReader(input, Encoding.UTF8, leaveOpen);
+        using NetworkBinaryReader reader = new NetworkBinaryReader(input, Encoding.UTF8, leaveOpen);
 
         return Tag.ReadNamedTag(reader);
     }

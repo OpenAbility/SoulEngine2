@@ -6,6 +6,7 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SoulEngine.Core;
 using SoulEngine.Events;
+using Monitor = OpenTK.Windowing.GraphicsLibraryFramework.Monitor;
 using Vector2 = System.Numerics.Vector2;
 
 namespace SoulEngine.Rendering;
@@ -139,6 +140,12 @@ public unsafe class Window : IRenderSurface
         
         DebugProc = (source, type, id, severity, length, message, param) =>
         {
+            if(type == DebugType.DebugTypePushGroup || type == DebugType.DebugTypePopGroup)
+                return;
+            
+            if(severity == DebugSeverity.DebugSeverityNotification && !Game.EngineVar.GetBool("r_gl_notifs"))
+                return;
+            
             string msg =
                 $"{source}, {type} ({severity}): {id}: {Encoding.UTF8.GetString(new Span<byte>((byte*)message, length))}";
 
@@ -213,5 +220,49 @@ public unsafe class Window : IRenderSurface
             GLFW.GetFramebufferSize(Handle, out var w, out var h);
             return new Vector2i(w, h);
         }
+    }
+
+    public bool MouseCaptured
+    {
+        get => GLFW.GetInputMode(Handle, CursorStateAttribute.Cursor) == CursorModeValue.CursorDisabled;
+        set => GLFW.SetInputMode(Handle, CursorStateAttribute.Cursor, value ? CursorModeValue.CursorDisabled : CursorModeValue.CursorNormal);
+    }
+
+    private Vector2i pos;
+    private Vector2i size;
+
+    public bool Fullscreen
+    {
+        get => GLFW.GetWindowMonitor(Handle) != null;
+        set
+        {
+            if (value && !Fullscreen)
+            {
+                GLFW.GetWindowPos(Handle, out var x, out var y);
+                pos.X = x;
+                pos.Y = y;
+                
+                GLFW.GetWindowSize(Handle, out var width, out var height);
+                size.X = width;
+                size.Y = height;
+                
+                Monitor* primaryMonitor = GLFW.GetPrimaryMonitor();
+
+                var videoMode = GLFW.GetVideoMode(primaryMonitor);
+
+
+                GLFW.SetWindowMonitor(Handle, GLFW.GetPrimaryMonitor(), 0, 0, videoMode->Width, videoMode->Height,
+                    videoMode->RefreshRate);
+            }
+            else if(Fullscreen)
+            {
+                GLFW.SetWindowMonitor(Handle, null, pos.X, pos.Y, size.X, size.Y, GLFW.DontCare);
+            }
+        }
+    }
+
+    public int GetSurfaceHandle()
+    {
+        return 0;
     }
 }

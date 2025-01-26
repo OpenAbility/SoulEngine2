@@ -353,6 +353,12 @@ public static class TagParser
 
             bool hasDecimal = false;
 
+            if (Current == '-')
+            {
+                builder.Append(Current);
+                Step();
+            }
+
             // Allow for one decimal point
             while (char.IsAsciiDigit(Current) || (Current == '.' && !hasDecimal))
             {
@@ -381,10 +387,11 @@ public static class TagParser
                 else if (Current == '}') PushAndStep(TokenType.CompoundCloser);
                 else if (Current == '"' || Current == '\'') LexString();
                 else if (char.IsAsciiDigit(Current)) LexNumeric();
+                else if (Current == '-' && char.IsAsciiDigit(Peek(1))) LexNumeric();
                 else if (IsValidId(Current)) LexID();
                 else
                 {
-                    throw new Exception("Malformed SNBT data!");
+                    throw new Exception("Malformed SNBT data: invalid char '" + Current + "'");
                 }
             }
             

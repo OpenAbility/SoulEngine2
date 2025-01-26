@@ -1,8 +1,12 @@
 namespace SoulEngine.Data.NBT;
 
-public class LongTag : Tag
+public class LongTag : ValueTag<long>
 {
-    public long Data;
+    public long Data
+    {
+        get => Value;
+        set => Value = value;
+    }
     
     public LongTag(string? name) : base(name, TagType.Long)
     {

@@ -1,8 +1,12 @@
 namespace SoulEngine.Data.NBT;
 
-public class ShortTag : Tag
+public class ShortTag : ValueTag<short>
 {
-    public short Data;
+    public short Data
+    {
+        get => Value;
+        set => Value = value;
+    }
     
     public ShortTag(string? name) : base(name, TagType.Short)
     {

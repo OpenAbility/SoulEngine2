@@ -12,6 +12,8 @@ public class EventBus<T>
 	private Queue<(EventListener<T>, bool)> listenQueue = new ();
 	private List<EventListener<T>> handlers = new List<EventListener<T>>();
 
+	public event Action<EventBus<T>> OnDispatch = (bus) => { };
+
 	private readonly bool immediate;
 
 	/// <summary>
@@ -38,6 +40,8 @@ public class EventBus<T>
 	{
 		// Dirty code but it'll work
 		AddListeners();
+		
+		OnDispatch.Invoke(this);
 		
 		Queue<T> events = eventQueue;
 		eventQueue = new Queue<T>();

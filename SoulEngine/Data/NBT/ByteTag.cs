@@ -1,8 +1,12 @@
 namespace SoulEngine.Data.NBT;
 
-public class ByteTag : Tag
+public class ByteTag : ValueTag<byte>
 {
-    public byte Data;
+    public byte Data
+    {
+        get => Value;
+        set => Value = value;
+    }
     
     public ByteTag(string? name) : base(name, TagType.Byte)
     {

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 using OpenAbility.Logging;
 using SoulEngine.Core;
@@ -38,6 +39,8 @@ public static class PropLoader
             Factories[type.Attribute.ID] = (scene, typeId, name) => (Prop)ctor.Invoke([scene, typeId, name]);
         }
     }
+
+    public static IEnumerable<string> Types => Factories.Keys;
 
     /// <summary>
     /// Creates a prop

@@ -4,14 +4,14 @@ namespace SoulEngine.Development.ContentCompilers;
 
 public class CopyCompiler : ContentCompiler
 {
-    public override bool ShouldRecompile(DateTime lastOutput, string path, DataRegistry registry)
+    public override bool ShouldRecompile(ContentData contentData)
     {
-        return File.GetLastWriteTime(path) >= lastOutput;
+        return File.GetLastWriteTime(contentData.InputFilePath) >= contentData.LastOutputWrite;
     }
 
-    public override void Recompile(string path, string output, DataRegistry registry)
+    public override void Recompile(ContentData contentData)
     {
-        File.WriteAllBytes(output, File.ReadAllBytes(path));
+        File.Copy(contentData.InputFilePath, contentData.OutputFilePath, true);
     }
 
     public override string GetCompiledPath(string path)

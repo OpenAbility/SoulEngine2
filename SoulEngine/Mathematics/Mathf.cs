@@ -2,6 +2,10 @@ namespace SoulEngine.Mathematics;
 
 public static class Mathf
 {
+    public static float Deg2Rad = MathF.PI / 180;
+    public static float Rag2Deg = 1 / Deg2Rad;
+    
+    
     public static float LerpUnclamped(float from, float to, float delta)
     {
         return from + (to - from) * delta;
