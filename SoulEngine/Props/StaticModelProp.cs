@@ -30,6 +30,7 @@ public class StaticModelProp : Prop
         foreach (var mesh in ModelProperty.Value.Meshes)
         {
             mesh.Material.Bind(data, GlobalMatrix);
+            mesh.Material.Shader.Uniform1i("ub_skeleton", 0);
             mesh.ActualMesh.Draw();
         }
         

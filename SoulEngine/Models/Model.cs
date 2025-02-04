@@ -16,7 +16,7 @@ public class Model : Resource
     public MeshData[] Meshes { get; private set; } = [];
     public Skeleton Skeleton { get; private set; } = null!;
 
-    private Dictionary<int, int> skeletonToMeshJoints = new Dictionary<int, int>();
+    public readonly Dictionary<int, int> skeletonToMeshJoints = new Dictionary<int, int>();
 
     private readonly Game game;
     public Model(Game game)
@@ -36,18 +36,15 @@ public class Model : Resource
         Skeleton = resourceManager.Load<Skeleton>(skeletonPath);
         
         int skinJointCount = reader.ReadInt32();
-
-        Dictionary<string, int> jointMappings = new Dictionary<string, int>();
-
+        
         for (int i = 0; i < skinJointCount; i++)
         {
             string name = reader.ReadString();
-            reader.ReadInt32();
-            //int index = reader.ReadInt32();
+            int index = reader.ReadInt32();
 
             SkeletonJointData? data = Skeleton.GetJoint(name);
             if(data != null)
-                jointMappings[name] = data.SkeletonID;
+                skeletonToMeshJoints[data.SkeletonID] = index;
         }
         
         int meshCount = reader.ReadInt32();

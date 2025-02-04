@@ -11,7 +11,9 @@ using SoulEngine.Util;
 using Vector2 = System.Numerics.Vector2;
 #if DEVELOPMENT
 using ImGuizmoNET;
+using NativeFileDialogSharp;
 using OpenTK.Mathematics;
+using SoulEngine.Data.NBT;
 using SoulEngine.Development;
 using SoulEngine.Props;
 #endif
@@ -219,12 +221,6 @@ public abstract class Game
             if(msHistogram.Count > 30)
                 msHistogram.RemoveFirst();
             
-            if(BuiltinActions.LeftAlt.Down)
-                Logger.Info("Left alt!");
-            
-            if(BuiltinActions.Enter.Pressed)
-                Logger.Info("Enter!");
-
             if (Keys.LeftAlt.Down && Keys.Enter.Pressed)
             {
                 MainWindow.Fullscreen = !MainWindow.Fullscreen;
@@ -363,6 +359,43 @@ public abstract class Game
         {
             SceneCamera.CameraMode = CameraMode.GameCamera;
         }
+
+        if (MenuContext.IsPressed("File", "New"))
+        { 
+            SetScene(new Scene(this));
+        }
+        
+        if (MenuContext.IsPressed("File", "Open"))
+        {
+            var result = Dialog.FileOpen("scene_s;scene", "content_src");
+            if (result.IsOk)
+            {
+                Logger.Info("Loading from {}" , result.Path);
+
+                CurrentProp = null;
+
+                if (result.Path.EndsWith(".scene"))
+                {
+                    using FileStream stream = File.OpenRead(result.Path);
+                    SetScene(Scene.Loader.Load(this, (CompoundTag)TagIO.ReadCompressed(stream)));
+                }
+                else
+                {
+                                
+                    SetScene(Scene.Loader.Load(this, (CompoundTag)TagIO.ReadSNBT(File.ReadAllText(result.Path))));
+                }
+            }
+        }
+
+        if (MenuContext.IsPressed("File", "Save"))
+        {
+            var result = Dialog.FileSave("scene_s", "content_src/my_scene.scene_s");
+            if (result.IsOk)
+            {
+                Logger.Info("Saving to {}" , result.Path);
+                File.WriteAllText(result.Path, TagIO.WriteSNBT(Scene!.Write()));
+            }
+        }
         
         
         SceneWindow.Draw(false, () =>
@@ -373,30 +406,9 @@ public abstract class Game
             ImGuizmo.SetRect(position.X, position.Y, size.X, size.Y);
         }, () =>
         {
-            if (Scene != null)
+            if (Scene != null && CurrentProp != null)
             {
-                float[] view = new float[16];
-                SceneCamera.GetView().MatrixToArray(ref view);
-                
-                float[] projection = new float[16];
-                SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y).MatrixToArray(ref projection);
-
-                if (CurrentProp != null)
-                {
-                    float[] model = new float[16];
-                    CurrentProp.LocalMatrix.MatrixToArray(ref model);
-
-                    ImGuizmo.SetID(CurrentProp.GetHashCode());
-                    if (ImGuizmo.Manipulate(ref view[0], ref projection[0],
-                            OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.LOCAL, ref model[0]))
-                    {
-                        Matrix4 newModel = EngineUtility.ArrayToMatrix(model);
-                        
-                        CurrentProp.Position = newModel.ExtractTranslation();
-                        CurrentProp.Scale = newModel.ExtractScale();
-                        CurrentProp.RotationQuat = newModel.ExtractRotation();
-                    }
-                }
+                CurrentProp.RenderMoveGizmo(SceneCamera.GetView(), SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y));
             }
             
             SceneCamera.Update(DeltaTime, ImGui.IsWindowHovered());
@@ -506,8 +518,26 @@ public abstract class Game
             {
                 Scene.Director.Edit();
             }
-            
+
+            if (Scene != null)
+            {
+                if (ImGui.BeginPopupContextWindow())
+                {
+                    ImGui.TextDisabled("Create new director");
+                    foreach (var type in DirectorLoader.Types)
+                    {
+                        if (ImGui.Selectable(type))
+                        {
+                            Scene.Director = DirectorLoader.Create(Scene, type);
+                        }
+                    }
+                    
+                    ImGui.EndPopup();
+                }
+            }
+
         }
+
         ImGui.End();
         
 #else

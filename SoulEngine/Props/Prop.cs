@@ -1,10 +1,12 @@
 using System.Reflection;
 using ImGuiNET;
+using ImGuizmoNET;
 using Newtonsoft.Json.Linq;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
 using SoulEngine.Rendering;
+using SoulEngine.Util;
 
 namespace SoulEngine.Props;
 
@@ -196,9 +198,33 @@ public abstract class Prop : ITransformable
     {
         
     }
-    
-    
-    
+
+    public virtual void RenderMoveGizmo(Matrix4 viewMatrix, Matrix4 projectionMatrix)
+    {
+        float[] view = new float[16];
+        viewMatrix.MatrixToArray(ref view);
+
+        float[] projection = new float[16];
+        projectionMatrix.MatrixToArray(ref projection);
+
+        float[] model = new float[16];
+        LocalMatrix.MatrixToArray(ref model);
+
+        ImGuizmo.SetID(GetHashCode());
+        if (ImGuizmo.Manipulate(ref view[0], ref projection[0],
+                OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.LOCAL, ref model[0]))
+        {
+            Matrix4 newModel = EngineUtility.ArrayToMatrix(model);
+
+            Position = newModel.ExtractTranslation();
+            Scale = newModel.ExtractScale();
+            RotationQuat = newModel.ExtractRotation();
+        }
+    }
+
+
+
+
     protected T Register<T>(T property) where T : SerializedProperty
     {
         properties[property.Name] = property;

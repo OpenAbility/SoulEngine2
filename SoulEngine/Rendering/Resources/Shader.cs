@@ -19,6 +19,7 @@ public class Shader : Resource
     private int handle = -1;
     private Game? game;
     private Dictionary<string, ShaderParameter> parameters = new Dictionary<string, ShaderParameter>();
+    private Dictionary<string, uint> blocks = new Dictionary<string, uint>();
     public Shader()
     {
         
@@ -52,6 +53,7 @@ public class Shader : Resource
             return value.Location;
         return -1;
     }
+    
 
     public void Matrix(string name, Matrix4 matrix, bool transpose)
     {
@@ -84,6 +86,14 @@ public class Shader : Resource
     {
         int loc = UniformLocation(name);
         GL.Uniform4f(loc, value.X, value.Y, value.Z, value.W);
+    }
+
+    public unsafe void BindBuffer<T>(string name, GpuBuffer<T> buffer, int offset, int size) where T : unmanaged
+    {
+        if(!blocks.TryGetValue(name, out var index))
+            return;
+        GL.BindBufferRange(BufferTarget.ShaderStorageBuffer, index, buffer.Handle, offset * sizeof(T),
+            size * sizeof(T));
     }
     
 
@@ -123,6 +133,26 @@ public class Shader : Resource
                 if (name.Length == 0)
                     throw new Exception("Invalid shader XML: Define has no name!");
                 defines[name] = define.InnerText;
+            }
+        }
+        
+        foreach (XmlNode _child in shaderElement.ChildNodes)
+        {
+            if (_child is not XmlElement child)
+                continue;
+            
+            if(child.Name != "Bindings")
+                continue;
+            
+            if(child.GetAttribute("backend") != "SHARED" && child.GetAttribute("backend") != EngineData.Renderer)
+                continue;
+
+            foreach (XmlElement binding in child.ChildNodes)
+            {
+                string name = binding.GetAttribute("name");
+                if (name.Length == 0)
+                    throw new Exception("Invalid shader XML: Define has no name!");
+                blocks[name] = UInt32.Parse(binding.InnerText);
             }
         }
 
@@ -166,8 +196,8 @@ public class Shader : Resource
             }
         }
 
-        vertexSource = "#version 420 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n#line 0\n" +  vertexSource;
-        fragmentSource = "#version 420 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n#line 0\n" + fragmentSource;
+        vertexSource = "#version 430 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n#line 0\n" +  vertexSource;
+        fragmentSource = "#version 430 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n#line 0\n" + fragmentSource;
 
 
         game.ThreadSafety.EnsureMain(() =>

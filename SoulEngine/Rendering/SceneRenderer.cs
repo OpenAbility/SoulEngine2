@@ -12,7 +12,7 @@ namespace SoulEngine.Rendering;
 public class SceneRenderer
 {
     public readonly Scene Scene;
-
+    
     public SceneRenderer(Scene scene)
     {
         Scene = scene;
@@ -22,21 +22,31 @@ public class SceneRenderer
     {
         
         Vector2 surfaceSize = surface.FramebufferSize;
-        
-        if (cameraSettings.CameraMode != CameraMode.FlyCamera)
+
+        if (cameraSettings.CameraMode == CameraMode.GameCamera)
         {
             CameraProp? cameraProp = Scene.Camera;
             if (cameraProp == null)
                 return;
 
-            if (cameraSettings.CameraMode == CameraMode.GameCamera)
-            {
-                cameraSettings.ViewMatrix = cameraProp.GetView();
-                cameraSettings.ProjectionMatrix = cameraProp.GetProjection(surfaceSize.X / surfaceSize.Y);
-            }
+
+            cameraSettings.ViewMatrix = cameraProp.GetView();
+            cameraSettings.ProjectionMatrix = cameraProp.GetProjection(surfaceSize.X / surfaceSize.Y);
+
 
             cameraSettings.CameraPosition = cameraProp.Position;
             cameraSettings.CameraDirection = cameraProp.Forward;
+        }
+
+        else if (cameraSettings.CameraMode == CameraMode.FreeCamera)
+        {
+            CameraProp? cameraProp = Scene.Camera;
+            if (cameraProp != null)
+            {
+                
+                cameraSettings.CameraPosition = cameraProp.Position;
+                cameraSettings.CameraDirection = cameraProp.Forward;
+            }
         }
 
 

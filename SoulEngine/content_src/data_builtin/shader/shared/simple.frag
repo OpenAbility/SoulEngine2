@@ -8,6 +8,8 @@ out vec4 f_colour;
 uniform sampler2D ut_albedoTexture;
 uniform vec4 uc_albedoColour = vec4(1);
 
+
+
 void main() {
     
     vec3 sunDir = normalize(vec3(0, 1, 0));

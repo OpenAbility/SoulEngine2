@@ -123,9 +123,12 @@ public unsafe class Window : IRenderSurface
         
         Logger.Get("Rendering", "Window").Debug("Running OpenGL {}.{}, GLSL {} on '{}'", majorVersion, minorVersion, glsl ?? "NULL", renderer ?? "NULL");
 
-        const string outOfDateError = "Either OpenGL >= 4.2 and ARB_direct_state_access, or OpenGL >= 4.5 required!";
+        const string outOfDateError = "Either OpenGL >= 4.3 and ARB_direct_state_access, or OpenGL >= 4.5 required!";
         
         if (majorVersion < 4)
+            throw new Exception(outOfDateError);
+        
+        if (minorVersion < 3)
             throw new Exception(outOfDateError);
         
         if (minorVersion < 5 && !GLFW.ExtensionSupported("ARB_direct_state_access"))

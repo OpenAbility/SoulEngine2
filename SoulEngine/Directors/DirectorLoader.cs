@@ -39,6 +39,8 @@ public static class DirectorLoader
         }
     }
 
+    public static IEnumerable<string> Types => Factories.Keys;
+
     /// <summary>
     /// Creates a prop
     /// </summary>

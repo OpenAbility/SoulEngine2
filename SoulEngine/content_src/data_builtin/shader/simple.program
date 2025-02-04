@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 
 <Shader>
+    
+    <Bindings backend="OPENGL">
+        <Binding name="um_joint_buffer">10</Binding>
+    </Bindings>
+    
     <Vertex backend="OPENGL" src="shader/shared/simple.vert"/>
     <Fragment backend="OPENGL" src="shader/shared/simple.frag"/>  
 </Shader> 

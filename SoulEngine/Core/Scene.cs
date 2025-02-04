@@ -47,12 +47,11 @@ public class Scene : Resource
     
     public class Loader : IResourceLoader<Scene>
     {
-        public Scene LoadResource(ResourceManager resourceManager, string id, ContentContext content)
-        {
-            Scene scene = new Scene(resourceManager.Game);
-            
-            CompoundTag sceneTag = (CompoundTag)TagIO.ReadCompressed(content.Load(id)!, false);
 
+        public static Scene Load(Game game, CompoundTag sceneTag)
+        {
+            Scene scene = new Scene(game);
+            
             CompoundTag propsTag = (CompoundTag)sceneTag["props"];
 
             foreach (string name in propsTag.Keys)
@@ -79,7 +78,12 @@ public class Scene : Resource
                 scene.Director = director;
             }
 
-            return scene;
+            return scene;   
+        }
+        
+        public Scene LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        {
+            return Load(resourceManager.Game, (CompoundTag)TagIO.ReadCompressed(content.Load(id)!, false));
         }
     }
 
@@ -89,5 +93,23 @@ public class Scene : Resource
     {
         Prop prop = PropLoader.Create(this, type, name);
         Props.Add(prop);
+    }
+
+    public CompoundTag Write()
+    {
+        CompoundTag tag = new CompoundTag("scene");
+
+        CompoundTag propsTag = new CompoundTag("props");
+        tag.Add(propsTag);
+
+        foreach (var prop in Props)
+        {
+            propsTag[prop.Name] = prop.Save();
+        }
+
+        if(Director != null)
+            tag["director"] = Director.Save();
+
+        return tag;
     }
 }
