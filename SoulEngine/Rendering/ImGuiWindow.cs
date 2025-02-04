@@ -31,8 +31,10 @@ public class ImGuiWindow : IRenderSurface
     {
         if(!padded)
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(0, 0));
+        Visible = false;
         if (ImGui.Begin(Name))
         {
+            Visible = true;
             if ((int)ImGui.GetContentRegionAvail().X != framebuffer.Size.X || (int)ImGui.GetContentRegionAvail().Y != framebuffer.Size.Y)
             {
                 framebuffer = new Framebuffer(game, new Vector2i((int)ImGui.GetContentRegionAvail().X, (int)ImGui.GetContentRegionAvail().Y));
@@ -58,6 +60,8 @@ public class ImGuiWindow : IRenderSurface
     }
 
     public Vector2i FramebufferSize => framebuffer.Size;
+    public bool Visible { get; private set; }
+
     public int GetSurfaceHandle()
     {
         return framebuffer.Handle;

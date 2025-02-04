@@ -26,7 +26,7 @@ public class DynamicModelProp : Prop
     {
         Visible = Register(new BoolProperty("visible", true)); ;
 
-        ModelProperty = Register(new ResourceProperty<Model>("model", "mod/test.mdl", scene.Game));
+        ModelProperty = Register(new ResourceProperty<Model>("model", "", scene.Game));
         JointModelProperty = Register(new ResourceProperty<Model>("jointModel", "mod/joint.mdl", scene.Game));
     }
 

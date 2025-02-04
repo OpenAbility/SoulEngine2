@@ -6,6 +6,6 @@
         <Binding name="um_joint_buffer">10</Binding>
     </Bindings>
     
-    <Vertex backend="OPENGL" src="shader/shared/simple.vert"/>
-    <Fragment backend="OPENGL" src="shader/shared/simple.frag"/>  
+    <Vertex backend="OPENGL" src="shader/shared/skeletal.vert"/>
+    <Fragment backend="OPENGL" src="shader/shared/simple_cel.frag"/>  
 </Shader> 

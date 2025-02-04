@@ -1,5 +1,5 @@
 {
-  "shader": "shader/simple.program",
+  "shader": "shader/simple_shaded.program",
   "values": {
     "ut_albedoTexture": "null",
     "uc_albedoColour": [

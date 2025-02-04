@@ -47,6 +47,10 @@ public abstract class Game
     
     private SceneCamera SceneCamera;
 
+    public bool Visible => GameWindow.Visible;
+
+#else
+    public bool Visible => true;
 #endif
     
     public readonly MenuContext MenuContext = new MenuContext();
@@ -73,6 +77,7 @@ public abstract class Game
     private readonly RenderContext renderContext;
     
     public float DeltaTime { get; private set; }
+    
 
     public GameState State;
 
@@ -221,8 +226,9 @@ public abstract class Game
             if(msHistogram.Count > 30)
                 msHistogram.RemoveFirst();
             
-            if (Keys.LeftAlt.Down && Keys.Enter.Pressed)
+            if (Keys.Enter.Down)
             {
+                Logger.Info("FS!");
                 MainWindow.Fullscreen = !MainWindow.Fullscreen;
             }
             
@@ -338,6 +344,8 @@ public abstract class Game
         
     }
 
+    private bool inputViewer = false;
+
     private void RunningFrame()
     {
 #if DEVELOPMENT
@@ -363,6 +371,11 @@ public abstract class Game
         if (MenuContext.IsPressed("File", "New"))
         { 
             SetScene(new Scene(this));
+        }
+
+        if (MenuContext.IsPressed("Tools", "Input Viewer"))
+        {
+            inputViewer = !inputViewer;
         }
         
         if (MenuContext.IsPressed("File", "Open"))
@@ -539,6 +552,48 @@ public abstract class Game
         }
 
         ImGui.End();
+
+        if (inputViewer)
+        {
+            if (ImGui.Begin("Input Viewer", ref inputViewer))
+            {
+                if (ImGui.BeginTable("Inputs", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable))
+                {
+
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Name");
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Down");
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Pressed");
+                    ImGui.TableNextColumn();
+                    ImGui.TableHeader("Released");
+
+                    foreach (var action in InputManager.Actions)
+                    {
+                        ImGui.TableNextRow();
+                        
+                        ImGui.TableNextColumn();
+                        ImGui.Text(action.Name);
+                        
+                        ImGui.TableNextColumn();
+                        ImGui.Text(action.Down.ToString());
+      
+                        ImGui.TableNextColumn();
+                        ImGui.Text(action.Pressed.ToString());
+    
+                        ImGui.TableNextColumn();
+                        ImGui.Text(action.Released.ToString());
+                    }
+                    
+                    ImGui.EndTable();
+                }
+            }
+
+            ImGui.End();
+        }
+
         
 #else
         InputManager.WindowOffset = new Vector2(0, 0);

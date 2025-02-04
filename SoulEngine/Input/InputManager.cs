@@ -20,10 +20,12 @@ public class InputManager
     public Vector2 RawMousePosition { get; private set; }
 
     public bool MouseInWindow =>
-        (RawMousePosition.X >= WindowOffset.X && RawMousePosition.X < WindowOffset.X + WindowSize.X &&
-        RawMousePosition.Y >= WindowOffset.Y && RawMousePosition.Y < WindowOffset.Y + WindowSize.Y) || game.MainWindow.MouseCaptured;
+        ((RawMousePosition.X >= WindowOffset.X && RawMousePosition.X < WindowOffset.X + WindowSize.X &&
+        RawMousePosition.Y >= WindowOffset.Y && RawMousePosition.Y < WindowOffset.Y + WindowSize.Y) || game.MainWindow.MouseCaptured) && game.Visible;
 
     private Vector2? previousMousePosition;
+
+    public IEnumerable<InputAction> Actions => actions;
     
     public InputManager(Game game, EventBus<InputEvent> eventBus)
     {
