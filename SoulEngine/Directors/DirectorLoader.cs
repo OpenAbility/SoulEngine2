@@ -27,7 +27,7 @@ public static class DirectorLoader
 
             ConstructorInfo? ctor = type.Type.GetConstructor(
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-                [typeof(Scene)]);
+                [typeof(Scene), typeof(string)]);
 
             if (ctor == null)
             {
@@ -35,7 +35,7 @@ public static class DirectorLoader
                 continue;
             }
 
-            Factories[type.Attribute.ID] = (scene, typeId) => (Director)ctor.Invoke([scene]);
+            Factories[type.Attribute.ID] = (scene, typeId) => (Director)ctor.Invoke([scene, typeId]);
         }
     }
 

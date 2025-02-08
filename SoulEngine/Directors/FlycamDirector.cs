@@ -11,7 +11,7 @@ public class FlycamDirector : Director
     public readonly FloatProperty SpeedProperty;
     public readonly FloatProperty SprintSpeedProperty;
     
-    public FlycamDirector(Scene scene) : base(scene)
+    public FlycamDirector(Scene scene, string type) : base(scene, type)
     {
         SpeedProperty = Register(new FloatProperty("speed", 1));
         SprintSpeedProperty = Register(new FloatProperty("speed_sprint", 2));

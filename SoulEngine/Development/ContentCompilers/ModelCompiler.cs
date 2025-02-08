@@ -158,20 +158,20 @@ public class ModelCompiler : GLBContentCompiler
                     if (jointsAccessor.HasValue)
                     {
                         vertex.Indices = new JointIndices(
-                            loader.GetAccessor(jointsAccessor.Value, i * 2 + 0).CastStruct<byte, byte>(),
-                            loader.GetAccessor(jointsAccessor.Value, i * 2 + 1).CastStruct<byte, byte>(),
-                            loader.GetAccessor(jointsAccessor.Value, i * 2 + 2).CastStruct<byte, byte>(),
-                            loader.GetAccessor(jointsAccessor.Value, i * 2 + 3).CastStruct<byte, byte>()
+                            loader.GetAccessor(jointsAccessor.Value, i * 4 + 0).CastStruct<byte, byte>(),
+                            loader.GetAccessor(jointsAccessor.Value, i * 4 + 1).CastStruct<byte, byte>(),
+                            loader.GetAccessor(jointsAccessor.Value, i * 4 + 2).CastStruct<byte, byte>(),
+                            loader.GetAccessor(jointsAccessor.Value, i * 4 + 3).CastStruct<byte, byte>()
                         );
                     }
                     
                     if (weightsAccessor.HasValue)
                     {
                         vertex.Weights = new Vector4(
-                            loader.GetAccessor(weightsAccessor.Value, i * 2 + 0).CastStruct<float, byte>(),
-                            loader.GetAccessor(weightsAccessor.Value, i * 2 + 1).CastStruct<float, byte>(),
-                            loader.GetAccessor(weightsAccessor.Value, i * 2 + 2).CastStruct<float, byte>(),
-                            loader.GetAccessor(weightsAccessor.Value, i * 2 + 3).CastStruct<float, byte>()
+                            loader.GetAccessor(weightsAccessor.Value, i * 4 + 0).CastStruct<float, byte>(),
+                            loader.GetAccessor(weightsAccessor.Value, i * 4 + 1).CastStruct<float, byte>(),
+                            loader.GetAccessor(weightsAccessor.Value, i * 4 + 2).CastStruct<float, byte>(),
+                            loader.GetAccessor(weightsAccessor.Value, i * 4 + 3).CastStruct<float, byte>()
                         );
                     }
                     

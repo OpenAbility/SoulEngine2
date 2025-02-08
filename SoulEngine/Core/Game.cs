@@ -614,11 +614,13 @@ public abstract class Game
         sceneWindowSettings.ProjectionMatrix = SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y);
         sceneWindowSettings.ViewMatrix = SceneCamera.GetView();
         sceneWindowSettings.CameraPosition = SceneCamera.Position;
-        sceneWindowSettings.ShowGizmos = true;
+        sceneWindowSettings.ShowGizmos = MenuContext.IsFlagSet("View", "Gizmos");
         sceneWindowSettings.SelectedProp = CurrentProp;
         
-        sceneRenderer?.Render(renderContext, GameWindow, DeltaTime, CameraSettings.Game);
-        sceneRenderer?.Render(renderContext, SceneWindow, DeltaTime, sceneWindowSettings);
+        if(GameWindow.Visible)
+            sceneRenderer?.Render(renderContext, GameWindow, DeltaTime, CameraSettings.Game);
+        if(SceneWindow.Visible)
+            sceneRenderer?.Render(renderContext, SceneWindow, DeltaTime, sceneWindowSettings);
 #else
         sceneRenderer?.Render(renderContext, MainWindow, DeltaTime, CameraSettings.Game);
 #endif

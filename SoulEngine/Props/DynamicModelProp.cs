@@ -143,7 +143,7 @@ public class DynamicModelProp : Prop
         projectionMatrix.MatrixToArray(ref projection);
 
         float[] model = new float[16];
-        skeletonInstance!.GetJointGlobalMatrix(selectedJoint).MatrixToArray(ref model);
+        (skeletonInstance!.GetJointGlobalMatrix(selectedJoint) * GlobalMatrix).MatrixToArray(ref model);
 
         ImGuizmo.SetID(GetHashCode());
         if (ImGuizmo.Manipulate(ref view[0], ref projection[0],
@@ -153,8 +153,10 @@ public class DynamicModelProp : Prop
 
             if (selectedJoint.Parent != null)
             {
-                newModel = newModel * skeletonInstance.GetJointGlobalMatrix(selectedJoint.Parent).Inverted();
+                newModel *= skeletonInstance.GetJointGlobalMatrix(selectedJoint.Parent).Inverted();
             }
+
+            newModel *= GlobalMatrix.Inverted();
 
             skeletonInstance.TranslateJoint(selectedJoint, newModel);
         }

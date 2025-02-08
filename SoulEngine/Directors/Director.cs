@@ -11,12 +11,14 @@ public abstract class Director
     private readonly Dictionary<string, SerializedProperty> properties = new Dictionary<string, SerializedProperty>();
 
     public readonly Scene Scene;
+    public readonly string Type;
 
     public Game Game => Scene.Game;
 
-    protected Director(Scene scene)
+    protected Director(Scene scene, string type)
     {
         Scene = scene;
+        Type = type;
     }
 
 
@@ -46,6 +48,8 @@ public abstract class Director
     public CompoundTag Save()
     {
         CompoundTag tag = new CompoundTag("director");
+
+        tag.SetString("$_type", Type);
         
         foreach (var p in properties)
         {
