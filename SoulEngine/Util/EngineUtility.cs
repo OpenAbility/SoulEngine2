@@ -205,6 +205,33 @@ public static class EngineUtility
 
         return ArrayToMatrix(m);
     }
+    
+    /// <summary>
+    /// Get the level of inheritance from one type to another
+    /// </summary>
+    /// <param name="type">The type lower down in the chain</param>
+    /// <param name="parentType">The base type</param>
+    /// <returns>The number of types between, or -1 if no connection is found</returns>
+    /// <remarks>Interfaces will not work</remarks>
+    public static int GetInheritanceLevel(Type type, Type parentType)
+    {
+        if (!parentType.IsClass)
+            return -1;
+		
+        int level = 0;
+        Type? currentType = type;
+
+        while (currentType != parentType)
+        {
+            if (currentType == typeof(object))
+                return -1;
+            if (currentType == null)
+                return -1;
+            currentType = currentType.BaseType;
+        }
+		
+        return level;
+    }
 }
 
 public struct AttributeQueryResult<T> where T : Attribute

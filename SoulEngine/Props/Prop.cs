@@ -80,6 +80,8 @@ public abstract class Prop : ITransformable
         positionProperty = Register(new Vector3Property("position", new Vector3(0, 0, 0)));
         rotationProperty = Register(new QuaternionProperty("rotation", Quaternion.Identity));
         scaleProperty = Register(new Vector3Property("scale", Vector3.One));
+
+        PropertyReflection.RegisterProperties(scene, this, p => Register(p));
     }
 
     /// <summary>
@@ -212,7 +214,7 @@ public abstract class Prop : ITransformable
 
         ImGuizmo.SetID(GetHashCode());
         if (ImGuizmo.Manipulate(ref view[0], ref projection[0],
-                OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.LOCAL, ref model[0]))
+                OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.WORLD, ref model[0]))
         {
             Matrix4 newModel = EngineUtility.ArrayToMatrix(model);
 

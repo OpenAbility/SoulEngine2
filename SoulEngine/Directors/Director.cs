@@ -1,5 +1,6 @@
 using SoulEngine.Data.NBT;
 using SoulEngine.Props;
+using SoulEngine.UI;
 
 namespace SoulEngine.Core;
 
@@ -19,6 +20,8 @@ public abstract class Director
     {
         Scene = scene;
         Type = type;
+        
+        PropertyReflection.RegisterProperties(scene, this, p => Register(p));
     }
 
 
@@ -99,6 +102,8 @@ public abstract class Director
     {
         
     }
+
+    public abstract void RenderUI(UIContext context);
     
     
     public abstract void Update(float deltaTime);

@@ -2,7 +2,9 @@
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
+using SoulEngine.Mathematics;
 using SoulEngine.Props;
+using SoulEngine.UI;
 
 namespace SoulEngine.Rendering;
 
@@ -12,10 +14,16 @@ namespace SoulEngine.Rendering;
 public class SceneRenderer
 {
     public readonly Scene Scene;
+
+    private readonly UIContext uiContext;
+
+    private float rotateSpeed;
     
     public SceneRenderer(Scene scene)
     {
         Scene = scene;
+        uiContext = new UIContext(Scene.Game);
+
     }
 
     public void Render(RenderContext renderContext, IRenderSurface surface, float deltaTime, CameraSettings cameraSettings)
@@ -86,9 +94,21 @@ public class SceneRenderer
         {
             prop.Render(renderContext, renderData, deltaTime);
         }
-        
+
+        if (cameraSettings.ShowUI)
+        {
+            Vector2i targetResolution = new Vector2i(3840, 2160);
+
+            float widthScale = targetResolution.Y / surfaceSize.Y;
+            
+            uiContext.OnBegin(renderContext, new Vector2i((int)(surfaceSize.X * widthScale), targetResolution.Y));
+
+            Scene.Director?.RenderUI(uiContext);
+            
+            uiContext.EnsureEnded();
+        }
         renderContext.EndRendering();
-        
+
         if(cameraSettings.ShowGizmos) {
         
             pass.Name = Scene.ResourceID + " - Gizmo Pass";

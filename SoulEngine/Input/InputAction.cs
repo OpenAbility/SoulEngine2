@@ -37,9 +37,6 @@ public class InputAction
     {
         if(inputEvent is CursorEvent)
             return;
-        
-        if(!manager.MouseInWindow && !IgnoresWindow)
-            return;
             
         if (inputEvent is KeyEvent keyEvent && keyEvent.Key == KeyBinding)
         {
@@ -65,11 +62,28 @@ public class InputAction
     public int ControllerIndex;
     public string Name;
     public bool IgnoresWindow;
+
+    private bool down;
+    private bool pressed;
+    private bool released;
     
+    public bool Down
+    {
+        get => down && (IgnoresWindow || manager.MouseInWindow);
+        private set => down = value;
+    }
     
-    public bool Pressed { get; private set; }
-    public bool Released { get; private set; }
-    public bool Down { get; private set; }
+    public bool Pressed
+    {
+        get => pressed && (IgnoresWindow || manager.MouseInWindow);
+        private set => pressed = value;
+    }
+    
+    public bool Released
+    {
+        get => released && (IgnoresWindow || manager.MouseInWindow);
+        private set => released = value;
+    }
     
     
     public void Press()

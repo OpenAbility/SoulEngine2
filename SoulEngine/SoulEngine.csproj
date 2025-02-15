@@ -47,14 +47,11 @@
   
   <ItemGroup  Condition=" '$(Configuration)' == 'Development' ">
     <PackageReference Include="NativeFileDialogSharp" Version="0.6.0-alpha" />
+    <PackageReference Include="SpaceWizards.SharpFont" Version="1.0.2" />
   </ItemGroup>
   
   <ItemGroup  Condition=" '$(Configuration)' != 'Development' ">
     <Compile Remove="Development\**" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="vendor\" />
   </ItemGroup>
 
 </Project>

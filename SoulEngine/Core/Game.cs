@@ -1,18 +1,19 @@
 using System.Diagnostics;
 using ImGuiNET;
 using OpenAbility.Logging;
+using OpenTK.Mathematics;
 using SoulEngine.Content;
 using SoulEngine.Data;
 using SoulEngine.Events;
 using SoulEngine.Input;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
+using SoulEngine.UI;
 using SoulEngine.Util;
 using Vector2 = System.Numerics.Vector2;
 #if DEVELOPMENT
 using ImGuizmoNET;
 using NativeFileDialogSharp;
-using OpenTK.Mathematics;
 using SoulEngine.Data.NBT;
 using SoulEngine.Development;
 using SoulEngine.Props;
@@ -141,8 +142,9 @@ public abstract class Game
 
         renderContext = new RenderContext();
 
-        Keys = new KeyActions(InputManager);
+
         BuiltinActions = new BuiltinActions(InputManager);
+        Keys = new KeyActions(InputManager);
         
 #if DEVELOPMENT
         GameWindow = new ImGuiWindow(this, "Game");
@@ -226,9 +228,8 @@ public abstract class Game
             if(msHistogram.Count > 30)
                 msHistogram.RemoveFirst();
             
-            if (Keys.Enter.Down)
+            if (Keys.Enter.Pressed && Keys.LeftAlt.Down)
             {
-                Logger.Info("FS!");
                 MainWindow.Fullscreen = !MainWindow.Fullscreen;
             }
             
@@ -345,6 +346,7 @@ public abstract class Game
     }
 
     private bool inputViewer = false;
+    private bool showBuiltin = false;
 
     private void RunningFrame()
     {
@@ -529,6 +531,9 @@ public abstract class Game
             }
             else
             {
+                ImGui.Text("Director - " + Scene.Director.Type);
+                ImGui.Separator();
+                
                 Scene.Director.Edit();
             }
 
@@ -572,6 +577,8 @@ public abstract class Game
 
                     foreach (var action in InputManager.Actions)
                     {
+                        if(action.Name.StartsWith("builtin.") && !showBuiltin)
+                            continue;
                         ImGui.TableNextRow();
                         
                         ImGui.TableNextColumn();
@@ -589,6 +596,8 @@ public abstract class Game
                     
                     ImGui.EndTable();
                 }
+
+                ImGui.Checkbox("Show builtin actions", ref showBuiltin);
             }
 
             ImGui.End();
@@ -616,6 +625,7 @@ public abstract class Game
         sceneWindowSettings.CameraPosition = SceneCamera.Position;
         sceneWindowSettings.ShowGizmos = MenuContext.IsFlagSet("View", "Gizmos");
         sceneWindowSettings.SelectedProp = CurrentProp;
+        sceneWindowSettings.ShowUI = false;
         
         if(GameWindow.Visible)
             sceneRenderer?.Render(renderContext, GameWindow, DeltaTime, CameraSettings.Game);

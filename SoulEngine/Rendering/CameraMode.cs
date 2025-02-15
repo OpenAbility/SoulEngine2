@@ -16,9 +16,12 @@ public struct CameraSettings
     public bool ShowGizmos;
     public Prop? SelectedProp;
 
+    public bool ShowUI;
+
     public static readonly CameraSettings Game = new CameraSettings()
     {
-        CameraMode = CameraMode.GameCamera
+        CameraMode = CameraMode.GameCamera,
+        ShowUI = true
     };
 }
 

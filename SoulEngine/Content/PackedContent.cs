@@ -1,5 +1,6 @@
 using System.Text;
 using SoulEngine.Core;
+using SoulEngine.Util;
 
 namespace SoulEngine.Content;
 
@@ -52,6 +53,21 @@ public class PackedContent
         fileStream.ReadExactly(allocated);
 
         return allocated;
+    }
+
+    public Stream? LoadIntoStream(string id)
+    {
+        ulong hash = HashString(id);
+        if (!files.TryGetValue(hash, out FileLocation fileLocation))
+            return null;
+
+        FileStream fileStream = File.OpenRead(Name + "_" + fileLocation.ArchiveIndex + ".cpak");
+        BufferedStream bufferedStream = new BufferedStream(fileStream); // Buffer for read performance hehe
+        
+        StreamSegment streamSegment = new StreamSegment(bufferedStream, false);
+        streamSegment.Adjust((long)fileLocation.ArchiveOffset, (long)fileLocation.FileSize);
+
+        return streamSegment;
     }
 
     public bool Has(string id)
@@ -240,6 +256,3 @@ public class PackedContent
         }
     }
 }
-
-
-

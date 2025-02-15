@@ -52,3 +52,9 @@ public abstract class SerializedProperty<T> : SerializedProperty
         Set(resetValue);
     }
 }
+
+[AttributeUsage(AttributeTargets.Property)]
+public class SerializedPropertyAttribute(string id) : Attribute
+{
+    public readonly string ID = id;
+}

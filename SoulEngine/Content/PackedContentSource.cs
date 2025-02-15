@@ -20,7 +20,7 @@ public class PackedContentSource : IContentSource
     {
         if (!HasContent(id))
             return null;
-        return new MemoryStream(content.LoadIntoMemory(id));
+        return content.LoadIntoStream(id);
     }
 
     public bool HasContent(string id)

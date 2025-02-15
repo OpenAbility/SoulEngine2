@@ -61,10 +61,14 @@ public class Scene : Resource
                 string propType = propTag.GetString("$_type")!;
 
                 Prop prop = PropLoader.Create(scene, propType, name);
-            
-                prop.Load(propTag);
-            
+                
                 scene.Props.Add(prop);
+            }
+
+            foreach (var prop in scene.Props)
+            {
+                CompoundTag propTag = (CompoundTag)propsTag[prop.Name];
+                prop.Load(propTag);
             }
             
             CompoundTag directorTag = (CompoundTag)sceneTag["director"];
@@ -72,10 +76,9 @@ public class Scene : Resource
                 string directorType = directorTag.GetString("$_type")!;
 
                 Director director = DirectorLoader.Create(scene, directorType);
-            
-                director.Load(directorTag);
-
                 scene.Director = director;
+                
+                director.Load(directorTag);
             }
 
             return scene;   
@@ -111,5 +114,20 @@ public class Scene : Resource
             tag["director"] = Director.Save();
 
         return tag;
+    }
+
+    public Prop? GetProp(string name)
+    {
+        return Props.Find(p => p.Name == name);
+    }
+    
+    public Prop? GetProp(string name, Type type)
+    {
+        return Props.Find(p => p.Name == name && type.IsInstanceOfType(p));
+    }
+    
+    public T? GetProp<T>(string name) where T : Prop
+    {
+        return Props.Find(p => p.Name == name && p is T) as T;
     }
 }

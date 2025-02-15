@@ -31,6 +31,15 @@ public static unsafe class Unsafe
         
     }
     
+    public static TOut CastStruct<TOut, TIn>(this TIn data)   where TIn : unmanaged
+        where TOut : unmanaged
+    {
+        if (sizeof(TIn) < sizeof(TOut))
+            throw new Exception("Input is smaller in size than required!");
+        
+        return *(TOut*)&data;
+    }
+    
     public static Span<TOut> CastStructs<TOut, TIn>(this Span<TIn> span)   where TIn : unmanaged 
         where TOut : unmanaged
     {

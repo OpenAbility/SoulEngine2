@@ -2,6 +2,7 @@ using OpenTK.Mathematics;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
 using SoulEngine.Props;
+using SoulEngine.UI;
 
 namespace SoulEngine.Directors;
 
@@ -23,6 +24,11 @@ public class FlycamDirector : Director
     }
 
     public override void OnSave(CompoundTag tag)
+    {
+        
+    }
+
+    public override void RenderUI(UIContext context)
     {
         
     }

@@ -27,6 +27,8 @@ internal class BuiltinActions
     public readonly InputAction SceneCameraSprint;
     
     public readonly InputAction SceneCameraToggle;
+
+    public readonly InputAction Space;
     
     public BuiltinActions(InputManager inputManager)
     {

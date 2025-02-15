@@ -151,9 +151,30 @@ public struct Mesh
 }
 
 
-public struct Animation
+public struct Animation()
 {
-    
+    public string? Name;
+    public AnimationSampler[] Samplers = [];
+    public AnimationChannel[] Channels = [];
+}
+
+public struct AnimationSampler()
+{
+    public int Input;
+    public string Interpolation = "LINEAR";
+    public int Output;
+}
+
+public struct AnimationChannel()
+{
+    public int Sampler;
+    public AnimationTarget Target;
+}
+
+public struct AnimationTarget
+{
+    public int Node;
+    public string Path;
 }
 
 public struct BufferView

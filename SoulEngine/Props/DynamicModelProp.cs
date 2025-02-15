@@ -2,6 +2,7 @@ using ImGuiNET;
 using ImGuizmoNET;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
+using SoulEngine.Animation;
 using SoulEngine.Core;
 using SoulEngine.Mathematics;
 using SoulEngine.Models;
@@ -17,10 +18,12 @@ public class DynamicModelProp : Prop
     public readonly BoolProperty Visible;
     public readonly ResourceProperty<Model> ModelProperty;
     public readonly ResourceProperty<Model> JointModelProperty;
+    public readonly ResourceProperty<AnimationClip> AnimationProperty;
 
     private SkeletonJointData? selectedJoint;
     
     private SkeletonInstance? skeletonInstance;
+    public SingleAnimationPlayer? AnimationPlayer;
     
     public DynamicModelProp(Scene scene, string type, string name) : base(scene, type, name)
     {
@@ -28,6 +31,7 @@ public class DynamicModelProp : Prop
 
         ModelProperty = Register(new ResourceProperty<Model>("model", "", scene.Game));
         JointModelProperty = Register(new ResourceProperty<Model>("jointModel", "mod/joint.mdl", scene.Game));
+        AnimationProperty = Register(new ResourceProperty<AnimationClip>("animation", "", scene.Game));
     }
 
     public override void Update(float deltaTime)
@@ -38,8 +42,24 @@ public class DynamicModelProp : Prop
             if (ModelProperty.Value?.Skeleton != null)
             {
                 skeletonInstance = ModelProperty.Value.Skeleton.Instantiate();
+                AnimationPlayer = new SingleAnimationPlayer(skeletonInstance);
             }
         }
+
+        if (AnimationPlayer?.CurrentClip != AnimationProperty.Value)
+        {
+            if (AnimationPlayer != null)
+            {
+                AnimationPlayer.CurrentClip = AnimationProperty.Value;
+                AnimationPlayer.Playing?.Restart();
+            }
+        }
+
+        AnimationPlayer?.Apply();
+
+        if(AnimationPlayer?.Playing is { Playing: false })
+            AnimationPlayer.Playing.Restart();
+        
     }
 
     private static GpuBuffer<Matrix4>? skeletonBuffer;
@@ -74,6 +94,26 @@ public class DynamicModelProp : Prop
 
             }
         }
+
+        /*
+        ImGui.BeginDisabled(animationContext == null);
+        
+        if(ImGui.Button("Play"))
+            animationContext!.Play();
+        ImGui.SameLine();
+        if(ImGui.Button("Pause"))
+            animationContext!.Pause();
+        ImGui.SameLine();
+        if(ImGui.Button("Stop"))
+            animationContext!.Stop();
+        
+        if(ImGui.Button("Restart"))
+            animationContext!.Restart();
+        ImGui.SameLine();
+        ImGui.Text(animationContext?.Elapsed.ToString() ?? "NO ANIM");
+        
+        ImGui.EndDisabled();
+        */
     }
 
 
@@ -147,7 +187,7 @@ public class DynamicModelProp : Prop
 
         ImGuizmo.SetID(GetHashCode());
         if (ImGuizmo.Manipulate(ref view[0], ref projection[0],
-                OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.LOCAL, ref model[0]))
+                OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.WORLD, ref model[0]))
         {
             Matrix4 newModel = EngineUtility.ArrayToMatrix(model);
 
