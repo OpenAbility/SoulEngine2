@@ -48,6 +48,8 @@ public class DrawList
         
         GL.BindVertexArray(VertexArray);
         GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+        
+        vertices.Clear();
     }
     
     

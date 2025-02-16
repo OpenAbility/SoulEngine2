@@ -101,6 +101,9 @@ public class SceneRenderer
 
             float widthScale = targetResolution.Y / surfaceSize.Y;
             
+            renderContext.Enable(EnableCap.Blend);
+            renderContext.BlendFunction(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            
             uiContext.OnBegin(renderContext, new Vector2i((int)(surfaceSize.X * widthScale), targetResolution.Y));
 
             Scene.Director?.RenderUI(uiContext);

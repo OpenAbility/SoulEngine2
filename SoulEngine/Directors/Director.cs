@@ -42,6 +42,7 @@ public abstract class Director
             if(tag.TryGetValue(p.Key, out Tag? propertyTag))
                 p.Value.Load(propertyTag);
         }
+        OnLoad(tag);
     }
 
     /// <summary>
@@ -58,6 +59,8 @@ public abstract class Director
         {
             tag[p.Key] = p.Value.Save();
         }
+        
+        OnSave(tag);
 
         return tag;
     }

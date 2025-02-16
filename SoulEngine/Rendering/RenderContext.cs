@@ -214,4 +214,9 @@ public class RenderContext
     {
         GL.PolygonOffset(factor, units);
     }
+
+    public void BlendFunction(BlendingFactor sfactor, BlendingFactor dfactor)
+    {
+        GL.BlendFunc(sfactor, dfactor);
+    }
 }

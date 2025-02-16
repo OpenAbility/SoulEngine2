@@ -136,6 +136,12 @@ public unsafe class Window : IRenderSurface
             throw new Exception(outOfDateError);
         }
         
+        // TODO: Maybe some people don't care?
+        if (minorVersion < 6 && !GLFW.ExtensionSupported("GL_EXT_texture_filter_anisotropic"))
+        {
+            throw new Exception(outOfDateError);
+        }
+        
 #if !RELEASE
         
         GL.Enable(EnableCap.DebugOutput);

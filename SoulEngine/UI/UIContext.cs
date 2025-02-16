@@ -4,6 +4,7 @@ using SoulEngine.Core;
 using SoulEngine.Mathematics;
 using SoulEngine.Rendering;
 using SoulEngine.UI.Rendering;
+using SoulEngine.UI.Text;
 using EnableCap = OpenTK.Graphics.OpenGL.EnableCap;
 
 namespace SoulEngine.UI;
@@ -34,7 +35,7 @@ public class UIContext
     {
         this.renderContext = renderContext;
         Size = size;
-        projection = Matrix4.CreateOrthographicOffCenter(0, size.X, 0, size.Y, -10, 10);
+        projection = Matrix4.CreateOrthographicOffCenter(0, size.X, size.Y, 0, -10, 10);
 
     }
 
@@ -80,23 +81,23 @@ public class UIContext
     }
     
 
-    public void DrawSprite(Sprite sprite, float x, float y)
+    public void DrawSprite(Sprite sprite, float x, float y, Colour tint)
     { 
         EnsureDraw(sprite.Texture, PrimitiveType.Triangles, currentShader);
 
-        Vector2 uv0 = new Vector2(sprite.Position.X / sprite.Texture.Width, sprite.Position.Y / sprite.Texture.Height);
-        Vector2 uv1 = new Vector2((sprite.Position.X + sprite.Size.X) / sprite.Texture.Width, (sprite.Position.Y + sprite.Size.Y) / sprite.Texture.Height);
+        Vector2 uv0 = new Vector2(sprite.Position.X / sprite.Texture.Width, (sprite.Position.Y + sprite.Size.Y) / sprite.Texture.Height);
+        Vector2 uv1 = new Vector2((sprite.Position.X + sprite.Size.X) / sprite.Texture.Width, sprite.Position.Y / sprite.Texture.Height);
 
-        drawList.Vertex(x, y, uv0.X, uv0.Y, Colour.White);
-        drawList.Vertex(x + sprite.Size.X, y, uv1.X, uv0.Y, Colour.White);
-        drawList.Vertex(x + sprite.Size.X, y + sprite.Size.Y, uv1.X, uv1.Y, Colour.White);
+        drawList.Vertex(x, y, uv0.X, uv0.Y, tint);
+        drawList.Vertex(x + sprite.Size.X, y, uv1.X, uv0.Y, tint);
+        drawList.Vertex(x + sprite.Size.X, y + sprite.Size.Y, uv1.X, uv1.Y, tint);
         
-        drawList.Vertex(x, y, uv0.X, uv0.Y, Colour.White);
-        drawList.Vertex(x + sprite.Size.X, y + sprite.Size.Y, uv1.X, uv1.Y, Colour.White);
-        drawList.Vertex(x, y + sprite.Size.Y, uv0.X, uv1.Y, Colour.White);
+        drawList.Vertex(x, y, uv0.X, uv0.Y, tint);
+        drawList.Vertex(x + sprite.Size.X, y + sprite.Size.Y, uv1.X, uv1.Y, tint);
+        drawList.Vertex(x, y + sprite.Size.Y, uv0.X, uv1.Y, tint);
     }
     
-    public void DrawSprite(Sprite sprite, Vector2 pos, Vector2 origin, Vector2 size, float rotation)
+    public void DrawSprite(Sprite sprite, Vector2 pos, Vector2 origin, Vector2 size, float rotation, Colour tint)
     {
         // Well, this is bound to be fun.
         // Just a lot... like... a LOT of maths to do.
@@ -121,16 +122,38 @@ public class UIContext
         
         EnsureDraw(sprite.Texture, PrimitiveType.Triangles, currentShader);
 
-        Vector2 uv0 = new Vector2(sprite.Position.X / sprite.Texture.Width, sprite.Position.Y / sprite.Texture.Height);
-        Vector2 uv1 = new Vector2((sprite.Position.X + sprite.Size.X) / sprite.Texture.Width, (sprite.Position.Y + sprite.Size.Y) / sprite.Texture.Height);
+        Vector2 uv0 = new Vector2(sprite.Position.X / sprite.Texture.Width, (sprite.Position.Y + sprite.Size.Y) / sprite.Texture.Height);
+        Vector2 uv1 = new Vector2((sprite.Position.X + sprite.Size.X) / sprite.Texture.Width, sprite.Position.Y / sprite.Texture.Height);
 
-        drawList.Vertex(tl.X, tl.Y, uv0.X, uv0.Y, Colour.White);
-        drawList.Vertex(tr.X, tr.Y, uv1.X, uv0.Y, Colour.White);
-        drawList.Vertex(br.X, br.Y, uv1.X, uv1.Y, Colour.White);
+        drawList.Vertex(tl.X, tl.Y, uv0.X, uv0.Y, tint);
+        drawList.Vertex(tr.X, tr.Y, uv1.X, uv0.Y, tint);
+        drawList.Vertex(br.X, br.Y, uv1.X, uv1.Y, tint);
 
-        drawList.Vertex(tl.X, tl.Y, uv0.X, uv0.Y, Colour.White);
-        drawList.Vertex(br.X, br.Y, uv1.X, uv1.Y, Colour.White);
-        drawList.Vertex(bl.X, bl.Y, uv0.X, uv1.Y, Colour.White);
+        drawList.Vertex(tl.X, tl.Y, uv0.X, uv0.Y, tint);
+        drawList.Vertex(br.X, br.Y, uv1.X, uv1.Y, tint);
+        drawList.Vertex(bl.X, bl.Y, uv0.X, uv1.Y, tint);
+    }
+
+    public void DrawText(Font font, float x, float y, string text, Colour tint)
+    {
+        float startX = x;
         
+        foreach (var character in text)
+        {
+            if (character == '\n')
+            {
+                y += font.LineHeight;
+                x = startX;
+                continue;
+            }
+            
+            Glyph? glyph = font[character];
+            if(glyph == null)
+                continue;
+            
+            DrawSprite(glyph.Value.Sprite, x + glyph.Value.Offset.X, glyph.Value.Offset.Y + y, tint);
+
+            x += glyph.Value.Advance;
+        }
     }
 }

@@ -199,6 +199,8 @@ public class Texture : Resource
                 GL.TextureParameteri(handle, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
                 GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
                 GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+                
+                GL.TextureParameterf(handle, TextureParameterName.TextureMaxAnisotropy, resourceManager.Game.EngineVar.GetFloat("e_anisotropy", 16));
             });
 
             return (handle, size);

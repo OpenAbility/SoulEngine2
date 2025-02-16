@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
+using SoulEngine.Mathematics;
 using SoulEngine.Rendering;
 using SoulEngine.Util;
 
@@ -47,8 +48,8 @@ public abstract class Prop : ITransformable
 
     public Vector3 RotationEuler
     {
-        get => rotationProperty.Value.ToEulerAngles();
-        set => rotationProperty.Value = Quaternion.FromEulerAngles(value);
+        get => rotationProperty.Value.ToEulerAngles() * Mathf.Rag2Deg;
+        set => rotationProperty.Value = Quaternion.FromEulerAngles(value * Mathf.Deg2Rad);
     }
 
     private readonly Vector3Property scaleProperty;
