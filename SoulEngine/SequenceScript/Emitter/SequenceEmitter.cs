@@ -1,3 +1,5 @@
+using SoulEngine.SequenceScript.Parsing.SyntaxNodes;
+
 namespace SoulEngine.SequenceScript.Emitter;
 
 /// <summary>
@@ -5,5 +7,15 @@ namespace SoulEngine.SequenceScript.Emitter;
 /// </summary>
 public class SequenceEmitter
 {
+
+    private readonly List<string> stringTable = new List<string>();
     
+    public SequenceEmitter()
+    {
+        
+    }
+
+    public void Process(ProgramRootNode rootNode)
+    {
+    }
 }

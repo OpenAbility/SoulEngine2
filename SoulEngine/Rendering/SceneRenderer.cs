@@ -104,7 +104,8 @@ public class SceneRenderer
             renderContext.Enable(EnableCap.Blend);
             renderContext.BlendFunction(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             
-            uiContext.OnBegin(renderContext, new Vector2i((int)(surfaceSize.X * widthScale), targetResolution.Y));
+            //uiContext.OnBegin(renderContext, new Vector2i((int)(surfaceSize.X * widthScale), targetResolution.Y));
+            uiContext.OnBegin(renderContext, surface.FramebufferSize);
 
             Scene.Director?.RenderUI(uiContext);
             

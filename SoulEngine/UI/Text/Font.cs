@@ -22,7 +22,7 @@ public partial class Font : Resource
         {
             if (glyphs.TryGetValue(glyph, out var value))
                 return value;
-            return null;
+            return glyph == char.MaxValue ? null : this[char.MaxValue];
         }
     }
 }
