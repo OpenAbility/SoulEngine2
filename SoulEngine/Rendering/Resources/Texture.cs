@@ -69,7 +69,7 @@ public class Texture : Resource
 
             int handle = -1;
             Vector3i size = new Vector3i();
-            if (id == "null")
+            if (id == "null" || id == "__TEXTURE_AUTOGEN/null")
             {
                 game.ThreadSafety.EnsureMain(() =>
                 {
@@ -109,6 +109,30 @@ public class Texture : Resource
                 });
 
                 return (handle, new Vector3i(16, 16, 1));
+            }
+            
+            if (id == "__TEXTURE_AUTOGEN/white")
+            {
+                game.ThreadSafety.EnsureMain(() =>
+                {
+                    handle = GL.CreateTexture(TextureTarget.Texture2d);
+                    GL.TextureStorage2D(handle, 1, SizedInternalFormat.Rgba8, 1, 1);
+
+                    byte[] textureData = [255, 255, 255, 255];
+
+                    GL.TextureSubImage2D(handle, 0, 0, 0, 1, 1, PixelFormat.Rgba, PixelType.UnsignedByte, textureData);
+                    GL.GenerateTextureMipmap(handle);
+
+                    GL.TextureParameteri(handle, TextureParameterName.TextureMinFilter,
+                        (int)TextureMinFilter.LinearMipmapLinear);
+                    GL.TextureParameteri(handle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+                    GL.TextureParameteri(handle, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
+                    GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+                    GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+
+                });
+
+                return (handle, new Vector3i(1, 1, 1));
             }
 
 

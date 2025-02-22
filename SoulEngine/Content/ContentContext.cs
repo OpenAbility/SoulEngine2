@@ -90,5 +90,16 @@ public class ContentContext
 
         return strings.ToArray();
     }
+
+    public bool Exists(string id)
+    {
+        foreach (var source in contentSources)
+        {
+            if (source.HasContent(id))
+                return true;
+        }
+
+        return false;
+    }
     
 }

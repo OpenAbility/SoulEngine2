@@ -220,7 +220,9 @@ public class DynamicModelProp : Prop
         {
             foreach (var mesh in JointModelProperty.Value.Meshes)
             {
-                mesh.Material.Bind(context.SceneRenderData, skeletonInstance.GetJointGlobalMatrix(skeletonInstance.Skeleton.GetJoint(i)) * GlobalMatrix);
+                Matrix4 matrix4 = skeletonInstance.GetJointGlobalMatrix(skeletonInstance.Skeleton.GetJoint(i)) *
+                                  GlobalMatrix;
+                mesh.Material.Bind(context.SceneRenderData, matrix4);
                 mesh.ActualMesh.Draw();
             }
         }

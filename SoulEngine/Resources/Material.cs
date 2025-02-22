@@ -76,6 +76,9 @@ public class Material : Resource
                 if (parameter.IsSampler)
                     values[parameter.Name] = resourceManager.Load<Texture>(jsonValue.Value<string>()!);
 
+            } else if (parameter.IsSampler)
+            {
+                values[parameter.Name] = resourceManager.Load<Texture>("__TEXTURE_AUTOGEN/white");
             }
         }
     }
