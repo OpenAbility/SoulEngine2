@@ -1,4 +1,4 @@
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using SoulEngine.Data;
 using SoulEngine.Data.NBT;
 using SoulEngine.Resources;
@@ -63,7 +63,7 @@ public unsafe class ByteInspector : Inspector<byte>, INBTSerializer<byte>
 {
     public override byte Edit(byte instance, InspectionContext context)
     {
-        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.U8, new IntPtr(&instance)))
+        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.U8, &instance))
             context.MarkEdited();
         return instance;
     }
@@ -88,7 +88,7 @@ public unsafe class ShortInspector : Inspector<short>, INBTSerializer<short>
 {
     public override short Edit(short instance, InspectionContext context)
     {
-        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.S16, new IntPtr(&instance)))
+        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.S16, &instance))
             context.MarkEdited();
         return instance;
     }
@@ -113,7 +113,7 @@ public unsafe class IntInspector : Inspector<int>, INBTSerializer<int>
 {
     public override int Edit(int instance, InspectionContext context)
     {
-        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.S32, new IntPtr(&instance)))
+        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.S32, &instance))
             context.MarkEdited();
         return instance;
     }
@@ -138,7 +138,7 @@ public unsafe class LongInspector : Inspector<long>, INBTSerializer<long>
 {
     public override long Edit(long instance, InspectionContext context)
     {
-        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.S64, new IntPtr(&instance)))
+        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.S64, &instance))
             context.MarkEdited();
         return instance;
     }
@@ -151,6 +151,32 @@ public unsafe class LongInspector : Inspector<long>, INBTSerializer<long>
     public long Deserialize(Tag tag, NBTSerializationContext context)
     {
         if (tag is LongTag byteTag)
+            return byteTag.Value;
+        return 0;
+    }
+}
+
+
+[Serializable]
+[Inspector(typeof(float))]
+[NBTSerializer(typeof(float))]
+public unsafe class FloatInspector : Inspector<float>, INBTSerializer<float>
+{
+    public override float Edit(float instance, InspectionContext context)
+    {
+        if (ImGui.InputScalar(context.AssociatedName ?? "", ImGuiDataType.Float, &instance))
+            context.MarkEdited();
+        return instance;
+    }
+
+    public Tag Serialize(float value, NBTSerializationContext context)
+    {
+        return new FloatTag(null, value);
+    }
+
+    public float Deserialize(Tag tag, NBTSerializationContext context)
+    {
+        if (tag is FloatTag byteTag)
             return byteTag.Value;
         return 0;
     }

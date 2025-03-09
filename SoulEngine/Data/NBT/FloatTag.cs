@@ -29,6 +29,6 @@ public class FloatTag : ValueTag<float>
 
     public override void Write(SNBTWriter writer)
     {
-        writer.Append(Data + "f");
+        writer.Append(Data.ToString("F") + "f");
     }
 }

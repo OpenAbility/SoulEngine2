@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using OpenAbility.Logging;
 using OpenTK.Graphics;
@@ -165,6 +166,9 @@ public unsafe class Window : IRenderSurface
                 logger.Error(msg);
             else
                 logger.Debug(msg);
+            
+            if(type == DebugType.DebugTypeError && Game.EngineVar.GetBool("r_gl_error_break"))
+                Debugger.Break();
         };
         
         GL.DebugMessageCallback(DebugProc, IntPtr.Zero);

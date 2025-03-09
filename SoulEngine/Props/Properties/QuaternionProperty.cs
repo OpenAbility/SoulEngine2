@@ -1,4 +1,4 @@
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using OpenTK.Mathematics;
 using SoulEngine.Data.NBT;
 using SoulEngine.Mathematics;
@@ -16,7 +16,7 @@ public class QuaternionProperty : SerializedProperty<Quaternion>
     public override unsafe void Edit()
     {
 
-        if (ImGui.BeginChild(Name, new Vector2(0, 0), ImGuiChildFlags.AlwaysAutoResize | ImGuiChildFlags.Border | ImGuiChildFlags.AutoResizeX | ImGuiChildFlags.AutoResizeY))
+        if (ImGui.BeginChild(Name, new Vector2(0, 0), ImGuiChildFlags.AlwaysAutoResize | ImGuiChildFlags.Borders | ImGuiChildFlags.AutoResizeX | ImGuiChildFlags.AutoResizeY))
         {
             ImGui.Text(Name);
 

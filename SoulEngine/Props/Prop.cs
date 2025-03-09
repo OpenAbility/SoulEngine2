@@ -1,7 +1,8 @@
 using System.Reflection;
-using ImGuiNET;
-using ImGuizmoNET;
+using Hexa.NET.ImGui;
+using Hexa.NET.ImGuizmo;
 using Newtonsoft.Json.Linq;
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
@@ -31,6 +32,8 @@ public abstract class Prop : ITransformable
     private readonly Dictionary<string, SerializedProperty> properties = new Dictionary<string, SerializedProperty>();
 
     private readonly Vector3Property positionProperty;
+
+    internal readonly Texture? propIcon;
     
     public Vector3 Position
     {
@@ -66,6 +69,13 @@ public abstract class Prop : ITransformable
     public ITransformable? Parent;
     public Matrix4 GlobalMatrix => Parent?.GlobalMatrix ?? Matrix4.Identity * LocalMatrix;
     
+    
+    public Vector3 Forward => RotationQuat * -Vector3.UnitZ;
+    public Vector3 Up => RotationQuat * Vector3.UnitY;
+    public Vector3 Right => RotationQuat * Vector3.UnitX;
+
+    
+    
     /// <summary>
     /// Create a new prop
     /// </summary>
@@ -83,6 +93,13 @@ public abstract class Prop : ITransformable
         scaleProperty = Register(new Vector3Property("scale", Vector3.One));
 
         PropertyReflection.RegisterProperties(scene, this, p => Register(p));
+        
+#if DEVELOPMENT
+        string icon = GetType().GetCustomAttribute<PropAttribute>()?.Icon ?? "object";
+
+        if(icon != "none")
+            propIcon = Scene.Game.ResourceManager.Load<Texture>("icons/" + icon + ".dds");
+#endif
     }
 
     /// <summary>
@@ -199,7 +216,20 @@ public abstract class Prop : ITransformable
 
     public virtual void RenderGizmo(GizmoContext context)
     {
+        if(propIcon != null)
+            context.BillboardedSprite(propIcon);
+        context.Begin(PrimitiveType.Lines);
         
+        context.Vertex(Vector3.Zero, Colour.Red);
+        context.Vertex(Vector3.UnitX, Colour.Red);
+        
+        context.Vertex(Vector3.Zero, Colour.Green);
+        context.Vertex(Vector3.UnitY, Colour.Green);
+        
+        context.Vertex(Vector3.Zero, Colour.Blue);
+        context.Vertex(-Vector3.UnitZ, Colour.Blue);
+
+        context.End();
     }
 
     public virtual void RenderMoveGizmo(Matrix4 viewMatrix, Matrix4 projectionMatrix)
@@ -215,7 +245,7 @@ public abstract class Prop : ITransformable
 
         ImGuizmo.SetID(GetHashCode());
         if (ImGuizmo.Manipulate(ref view[0], ref projection[0],
-                OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.WORLD, ref model[0]))
+                ImGuizmoOperation.Translate | ImGuizmoOperation.Rotate | ImGuizmoOperation.Scale, ImGuizmoMode.World, ref model[0]))
         {
             Matrix4 newModel = EngineUtility.ArrayToMatrix(model);
 

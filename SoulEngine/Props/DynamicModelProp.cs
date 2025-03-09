@@ -1,5 +1,5 @@
-using ImGuiNET;
-using ImGuizmoNET;
+using Hexa.NET.ImGui;
+using Hexa.NET.ImGuizmo;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Animation;
@@ -11,7 +11,7 @@ using SoulEngine.Util;
 
 namespace SoulEngine.Props;
 
-[Prop("model_dynamic")]
+[Prop("model_dynamic", Icon = "skeleton")]
 [Serializable]
 public class DynamicModelProp : Prop
 {
@@ -187,7 +187,7 @@ public class DynamicModelProp : Prop
 
         ImGuizmo.SetID(GetHashCode());
         if (ImGuizmo.Manipulate(ref view[0], ref projection[0],
-                OPERATION.TRANSLATE | OPERATION.ROTATE | OPERATION.SCALE, MODE.WORLD, ref model[0]))
+                ImGuizmoOperation.Translate | ImGuizmoOperation.Rotate | ImGuizmoOperation.Scale, ImGuizmoMode.World, ref model[0]))
         {
             Matrix4 newModel = EngineUtility.ArrayToMatrix(model);
 
@@ -204,6 +204,8 @@ public class DynamicModelProp : Prop
 
     public override void RenderGizmo(GizmoContext context)
     {
+        base.RenderGizmo(context);
+        
         if(!Visible.Value)
             return;
         
@@ -218,13 +220,11 @@ public class DynamicModelProp : Prop
         
         for (int i = 0; i < skeletonInstance.Skeleton.JointCount; i++)
         {
-            foreach (var mesh in JointModelProperty.Value.Meshes)
-            {
-                Matrix4 matrix4 = skeletonInstance.GetJointGlobalMatrix(skeletonInstance.Skeleton.GetJoint(i)) *
-                                  GlobalMatrix;
-                mesh.Material.Bind(context.SceneRenderData, matrix4);
-                mesh.ActualMesh.Draw();
-            }
+            Matrix4 matrix4 = skeletonInstance.GetJointGlobalMatrix(skeletonInstance.Skeleton.GetJoint(i)) *
+                              GlobalMatrix;
+
+            context.ModelMatrix = matrix4;
+            context.BillboardedSprite(Scene.Game.ResourceManager.Load<Texture>("icons/bone.dds"), 0.2f);
         }
     }
 }

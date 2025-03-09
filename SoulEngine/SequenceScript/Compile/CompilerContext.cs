@@ -1,6 +1,9 @@
 using System.Text;
+using SoulEngine.SequenceScript.Emitter;
 using SoulEngine.SequenceScript.Lexing;
 using SoulEngine.SequenceScript.Parsing;
+using SoulEngine.SequenceScript.Parsing.SyntaxNodes;
+using SoulEngine.SequenceScript.Utility;
 
 namespace SoulEngine.SequenceScript.Compile;
 
@@ -9,37 +12,66 @@ namespace SoulEngine.SequenceScript.Compile;
 /// </summary>
 public class CompilerContext
 {
-    private readonly List<ICompileIncludeHandler> includeHandlers = new List<ICompileIncludeHandler>();
-
     private readonly List<CompileError> errors = new List<CompileError>();
 
-    public void Include(ICompileIncludeHandler includeHandler)
-    {
-        includeHandlers.Add(includeHandler);
-    }
+    private readonly Dictionary<string, CompilingFile> working = new Dictionary<string, CompilingFile>();
+    
 
-    public void Include(string directory)
+    public void BeginCompiling(string resolvePath, string inputPath, string outputPath)
     {
-        Include(new DirectoryIncludeHandler(directory));
-    }
+        
+        CompilingFile compilingFile = new CompilingFile();
+        working[resolvePath] = compilingFile;
 
-    public void Compile(Stream inputStream, Stream outputStream, string path)
-    {
+        compilingFile.InputPath = inputPath;
+        compilingFile.OutputPath = outputPath;
+        compilingFile.ResolvePath = resolvePath;
 
-        SequenceLexer lexer = new SequenceLexer(path, inputStream, Encoding.Default, this);
+        using var inputStream = File.OpenRead(inputPath);
+
+        var lexer = new SequenceLexer(inputPath, inputStream, Encoding.UTF8, this);
         lexer.Process();
+        
+        compilingFile.Tokens = lexer.GetTokens();
 
-        Token[] tokens = lexer.GetTokens();
-        for (int i = 0; i < tokens.Length; i++)
+        var parser = new SequenceParser(compilingFile.Tokens, this);
+
+        compilingFile.AST = parser.Process();
+
+        foreach (var node in compilingFile.AST.Nodes)
         {
-            //Console.WriteLine(tokens[i]);
+            if (node is GlobalStatement globalStatement)
+            {
+                compilingFile.globals.Add(globalStatement.Identifier.Value, SequenceRules.KeywordToValueType(globalStatement.Type.TokenType));
+            } 
+            else if (node is ProcedureDefinitionNode procedureDefinitionNode)
+            {
+                CompilingFunction function = new CompilingFunction();
+
+                function.ReturnType = SequenceRules.KeywordToReturnType(procedureDefinitionNode.ReturnType.TokenType);
+                function.Name = procedureDefinitionNode.Identifier.Value;
+                function.ParameterTypes = procedureDefinitionNode.Parameters
+                    .Select(n => SequenceRules.KeywordToValueType(n.Type.TokenType)).ToArray();
+
+                compilingFile.functions[function.Name] = function;
+            }
         }
-
-        SequenceParser parser = new SequenceParser(tokens, this);
-        var ast = parser.Process();
-
     }
 
+    public CompilingFile? ResolveInclude(string from, string to)
+    {
+        string path = Path.Join(Path.GetDirectoryName(from), to);
+        return working.GetValueOrDefault(path);
+    }
+
+    public void Emit()
+    {
+        foreach (var compilingFile in working.Values)
+        {
+            SequenceEmitter emitter = new SequenceEmitter(this, compilingFile.ResolvePath);
+            emitter.Process(compilingFile.AST);
+        }
+    }
 
     public void Error(CompileError error)
     {
@@ -56,10 +88,14 @@ public class CompilerContext
         if(errors.Count == 0)
             return;
 
+        Console.ForegroundColor = ConsoleColor.Red;
+
         for (int i = 0; i < errors.Count; i++)
         {
             Console.Error.WriteLine(errors[i].ToString());
         }
+        
+        Console.ResetColor();
 
         throw new Exception("Compilation threw errors!");
     }
@@ -68,6 +104,4 @@ public class CompilerContext
     {
         errors.Clear();
     }
-
-
 }

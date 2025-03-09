@@ -1,4 +1,5 @@
 using SoulEngine.SequenceScript.Lexing;
+using ValueType = SoulEngine.SequenceScript.Machine.ValueType;
 
 namespace SoulEngine.SequenceScript.Utility;
 
@@ -13,6 +14,33 @@ public static class SequenceRules
             TokenType.Not => 6,
 			
             _ => 0
+        };
+    }
+
+    public static ValueType KeywordToValueType(TokenType type)
+    {
+        return type switch
+        {
+            TokenType.StringKw => ValueType.String,
+            TokenType.IntKw => ValueType.Integer,
+            TokenType.BoolKw => ValueType.Boolean,
+            TokenType.FloatKw => ValueType.Floating,
+            TokenType.HandleKw => ValueType.Handle,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+    }
+    
+    public static ValueType? KeywordToReturnType(TokenType type)
+    {
+        return type switch
+        {
+            TokenType.StringKw => ValueType.String,
+            TokenType.IntKw => ValueType.Integer,
+            TokenType.BoolKw => ValueType.Boolean,
+            TokenType.FloatKw => ValueType.Floating,
+            TokenType.HandleKw => ValueType.Handle,
+            TokenType.VoidKw => null,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
     }
 

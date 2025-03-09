@@ -4,6 +4,7 @@ namespace SoulEngine.Props;
 public class PropAttribute : Attribute
 {
     public readonly string ID;
+    public string Icon = "object";
 
     public PropAttribute(string id)
     {

@@ -93,6 +93,8 @@ public enum TokenType
 	TrueKw,
 	FalseKw,
 	
+	NullKw,
+	
 	VoidKw,
 	IntKw,
 	FloatKw,

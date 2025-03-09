@@ -4,9 +4,13 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>default</LangVersion>
+    <LangVersion>preview</LangVersion>
     <Configurations>Debug;Release;Development</Configurations>
     <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -31,6 +35,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OpenAbility.Logging\OpenAbility.Logging\OpenAbility.Logging.csproj" />
+    <ProjectReference Include="..\SoulEngine.Vendor\SoulEngine.Vendor.csproj" />
   </ItemGroup>
   
   <ItemGroup>
@@ -52,6 +57,10 @@
   
   <ItemGroup  Condition=" '$(Configuration)' != 'Development' ">
     <Compile Remove="Development\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="vendor\" />
   </ItemGroup>
 
 </Project>

@@ -8,7 +8,6 @@ public class ContentContext
 
     public ContentContext()
     {
-        
     }
 
     public void Mount(IContentSource contentSource)

@@ -14,11 +14,15 @@ public class SceneCamera
     public float Pitch;
 
     public float FOV = 90;
+
+    public float Near = 0.1f;
+    public float Far = 1000f;
     
     public Quaternion Rotation => Quaternion.FromEulerAngles(0, Yaw * Mathf.Deg2Rad,0) * Quaternion.FromEulerAngles(Pitch * Mathf.Deg2Rad, 0, 0);
 
     public Vector3 Forward => Rotation * -Vector3.UnitZ;
     public Vector3 Right => Rotation * Vector3.UnitX;
+    public Vector3 Up => Rotation * Vector3.UnitY;
     
     private readonly Game game;
     
@@ -34,7 +38,7 @@ public class SceneCamera
 
     public Matrix4 GetProjection(float aspect)
     {
-        return Matrix4.CreatePerspectiveFieldOfView(FOV * MathF.PI / 180f, aspect, 0.1f, 1000f);
+        return Matrix4.CreatePerspectiveFieldOfView(FOV * MathF.PI / 180f, aspect, Near, Far);
     }
 
     private bool mouseCaptured;

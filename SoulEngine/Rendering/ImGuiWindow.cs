@@ -1,5 +1,5 @@
-using ImGuiNET;
-using ImGuizmoNET;
+using Hexa.NET.ImGui;
+using Hexa.NET.ImGuizmo;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
@@ -34,6 +34,8 @@ public class ImGuiWindow : IRenderSurface
         Visible = false;
         if (ImGui.Begin(Name))
         {
+            Active = ImGui.IsWindowFocused();
+            
             Visible = true;
             if ((int)ImGui.GetContentRegionAvail().X != framebuffer.Size.X || (int)ImGui.GetContentRegionAvail().Y != framebuffer.Size.Y)
             {
@@ -44,7 +46,7 @@ public class ImGuiWindow : IRenderSurface
             
             beforeCallback?.Invoke();
             
-            ImGui.Image(framebuffer.ColourBuffer, new Vector2(framebuffer.Size.X, framebuffer.Size.Y), new Vector2(0, 1), new Vector2(1, 0));
+            ImGui.Image(new ImTextureID(framebuffer.ColourBuffer), new Vector2(framebuffer.Size.X, framebuffer.Size.Y), new Vector2(0, 1), new Vector2(1, 0));
             
             afterCallback?.Invoke();
         }
@@ -61,6 +63,7 @@ public class ImGuiWindow : IRenderSurface
 
     public Vector2i FramebufferSize => framebuffer.Size;
     public bool Visible { get; private set; }
+    public bool Active { get; private set; }
 
     public int GetSurfaceHandle()
     {

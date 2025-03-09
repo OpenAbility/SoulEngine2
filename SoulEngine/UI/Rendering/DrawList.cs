@@ -47,7 +47,7 @@ public class DrawList
         GL.VertexArrayVertexBuffer(VertexArray, 0, VertexBuffer, 0, sizeof(UIVertex));
         
         GL.BindVertexArray(VertexArray);
-        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+        GL.DrawArrays(primitiveType, 0, vertices.Count);
         
         vertices.Clear();
     }

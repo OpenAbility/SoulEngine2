@@ -25,7 +25,7 @@ public class SequenceLexer
         while (!reader.EOF)
         {
             
-            if(reader.Current == '\n' || reader.Current == '\t' || reader.Current == ' ' || reader.Current == '\t')
+            if(reader.Current == '\n' || reader.Current == '\t' || reader.Current == ' ' || reader.Current == '\t' || reader.Current == '\0')
                 reader.Step();
             else if (reader.Current == '/' && reader.Peek(1) == '/')
                 ParseCommentOneLine();
@@ -190,9 +190,9 @@ public class SequenceLexer
 		    }
 	    }
 
-	    if (reader.Current == 'f')
+	    if (reader.Current == 'f' && !hasDecimal)
 	    {
-		    builder.Append('f');
+		    builder.Append(".0");
 		    reader.Step();
 	    }
 	    
@@ -251,6 +251,8 @@ public class SequenceLexer
 		    "extern" => TokenType.ExternKw,
 		    
 		    "proc" => TokenType.ProcKw,
+		    
+		    "null" => TokenType.NullKw,
 			
 		    _ => TokenType.Identifier
 	    };

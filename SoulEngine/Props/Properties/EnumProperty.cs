@@ -1,6 +1,6 @@
 using System.Numerics;
 using System.Reflection;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
@@ -29,17 +29,25 @@ public class EnumProperty<T> : SerializedProperty<T> where T : struct, Enum
             
             ImGui.Text(Name);
             if (ImGui.BeginChild(Name + "##Basket", new Vector2(ImGui.GetContentRegionAvail().X, 0),
-                    ImGuiChildFlags.Border | ImGuiChildFlags.AutoResizeY))
+                    ImGuiChildFlags.Borders | ImGuiChildFlags.AutoResizeY))
             {
                 uint v = Convert.ToUInt32(Value);
+                uint result = 0;
 
                 foreach (var value in Values)
                 {
-                    uint fv = Convert.ToUInt32(value);
-                    ImGui.CheckboxFlags(value.ToString(), ref v, fv);
+                    uint flagValue = Convert.ToUInt32(value);
+
+                    bool isSet = (v & flagValue) != 0;
+
+                    ImGui.Checkbox(value.ToString(), ref isSet);
+
+                    if (isSet)
+                        result |= flagValue;
+
                 }
 
-                Value = (T)Enum.ToObject(typeof(T), v);
+                Value = (T)Enum.ToObject(typeof(T), result);
 
             }
             ImGui.EndChild();

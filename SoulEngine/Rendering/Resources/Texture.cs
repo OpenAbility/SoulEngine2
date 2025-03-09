@@ -201,6 +201,10 @@ public class Texture : Resource
                 {
                     var surface = fileData.Textures[0].Surfaces[i];
                     
+                    // We must be larger than 0x0
+                    if(surface.Width <= 0 || surface.Height <= 0)
+                        continue;
+                    
                     if (fileData.IsBlockCompressed)
                     {
                         ts.EnsureMain(() => GL.CompressedTextureSubImage2D(handle, surface.Level - baseMip, 0, 0,

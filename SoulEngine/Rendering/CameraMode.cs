@@ -10,8 +10,15 @@ public struct CameraSettings
     public Vector3 CameraPosition;
     public Vector3 CameraDirection;
 
+    public Vector3 CameraUp;
+    public Vector3 CameraRight;
+
     public Matrix4 ViewMatrix;
     public Matrix4 ProjectionMatrix;
+    
+    public float FieldOfView;
+    public float NearPlane;
+    public float FarPlane;
 
     public bool ShowGizmos;
     public Prop? SelectedProp;
@@ -23,6 +30,8 @@ public struct CameraSettings
         CameraMode = CameraMode.GameCamera,
         ShowUI = true
     };
+
+
 }
 
 public enum CameraMode

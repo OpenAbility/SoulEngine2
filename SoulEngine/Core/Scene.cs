@@ -1,3 +1,4 @@
+using SoulEngine.Components;
 using SoulEngine.Content;
 using SoulEngine.Data.NBT;
 using SoulEngine.Props;
@@ -90,7 +91,7 @@ public class Scene : Resource
         }
     }
 
-    public CameraProp? Camera => Props.FirstOrDefault(p => p is CameraProp) as CameraProp;
+    public CameraComponent? Camera => GetComponents<CameraComponent>().OrderDescending().FirstOrDefault();
 
     public void AddProp(string type, string name)
     {
@@ -129,5 +130,10 @@ public class Scene : Resource
     public T? GetProp<T>(string name) where T : Prop
     {
         return Props.Find(p => p.Name == name && p is T) as T;
+    }
+
+    public IEnumerable<T> GetComponents<T>() where T : Component
+    {
+        return Props.Where(p => p is Entity).Cast<Entity>().SelectMany(e => e.GetComponents<T>());
     }
 }

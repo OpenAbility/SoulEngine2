@@ -21,5 +21,9 @@ public enum ValueType
     /// <summary>
     /// Opaque device handle
     /// </summary>
-    Handle
+    Handle,
+    /// <summary>
+    /// Not a real value type - shouldn't be allowed
+    /// </summary>
+    Bogus
 }

@@ -1,18 +1,20 @@
 using System.Diagnostics;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using OpenAbility.Logging;
 using OpenTK.Mathematics;
 using SoulEngine.Content;
 using SoulEngine.Data;
 using SoulEngine.Events;
 using SoulEngine.Input;
+using SoulEngine.Localization;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
 using SoulEngine.UI;
 using SoulEngine.Util;
+using ImGuiWindow = SoulEngine.Rendering.ImGuiWindow;
 using Vector2 = System.Numerics.Vector2;
 #if DEVELOPMENT
-using ImGuizmoNET;
+using Hexa.NET.ImGuizmo;
 using NativeFileDialogSharp;
 using SoulEngine.Data.NBT;
 using SoulEngine.Development;
@@ -36,6 +38,7 @@ public abstract class Game
     public readonly ResourceManager ResourceManager;
     public readonly ThreadSafety ThreadSafety;
     public readonly DataRegistry GameRegistry;
+    public readonly Localizator Localizator;
     
 #if DEVELOPMENT
     public readonly DataRegistry DevelopmentRegistry;
@@ -48,7 +51,7 @@ public abstract class Game
     
     private SceneCamera SceneCamera;
 
-    public bool Visible => GameWindow.Visible;
+    public bool Visible => GameWindow.Visible && GameWindow.Active;
 
 #else
     public bool Visible => true;
@@ -75,7 +78,7 @@ public abstract class Game
     public readonly Window MainWindow;
     public readonly Thread MainThread;
 
-    private readonly RenderContext renderContext;
+    public readonly RenderContext RenderContext;
     
     public float DeltaTime { get; private set; }
     
@@ -140,7 +143,7 @@ public abstract class Game
         InputBus.BeginListen(ImGuiRenderer.OnInputEvent);
         
 
-        renderContext = new RenderContext();
+        RenderContext = new RenderContext();
 
 
         BuiltinActions = new BuiltinActions(InputManager);
@@ -152,6 +155,9 @@ public abstract class Game
 
         SceneCamera = new SceneCamera(this);
 #endif
+
+        Localizator = new Localizator(this);
+
 
     }
     
@@ -257,9 +263,8 @@ public abstract class Game
             
 
             ImGui.SetNextWindowPos(new Vector2(ImGui.GetIO().DisplaySize.X - 5, ImGui.GetIO().DisplaySize.Y - 5), ImGuiCond.Always, new Vector2(1, 1));
-            ImGui.SetNextWindowSize(new Vector2(100, 49), ImGuiCond.Always);
             ImGui.SetNextWindowBgAlpha(0.5f);
-            if (ImGui.Begin("Info", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoInputs))
+            if (ImGui.Begin("Info", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize))
             {
                 ImGui.Text(" FPS: " + avgFPS.ToString("F0"));
                 ImGui.Text(" MS: " + avgMS.ToString("F2"));
@@ -298,10 +303,10 @@ public abstract class Game
             imguiPass.Surface = MainWindow;
             imguiPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
             
-            renderContext.BeginRendering(imguiPass);
+            RenderContext.BeginRendering(imguiPass);
             ImGuiRenderer.EndFrame(MainWindow, !Development);
-            renderContext.RebuildState();
-            renderContext.EndRendering();
+            RenderContext.RebuildState();
+            RenderContext.EndRendering();
             
             MainWindow.Swap();
             Window.Poll();
@@ -426,7 +431,7 @@ public abstract class Game
                 CurrentProp.RenderMoveGizmo(SceneCamera.GetView(), SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y));
             }
             
-            SceneCamera.Update(DeltaTime, ImGui.IsWindowHovered());
+            SceneCamera.Update(DeltaTime, ImGui.IsWindowFocused());
             
         });
         GameWindow.Draw(false, null, null);
@@ -444,6 +449,9 @@ public abstract class Game
             ImGui.Text("Cursor Raw: " + InputManager.RawMousePosition);
             ImGui.Text("Cursor Inside: " + InputManager.MouseInWindow);
             ImGui.Text("Cursor Captured: " + MainWindow.MouseCaptured);
+
+            ImGui.Text("ImGui Pos: " + ImGui.GetMousePos());
+            ImGui.Text("ImGui Clicked: " + ImGui.GetIO().MouseClicked[0]);
         }
         ImGui.End();
 
@@ -452,15 +460,6 @@ public abstract class Game
             if (CurrentProp != null && Scene != null)
             {
                 CurrentProp.Edit();
-
-                float[] view = new float[16];
-                Scene.Camera!.GetView().MatrixToArray(ref view);
-                
-                float[] projection = new float[16];
-                Scene.Camera!.GetProjection((float)GameWindow.FramebufferSize.X / GameWindow.FramebufferSize.Y).MatrixToArray(ref projection);
-
-                
-
             }
             else
             {
@@ -481,12 +480,14 @@ public abstract class Game
                 
                 foreach (var prop in new List<Prop>(Scene.Props))
                 {
-                    if (ImGui.Selectable(prop.Name + "##" + prop.GetHashCode(), CurrentProp == prop))
+                    
+                    if (ImGuiUtil.ImageSelectable(prop.propIcon, prop.Name + "##" + prop.GetHashCode(), CurrentProp == prop))
                         CurrentProp = prop;
 
                     if (ImGui.IsItemHovered())
                         hoveredButton = true;
-
+                    
+                    /*
                     if (ImGui.BeginPopupContextItem())
                     {
                         if (ImGui.Selectable("Delete"))
@@ -498,6 +499,8 @@ public abstract class Game
                         
                         ImGui.EndPopup();
                     }
+                    */
+                    
                     
                 }
 
@@ -507,7 +510,7 @@ public abstract class Game
                     {
                         if (ImGui.Selectable(prop))
                         {
-                            Scene.AddProp(prop, "Prop " + Guid.NewGuid());
+                            Scene.AddProp(prop, prop + " (" + Random.Shared.Next(1000, 9999) + ")");
                         }
                     }
                     
@@ -613,26 +616,32 @@ public abstract class Game
         UpdateHook();
         Scene?.Update(DeltaTime);
             
-        RenderHook(renderContext);
+        RenderHook(RenderContext);
 
 #if DEVELOPMENT
 
         CameraSettings sceneWindowSettings = new CameraSettings();
         sceneWindowSettings.CameraMode = SceneCamera.CameraMode;
-        sceneWindowSettings.CameraDirection = SceneCamera.Forward;
         sceneWindowSettings.ProjectionMatrix = SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y);
         sceneWindowSettings.ViewMatrix = SceneCamera.GetView();
-        sceneWindowSettings.CameraPosition = SceneCamera.Position;
         sceneWindowSettings.ShowGizmos = MenuContext.IsFlagSet("View", "Gizmos");
         sceneWindowSettings.SelectedProp = CurrentProp;
         sceneWindowSettings.ShowUI = false;
         
+        sceneWindowSettings.CameraPosition = SceneCamera.Position;
+        sceneWindowSettings.CameraDirection = SceneCamera.Forward;
+        sceneWindowSettings.CameraRight = SceneCamera.Right;
+        sceneWindowSettings.CameraUp = SceneCamera.Up;
+        sceneWindowSettings.FieldOfView = SceneCamera.FOV;
+        sceneWindowSettings.NearPlane = SceneCamera.Near;
+        sceneWindowSettings.FarPlane = SceneCamera.Far;
+        
         if(GameWindow.Visible)
-            sceneRenderer?.Render(renderContext, GameWindow, DeltaTime, CameraSettings.Game);
+            sceneRenderer?.Render(RenderContext, GameWindow, DeltaTime, CameraSettings.Game);
         if(SceneWindow.Visible)
-            sceneRenderer?.Render(renderContext, SceneWindow, DeltaTime, sceneWindowSettings);
+            sceneRenderer?.Render(RenderContext, SceneWindow, DeltaTime, sceneWindowSettings);
 #else
-        sceneRenderer?.Render(renderContext, MainWindow, DeltaTime, CameraSettings.Game);
+        sceneRenderer?.Render(RenderContext, MainWindow, DeltaTime, CameraSettings.Game);
 #endif
     }
 

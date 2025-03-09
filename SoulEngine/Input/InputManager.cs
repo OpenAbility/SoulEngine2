@@ -21,7 +21,7 @@ public class InputManager
 
     public bool MouseInWindow =>
         ((RawMousePosition.X >= WindowOffset.X && RawMousePosition.X < WindowOffset.X + WindowSize.X &&
-        RawMousePosition.Y >= WindowOffset.Y && RawMousePosition.Y < WindowOffset.Y + WindowSize.Y) || game.MainWindow.MouseCaptured) && game.Visible;
+        RawMousePosition.Y >= WindowOffset.Y && RawMousePosition.Y < WindowOffset.Y + WindowSize.Y) || (game.MainWindow.MouseCaptured && game.Visible)) && game.Visible;
 
     private Vector2? previousMousePosition;
 

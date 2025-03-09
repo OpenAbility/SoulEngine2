@@ -1,4 +1,4 @@
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using SoulEngine.Data.NBT;
 
 namespace SoulEngine.Props;
@@ -13,7 +13,7 @@ public class IntProperty : SerializedProperty<int>
     public override unsafe void Edit()
     {
         fixed (void* ptr = &Value)
-            ImGui.InputScalar(Name, ImGuiDataType.S32, (IntPtr)ptr);
+            ImGui.InputScalar(Name, ImGuiDataType.S32, ptr);
     }
 
 

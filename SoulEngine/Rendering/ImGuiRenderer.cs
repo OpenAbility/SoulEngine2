@@ -1,8 +1,8 @@
 // We only need ImGui in dev builds
 
 using System.Resources;
-using ImGuiNET;
-using ImGuizmoNET;
+using Hexa.NET.ImGui;
+using Hexa.NET.ImGuizmo;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -16,7 +16,7 @@ namespace SoulEngine.Rendering;
 public unsafe class ImGuiRenderer
 {
 
-    public readonly IntPtr Context;
+    public readonly ImGuiContextPtr Context;
     public readonly IntPtr GizmoContext;
     public readonly ImGuiIOPtr IO;
 
@@ -39,8 +39,14 @@ public unsafe class ImGuiRenderer
 
         IO = ImGui.GetIO();
 
-        IO.Fonts.AddFontDefault();
+        
+        if (resourceManager.Game.EngineVar.Exists("imgui_font"))
+            IO.Fonts.AddFontFromFileTTF(resourceManager.Game.EngineVar.GetString("imgui_font"), resourceManager.Game.EngineVar.GetInt("imgui_font_size", 21));
+        else
+            IO.Fonts.AddFontDefault();
 
+        IO.Fonts.Build();
+        
         IO.BackendFlags = ImGuiBackendFlags.RendererHasVtxOffset;
         IO.ConfigFlags = ImGuiConfigFlags.DockingEnable;
 
@@ -78,7 +84,12 @@ public unsafe class ImGuiRenderer
 
     public void BuildFontTexture()
     {
-        IO.Fonts.GetTexDataAsRGBA32(out byte* pixels, out int width, out int height, out int bytesPerPixel);
+        byte* pixels = null;
+        int width = 0;
+        int height = 0;
+        int bytesPerPixel = 0;
+        
+        IO.Fonts.GetTexDataAsRGBA32(ref pixels, ref width, ref height, ref bytesPerPixel);
 
         int mips = (int)Math.Floor(Math.Log(Math.Max(width, height), 2));
 
@@ -96,7 +107,7 @@ public unsafe class ImGuiRenderer
         GL.TextureParameteri(fontTexture, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
         GL.TextureParameteri(fontTexture, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
 
-        IO.Fonts.SetTexID(fontTexture);
+        IO.Fonts.SetTexID(new ImTextureID(fontTexture));
         IO.Fonts.ClearTexData();
     }
 
@@ -136,6 +147,12 @@ public unsafe class ImGuiRenderer
                 mouseEvent.Handle();
         } else if (inputEvent is KeyEvent keyEvent && keyEvent.Action != InputAction.Repeat)
         {
+
+            IO.KeyAlt = (keyEvent.Modifier & KeyModifiers.Alt) != 0;
+            IO.KeyCtrl = (keyEvent.Modifier & KeyModifiers.Control) != 0;
+            IO.KeyShift = (keyEvent.Modifier & KeyModifiers.Shift) != 0;
+            IO.KeySuper = (keyEvent.Modifier & KeyModifiers.Super) != 0;
+            
             IO.AddKeyEvent(TranslateKey(keyEvent.Key), keyEvent.Action == InputAction.Press);
             if (IO.WantCaptureKeyboard)
                 keyEvent.Handle();
@@ -202,12 +219,12 @@ public unsafe class ImGuiRenderer
             for (int j = 0; j < drawList.CmdBuffer.Size; j++)
             {
 
-                ImDrawCmdPtr drawCommand = drawList.CmdBuffer[j];
+                ImDrawCmd drawCommand = drawList.CmdBuffer[j];
 
-                GL.BindTextureUnit(0, drawCommand.TextureId.ToInt32());
+                GL.BindTextureUnit(0, (int)drawCommand.TextureId.Handle);
 
                 var clip = drawCommand.ClipRect;
-                GL.Scissor((int)clip.X, surfaceSize.Y - (int)clip.W, (int)(clip.Z - clip.X), (int)(clip.W - clip.Y));
+                GL.Scissor((int)clip.X, surfaceSize.Y - (int)clip.W, (int)(clip.Z), (int)(clip.W));
 
                 GL.DrawElementsBaseVertex(PrimitiveType.Triangles, (int)drawCommand.ElemCount,
                     DrawElementsType.UnsignedShort, (IntPtr)(drawCommand.IdxOffset * sizeof(ushort)),
@@ -225,7 +242,7 @@ public unsafe class ImGuiRenderer
     private static ImGuiKey TranslateKey(Keys key)
     {
         if (key >= Keys.D0 && key <= Keys.D9)
-            return key - Keys.D0 + ImGuiKey._0;
+            return key - Keys.D0 + ImGuiKey.Key0;
 
         if (key >= Keys.A && key <= Keys.Z)
             return key - Keys.A + ImGuiKey.A;

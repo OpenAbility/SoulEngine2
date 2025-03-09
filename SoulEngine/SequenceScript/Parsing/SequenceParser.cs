@@ -78,7 +78,7 @@ public class SequenceParser
         if (CurrentType == TokenType.Assign)
         {
             Consume(TokenType.Assign);
-            globalStatement.DefaultValue = ParseExpression();
+            globalStatement.DefaultValue = ParseExpression(false);
         }
 
         Consume(TokenType.EndStatement);
@@ -171,7 +171,7 @@ public class SequenceParser
         if (CurrentType == TokenType.ForKw) return ParseFor();
         if (CurrentType == TokenType.WhileKw) return ParseWhile();
 
-        ExpressionNode expressionNode = ParseExpression();
+        ExpressionNode expressionNode = ParseExpression(true);
         if(requireEnd)
             Consume(TokenType.EndStatement);
 
@@ -180,7 +180,7 @@ public class SequenceParser
 
 
 
-    private ExpressionNode ParseExpression()
+    private ExpressionNode ParseExpression(bool limited)
     {
         if (CurrentType == TokenType.Identifier && SequenceRules.GetBinaryOperatorPrecedence(PeekType(1)) != 0 &&
             !Peek(1).WhitespaceFollowed && PeekType(2) == TokenType.Assign)
@@ -210,8 +210,9 @@ public class SequenceParser
         {
             return ParseVariableAssignation();
         }
+        
 
-        return ParseBinaryExpression(0);
+        return ParseBinaryExpression(0, limited);
     }
 
     private VariableEditorExpression ParseVariableEditor()
@@ -223,7 +224,7 @@ public class SequenceParser
         variableEditorExpression.Operator = Consume(CurrentType);
         Consume(TokenType.Assign);
 
-        variableEditorExpression.Expression = ParseExpression();
+        variableEditorExpression.Expression = ParseExpression(false);
 
         return variableEditorExpression;
     }
@@ -233,12 +234,12 @@ public class SequenceParser
         VariableAssignationExpression variableEditorExpression = new VariableAssignationExpression();
 
         variableEditorExpression.Variable = Consume(TokenType.Identifier);
-        variableEditorExpression.Value = ParseExpression();
+        variableEditorExpression.Value = ParseExpression(false);
 
         return variableEditorExpression;
     }
 
-    private ExpressionNode ParseBinaryExpression(int parentPrecedence)
+    private ExpressionNode ParseBinaryExpression(int parentPrecedence, bool limited)
     {
         int unaryPrecedence = SequenceRules.GetUnaryOperatorPrecedence(CurrentType);
         if (unaryPrecedence != 0 && unaryPrecedence > parentPrecedence)
@@ -246,12 +247,12 @@ public class SequenceParser
             UnaryExpressionNode unaryExpressionNode = new UnaryExpressionNode();
             
             unaryExpressionNode.Operation = Consume(CurrentType);
-            unaryExpressionNode.Value = ParseBinaryExpression(unaryPrecedence);
+            unaryExpressionNode.Value = ParseBinaryExpression(unaryPrecedence, false);
             
             return unaryExpressionNode;
         }
 		
-        ExpressionNode left = ParsePrimaryExpression();
+        ExpressionNode left = ParsePrimaryExpression(limited);
 
         while (true)
         {
@@ -261,7 +262,7 @@ public class SequenceParser
                 break;
 			
             Token op = Consume(CurrentType);
-            ExpressionNode right = ParseBinaryExpression(parentPrecedence);
+            ExpressionNode right = ParseBinaryExpression(parentPrecedence, false);
 
             left = new BinaryExpressionNode(left, op, right);
         }
@@ -270,13 +271,14 @@ public class SequenceParser
 
     }
 
-    private ExpressionNode ParsePrimaryExpression()
+    private ExpressionNode ParsePrimaryExpression(bool limited)
     {
         TokenType type = CurrentType;
 
         if (type == TokenType.String) return new ConstantNode(Consume(TokenType.String));
         if (type == TokenType.Numeric) return new ConstantNode(Consume(TokenType.Numeric));
         if (type == TokenType.TrueKw || type == TokenType.FalseKw) return new ConstantNode(Consume(CurrentType));
+        if (type == TokenType.NullKw) return new ConstantNode(Consume(CurrentType));
 
         if (type == TokenType.Identifier && PeekType(1) == TokenType.OpenParenthesis) return ParseCallExpression();
         if (type == TokenType.Identifier) return new VariableExpression(Consume(TokenType.Identifier));
@@ -295,7 +297,7 @@ public class SequenceParser
     private ExpressionNode ParseParenthesisedExpression()
     {
         Consume(TokenType.OpenParenthesis);
-        ExpressionNode expressionNode = ParseExpression();
+        ExpressionNode expressionNode = ParseExpression(false);
         Consume(TokenType.CloseParenthesis);
         return expressionNode;
     }
@@ -314,7 +316,7 @@ public class SequenceParser
         {
             while (true)
             {
-                parameters.Add(ParseExpression());
+                parameters.Add(ParseExpression(false));
                 
                 if(CurrentType != TokenType.Comma)
                     break;
@@ -361,7 +363,7 @@ public class SequenceParser
 
                     while (true)
                     {
-                        arrayValues.Add(ParseExpression());
+                        arrayValues.Add(ParseExpression(false));
                         
                         if(CurrentType != TokenType.Comma)
                             break;
@@ -380,7 +382,7 @@ public class SequenceParser
             }
             else
             {
-                variableDefinition.DefaultValue = ParseExpression();
+                variableDefinition.DefaultValue = ParseExpression(false);
             }
         }
 
@@ -399,7 +401,7 @@ public class SequenceParser
 
         Consume(TokenType.OpenParenthesis);
 
-        switchStatement.Expression = ParseExpression();
+        switchStatement.Expression = ParseExpression(false);
 
         Consume(TokenType.CloseParenthesis);
 
@@ -428,7 +430,7 @@ public class SequenceParser
                 
                 SwitchCase switchCase = new SwitchCase();
                 
-                switchCase.Expression = ParseExpression();
+                switchCase.Expression = ParseExpression(false);
 
                 Consume(TokenType.CloseParenthesis);
 
@@ -490,7 +492,7 @@ public class SequenceParser
         ReturnStatement returnStatement = new ReturnStatement();
         Consume(TokenType.ReturnKw);
 
-        returnStatement.ExpressionNode = ParseExpression();
+        returnStatement.ExpressionNode = ParseExpression(false);
 
         Consume(TokenType.EndStatement);
 
@@ -518,7 +520,7 @@ public class SequenceParser
         Consume(TokenType.OpenParenthesis);
         
         forStatement.Incrementor = ParseStatement(true);
-        forStatement.Comparison = ParseExpression();
+        forStatement.Comparison = ParseExpression(false);
         Consume(TokenType.EndStatement);
         forStatement.Incrementor = ParseStatement(false);
 
