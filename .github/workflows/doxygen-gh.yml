@@ -34,8 +34,8 @@ jobs:
         uses: mattnotmitt/doxygen-action@1.9.8
       - name: Move generated file to deploy directory
         run: |
-          mkdir -p deploy/doxy
-          mv docs/html/* deploy/doxy/
+          sudo mkdir -p deploy/doxy
+          sudo mv docs/html/* deploy/doxy/
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
