@@ -1,0 +1,37 @@
+var namespaceSoulEngine_1_1Data_1_1NBT =
+[
+    [ "ArrayTag", "dd/da7/classSoulEngine_1_1Data_1_1NBT_1_1ArrayTag.html", "dd/da7/classSoulEngine_1_1Data_1_1NBT_1_1ArrayTag" ],
+    [ "ByteArrayTag", "db/d6b/classSoulEngine_1_1Data_1_1NBT_1_1ByteArrayTag.html", "db/d6b/classSoulEngine_1_1Data_1_1NBT_1_1ByteArrayTag" ],
+    [ "ByteTag", "dc/de0/classSoulEngine_1_1Data_1_1NBT_1_1ByteTag.html", "dc/de0/classSoulEngine_1_1Data_1_1NBT_1_1ByteTag" ],
+    [ "CompoundTag", "d2/d46/classSoulEngine_1_1Data_1_1NBT_1_1CompoundTag.html", "d2/d46/classSoulEngine_1_1Data_1_1NBT_1_1CompoundTag" ],
+    [ "DoubleTag", "d1/d93/classSoulEngine_1_1Data_1_1NBT_1_1DoubleTag.html", "d1/d93/classSoulEngine_1_1Data_1_1NBT_1_1DoubleTag" ],
+    [ "EndTag", "db/d91/classSoulEngine_1_1Data_1_1NBT_1_1EndTag.html", "db/d91/classSoulEngine_1_1Data_1_1NBT_1_1EndTag" ],
+    [ "FloatTag", "df/d13/classSoulEngine_1_1Data_1_1NBT_1_1FloatTag.html", "df/d13/classSoulEngine_1_1Data_1_1NBT_1_1FloatTag" ],
+    [ "IntArrayTag", "dc/dae/classSoulEngine_1_1Data_1_1NBT_1_1IntArrayTag.html", "dc/dae/classSoulEngine_1_1Data_1_1NBT_1_1IntArrayTag" ],
+    [ "IntTag", "da/d4c/classSoulEngine_1_1Data_1_1NBT_1_1IntTag.html", "da/d4c/classSoulEngine_1_1Data_1_1NBT_1_1IntTag" ],
+    [ "ListTag", "d1/d26/classSoulEngine_1_1Data_1_1NBT_1_1ListTag.html", "d1/d26/classSoulEngine_1_1Data_1_1NBT_1_1ListTag" ],
+    [ "LongArrayTag", "d4/de1/classSoulEngine_1_1Data_1_1NBT_1_1LongArrayTag.html", "d4/de1/classSoulEngine_1_1Data_1_1NBT_1_1LongArrayTag" ],
+    [ "LongTag", "d3/dde/classSoulEngine_1_1Data_1_1NBT_1_1LongTag.html", "d3/dde/classSoulEngine_1_1Data_1_1NBT_1_1LongTag" ],
+    [ "ShortTag", "d2/d1a/classSoulEngine_1_1Data_1_1NBT_1_1ShortTag.html", "d2/d1a/classSoulEngine_1_1Data_1_1NBT_1_1ShortTag" ],
+    [ "SNBTWriter", "d4/dd1/classSoulEngine_1_1Data_1_1NBT_1_1SNBTWriter.html", "d4/dd1/classSoulEngine_1_1Data_1_1NBT_1_1SNBTWriter" ],
+    [ "StringTag", "d6/dac/classSoulEngine_1_1Data_1_1NBT_1_1StringTag.html", "d6/dac/classSoulEngine_1_1Data_1_1NBT_1_1StringTag" ],
+    [ "Tag", "d5/dc3/classSoulEngine_1_1Data_1_1NBT_1_1Tag.html", "d5/dc3/classSoulEngine_1_1Data_1_1NBT_1_1Tag" ],
+    [ "TagIO", "d4/d99/classSoulEngine_1_1Data_1_1NBT_1_1TagIO.html", "d4/d99/classSoulEngine_1_1Data_1_1NBT_1_1TagIO" ],
+    [ "TagParser", "dd/d2e/classSoulEngine_1_1Data_1_1NBT_1_1TagParser.html", "dd/d2e/classSoulEngine_1_1Data_1_1NBT_1_1TagParser" ],
+    [ "ValueTag", "d2/df9/classSoulEngine_1_1Data_1_1NBT_1_1ValueTag.html", "d2/df9/classSoulEngine_1_1Data_1_1NBT_1_1ValueTag" ],
+    [ "TagType", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27", [
+      [ "End", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a87557f11575c0ad78e4e28abedc13b6e", null ],
+      [ "Byte", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27aa245c3230debe5c956484ecc6fa93877", null ],
+      [ "Short", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a30bb747c98bccdd11b3f89e644c4d0ad", null ],
+      [ "Int", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a1686a6c336b71b36d77354cea19a8b52", null ],
+      [ "Long", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a8394f0347c184cf156ac5924dccb773b", null ],
+      [ "Float", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a22ae0e2b89e5e3d477f988cc36d3272b", null ],
+      [ "Double", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27ad909d38d705ce75386dd86e611a82f5b", null ],
+      [ "ByteArray", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a29d83f0080e24c1f4b3975dc9ff9e868", null ],
+      [ "String", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a27118326006d3829667a400ad23d5d98", null ],
+      [ "List", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a4ee29ca12c7d126654bd0e5275de6135", null ],
+      [ "Compound", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a26154ea007c65f860de5333a555a56cf", null ],
+      [ "IntArray", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27aa4cf98abdafab708d30b8d2ae8d57be8", null ],
+      [ "LongArray", "d1/d5e/namespaceSoulEngine_1_1Data_1_1NBT.html#af9a788a88cfb976c2f6fa6751ff60b27a8bbd125334fd7be70adc8c8819241053", null ]
+    ] ]
+];

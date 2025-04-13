@@ -1,0 +1,28 @@
+var classSoulEngine_1_1Util_1_1StreamSegment =
+[
+    [ "StreamSegment", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#aa67ae057345f688392a0caf39c42043d", null ],
+    [ "Adjust", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#af7bc643245d5172116cd21dbf725b850", null ],
+    [ "Dispose", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a5572eb42e40a1ebeac3e3b69c22b411a", null ],
+    [ "DisposeAsync", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a71216061dacac5f33a55ee8432f7179e", null ],
+    [ "Flush", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#aa87b4c804a08feaa986f901207d7c0db", null ],
+    [ "FlushAsync", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#aafa33d0fd0680728bd64932b82ba1e81", null ],
+    [ "Read", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a8f7c0f2c0c2f941c06d086b3168de08c", null ],
+    [ "Read", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a6069e6a90c6fa7cada4d2871960959f3", null ],
+    [ "ReadAsync", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a351058849745619d65ddade3d9c3c0c0", null ],
+    [ "ReadAsync", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#aa9851cb0bd41763cf3c4b1594ac947d4", null ],
+    [ "Seek", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a334f18efb551a806930a7f68ff30e5e6", null ],
+    [ "SetLength", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a9f18e3671b61b27810d3b323403cd438", null ],
+    [ "Write", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#ab468b0d054783f14a2a574701104ba3d", null ],
+    [ "Write", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#ac03f7889036c36a31fe1a702706880cf", null ],
+    [ "WriteAsync", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#aab084f173cf30e42047c52c6fcdb7a92", null ],
+    [ "WriteAsync", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a89bd73e0df3dd3a7f2270fd32934a38a", null ],
+    [ "BaseStream", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#ac53288f6cabeec714cde17e49c444491", null ],
+    [ "CanRead", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#ad0b3a22f33bae3d6124989f3a437adfa", null ],
+    [ "CanSeek", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a49a02fada352346196067285dbcad993", null ],
+    [ "CanTimeout", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a889d49d6370b7c89c655e9ad250e84bf", null ],
+    [ "CanWrite", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a07e8278b8cf736f077e7b03126e67d0c", null ],
+    [ "Length", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a564b47a27c85dda4a15730e76f19ace0", null ],
+    [ "Position", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a10a43709bfc865d39cc634111cdc6081", null ],
+    [ "ReadTimeout", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a9fa6c9e75019e3ca1b76a315065474e8", null ],
+    [ "WriteTimeout", "dd/d9e/classSoulEngine_1_1Util_1_1StreamSegment.html#a6faa2e70819671694804b5a3aa5c6f7b", null ]
+];
