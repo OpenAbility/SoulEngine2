@@ -22,4 +22,5 @@ public struct CompilingFunction
     public string Name;
     public ValueType? ReturnType;
     public ValueType[] ParameterTypes;
+    public bool SystemFunction;
 }

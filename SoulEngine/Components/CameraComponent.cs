@@ -36,34 +36,55 @@ public class CameraComponent : Component, IComparable<CameraComponent>
     public override void RenderGizmo(GizmoContext context)
     {
         base.RenderGizmo(context);
-        
+
+
+        Matrix4 oldModel = context.ModelMatrix;
+
+        context.ModelMatrix = Matrix4.Identity;
         context.Begin(PrimitiveType.Lines);
-        
-        context.Vertex(Vector3.Zero);
-        context.Vertex(new Vector3(1, 1, -1));
-        
-        context.Vertex(Vector3.Zero);
-        context.Vertex(new Vector3(-1, 1, -1));
-        
-        context.Vertex(Vector3.Zero);
-        context.Vertex(new Vector3(1, -1, -1));
-        
-        context.Vertex(Vector3.Zero);
-        context.Vertex(new Vector3(-1, -1, -1));
-        
-        context.Vertex(new Vector3(1, 1, -1));
-        context.Vertex(new Vector3(-1, 1, -1));
-        
-        context.Vertex(new Vector3(1, -1, -1));
-        context.Vertex(new Vector3(-1, -1, -1));
-        
-        context.Vertex(new Vector3(1, 1, -1));
-        context.Vertex(new Vector3(1, -1, -1));
-        
-        context.Vertex(new Vector3(-1, 1, -1));
-        context.Vertex(new Vector3(-1, -1, -1));
- 
+
+        Vector3[] frustumPoints = Frustum.CreateFromCamera(Entity.Position, Entity.Forward, Entity.Right, Vector3.UnitY,
+            context.CurrentAspectRatio, FieldOfView, NearPlane, FarPlane).GetCorners();
+
+        context.Vertex(frustumPoints[0]);
+        context.Vertex(frustumPoints[1]);
+
+        context.Vertex(frustumPoints[1]);
+        context.Vertex(frustumPoints[3]);
+
+        context.Vertex(frustumPoints[3]);
+        context.Vertex(frustumPoints[2]);
+
+        context.Vertex(frustumPoints[2]);
+        context.Vertex(frustumPoints[0]);
+
+        context.Vertex(frustumPoints[4]);
+        context.Vertex(frustumPoints[5]);
+
+        context.Vertex(frustumPoints[5]);
+        context.Vertex(frustumPoints[7]);
+
+        context.Vertex(frustumPoints[7]);
+        context.Vertex(frustumPoints[6]);
+
+        context.Vertex(frustumPoints[6]);
+        context.Vertex(frustumPoints[4]);
+
+        context.Vertex(frustumPoints[0]);
+        context.Vertex(frustumPoints[4]);
+
+        context.Vertex(frustumPoints[1]);
+        context.Vertex(frustumPoints[5]);
+
+        context.Vertex(frustumPoints[2]);
+        context.Vertex(frustumPoints[6]);
+
+        context.Vertex(frustumPoints[3]);
+        context.Vertex(frustumPoints[7]);
+
         context.End();
+        context.ModelMatrix = oldModel;
+
     }
 
     public int CompareTo(CameraComponent? other)

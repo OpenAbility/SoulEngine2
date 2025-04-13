@@ -1,6 +1,6 @@
 namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes;
 
-public class BodyNode
+public class BodyNode : SyntaxNode
 {
     public SyntaxNode[] Nodes;
 }

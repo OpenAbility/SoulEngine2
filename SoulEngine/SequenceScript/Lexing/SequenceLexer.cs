@@ -14,7 +14,7 @@ public class SequenceLexer
     
     public SequenceLexer(string path, Stream stream, Encoding encoding, CompilerContext context)
     {
-        reader = new LexicalReader(stream, encoding, path, context);
+        reader = new LexicalReader(stream, encoding, path);
         this.context = context;
     }
 
@@ -68,6 +68,7 @@ public class SequenceLexer
 			
 			else if(TryConsumePush('=', TokenType.Assign)) continue;
 			else if(TryConsumePush(':', TokenType.Colon)) continue;
+            else if(TryConsumePush('#', TokenType.MetaCharacter)) continue;
             
             else if (SequenceFormatting.IsValidIdentifier(reader.Current, true)) ParseIdentifier();
             else if (reader.Current == '"') ParseString();
@@ -215,6 +216,8 @@ public class SequenceLexer
 
         while (!reader.EOF && !(reader.Current == '*' && reader.Peek(1) == '/'))
             reader.Step();
+        
+        reader.Step(2);
     }
     
     private TokenType RecognizeIdentifier(string s)

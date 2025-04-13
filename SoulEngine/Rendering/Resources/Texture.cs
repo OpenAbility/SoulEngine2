@@ -1,10 +1,14 @@
+using System.Runtime.InteropServices;
+using System.Text;
 using Dades;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Content;
 using SoulEngine.Core;
+using SoulEngine.Data;
 using SoulEngine.Resources;
 using SoulEngine.Util;
+using StbImageSharp;
 
 namespace SoulEngine.Rendering;
 
@@ -61,6 +65,54 @@ public class Texture : Resource
             (int handle, Vector3i size) = Load(resourceManager, id, content);
 
             return new Texture(resourceManager.Game, handle, size);
+        }
+
+        private (int, Vector3i) LoadStandardFormat(ResourceManager resourceManager, string id, ContentContext context)
+        {
+            Game game = resourceManager.Game;
+            
+            
+            ImageResult loaded = ImageResult.FromStream(context.Load(id)!);
+
+            int handle = -1;
+            
+            game.ThreadSafety.EnsureMain(() =>
+            {
+                handle = GL.CreateTexture(TextureTarget.Texture2d);
+
+                SizedInternalFormat format = loaded.Comp switch
+                {
+                    ColorComponents.Grey => SizedInternalFormat.R8,
+                    ColorComponents.GreyAlpha => SizedInternalFormat.Rg8,
+                    ColorComponents.RedGreenBlue => SizedInternalFormat.Rgb8,
+                    ColorComponents.RedGreenBlueAlpha => SizedInternalFormat.Rgba8,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+                
+                GL.TextureStorage2D(handle, 1, format, loaded.Width, loaded.Height);
+
+                PixelFormat pixelFormat = loaded.Comp switch
+                {
+                    ColorComponents.Grey => PixelFormat.Red,
+                    ColorComponents.GreyAlpha => PixelFormat.Rg,
+                    ColorComponents.RedGreenBlue => PixelFormat.Rgb,
+                    ColorComponents.RedGreenBlueAlpha => PixelFormat.Rgba,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+                
+                GL.TextureSubImage2D(handle, 0, 0, 0, loaded.Width, loaded.Height, pixelFormat, PixelType.UnsignedByte, loaded.Data);
+                GL.GenerateTextureMipmap(handle);
+
+                GL.TextureParameteri(handle, TextureParameterName.TextureMinFilter,
+                    (int)TextureMinFilter.LinearMipmapLinear);
+                GL.TextureParameteri(handle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+                GL.TextureParameteri(handle, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
+                GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+                GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+                
+            });
+
+            return (handle, new Vector3i(loaded.Width, loaded.Height, 1));
         }
 
         private (int, Vector3i) Load(ResourceManager resourceManager, string id, ContentContext content)
@@ -135,6 +187,9 @@ public class Texture : Resource
                 return (handle, new Vector3i(1, 1, 1));
             }
 
+            if (id.EndsWith(".tga") || id.EndsWith(".png") || id.EndsWith(".bmp") || id.EndsWith(".jpeg") || id.EndsWith(".jpg"))
+                return LoadStandardFormat(resourceManager, id, content);
+
 
             DdsFileData fileData = new DdsFileData(content.Load(id)!);
             PixelFormatInfo format = new PixelFormatInfo(fileData.FormatDxgi);
@@ -187,7 +242,7 @@ public class Texture : Resource
                 size = new Vector3i(fileData.Width, fileData.Height, 1);
                 
                 
-                int baseMip = Math.Min(resourceManager.Game.EngineVar.GetInt("e_basemip"),
+                int baseMip = Math.Min(EngineVarContext.Global.GetInt("e_basemip"),
                     fileData.Textures[0].Surfaces.Length - 1);
                 
                 var baseSurface = fileData.Textures[0].Surfaces[baseMip];
@@ -228,10 +283,27 @@ public class Texture : Resource
                 GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
                 GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
                 
-                GL.TextureParameterf(handle, TextureParameterName.TextureMaxAnisotropy, resourceManager.Game.EngineVar.GetFloat("e_anisotropy", 16));
+                GL.TextureParameterf(handle, TextureParameterName.TextureMaxAnisotropy, EngineVarContext.Global.GetFloat("e_anisotropy", 16));
             });
 
             return (handle, size);
         }
     }
+}
+
+[StructLayout(LayoutKind.Explicit, Pack = 0, Size = 18)]
+file struct TargaHeader
+{
+    [FieldOffset(0)] public byte idLength;
+    [FieldOffset(1)] public byte colorMapType;
+    [FieldOffset(2)] public byte dataTypeCode;
+    [FieldOffset(3)] public ushort colorMapOrigin;
+    [FieldOffset(5)] public ushort colorMapLength;
+    [FieldOffset(7)] public byte colorMapEntrySize;
+    [FieldOffset(8)] public ushort x_origin;
+    [FieldOffset(10)] public ushort y_origin;
+    [FieldOffset(12)] public ushort height;
+    [FieldOffset(14)] public ushort width;
+    [FieldOffset(16)] public byte imagePixelSize;
+    [FieldOffset(17)] public byte imageDescriptor;
 }

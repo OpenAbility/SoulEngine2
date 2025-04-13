@@ -4,5 +4,5 @@ namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes;
 
 public class ReturnStatement : SyntaxNode
 {
-    public ExpressionNode ExpressionNode;
+    public ExpressionNode? ExpressionNode;
 }

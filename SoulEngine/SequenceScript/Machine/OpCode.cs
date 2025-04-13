@@ -1,6 +1,6 @@
 namespace SoulEngine.SequenceScript.Machine;
 
-public enum OpCode
+public enum OpCode : byte
 {
     /// <summary>
     /// Push a const integer to stack
@@ -19,9 +19,9 @@ public enum OpCode
     /// </summary>
     PUSHS,
     /// <summary>
-    /// Push a const handle to stack
+    /// Push a null handle to stack
     /// </summary>
-    PUSHH,
+    PUSHN,
     
     /// <summary>
     /// Pop a value from stack
@@ -45,8 +45,14 @@ public enum OpCode
     // Expected math instructions
     ADD,
     SUB,
+    MULT,
+    DIV,
+    MOD,
+    
     XOR,
     AND,
+    OR,
+    NOT,
     
     /// <summary>
     /// Compares top two values from stack, pushes true if greater than, otherwise pushes false
@@ -62,9 +68,19 @@ public enum OpCode
     IEQ,
     
     /// <summary>
+    /// Jumps if top value of stack is true
+    /// </summary>
+    JMP,
+    
+    /// <summary>
     /// Calls a procedure
     /// </summary>
     CALL,
+    
+    /// <summary>
+    /// Returns from a procedure
+    /// </summary>
+    RET,
     
     /// <summary>
     /// Calls a host "interrupt" - used to interface outside the sandbox

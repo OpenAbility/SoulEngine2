@@ -34,7 +34,7 @@ public struct Token
 
 public enum TokenType
 {
-    	Unknown,
+	Unknown,
 	EOF,
 	
 	Identifier,
@@ -106,5 +106,7 @@ public enum TokenType
 	ConstKw,
 	ExternKw,
 	
-	ProcKw
+	ProcKw,
+	
+	MetaCharacter
 }

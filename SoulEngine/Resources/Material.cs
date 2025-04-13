@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OpenTK.Mathematics;
 using SoulEngine.Content;
+using SoulEngine.Data;
 using SoulEngine.Rendering;
 
 namespace SoulEngine.Resources;
@@ -9,10 +10,15 @@ namespace SoulEngine.Resources;
 [Resource(typeof(Loader))]
 public class Material : Resource
 {
+    
 
     public Shader Shader { get; private set; }
     public string Path { get; private set; }
     private Dictionary<string, object> values = new Dictionary<string, object>();
+
+    private static Texture? mipTexture;
+    private ResourceManager ResourceManager;
+    
     
     public void Bind(SceneRenderData data, Matrix4 model)
     {
@@ -27,6 +33,13 @@ public class Material : Resource
         {
             if (value.Value is Texture texture)
             {
+
+                if (EngineVarContext.Global.GetBool("e_showmips", false))
+                {
+                    mipTexture ??= ResourceManager.Load<Texture>("tex/mipmap_display.dds");
+                    texture = mipTexture;
+                }
+                
                 uint idx = textureBindingPoint++;
                 texture.Bind(idx);
                 Shader.Uniform1i(value.Key, (int)idx);
@@ -40,6 +53,8 @@ public class Material : Resource
 
     private void Load(ResourceManager resourceManager, string id, ContentContext content)
     {
+        ResourceManager = resourceManager;
+        
         Path = id;
         MaterialDefinition materialDefinition = LoadDef(resourceManager, id, content);
 

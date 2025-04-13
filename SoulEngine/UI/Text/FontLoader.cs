@@ -3,6 +3,7 @@ using System.Xml;
 using OpenAbility.Logging;
 using OpenTK.Mathematics;
 using SoulEngine.Content;
+using SoulEngine.Data;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
 
@@ -19,7 +20,7 @@ public partial class Font
             Stream? stream = content.Load(id);
             if (stream == null)
             {
-                string fallback = resourceManager.Game.EngineVar.GetString("e_font_fallback", "ui/font/DEFAULT.fnt");
+                string fallback = EngineVarContext.Global.GetString("e_font_fallback", "ui/font/DEFAULT.fnt");
                 Logger.Error("Font '{}' not found! Using fallback '{}'", id, fallback);
                 id = fallback;
                 stream = content.Load(id);

@@ -5,8 +5,6 @@ namespace SoulEngine.SequenceScript.Lexing;
 
 public class LexicalReader
 {
-    private readonly CompilerContext context;
-    
     // TODO: This might be a bad idea - rework later maybe?
     private readonly string buffer;
 
@@ -15,13 +13,11 @@ public class LexicalReader
     private int currentIndex = 0;
 
     
-    public LexicalReader(Stream stream, Encoding encoding, string filePath, CompilerContext context)
+    public LexicalReader(Stream stream, Encoding encoding, string filePath)
     {
         using MemoryStream memoryStream = new MemoryStream();
         stream.CopyTo(memoryStream);
         buffer = encoding.GetString(memoryStream.GetBuffer());
-        
-        this.context = context;
 
         location = new CodeLocation(filePath, 1, 0);
     }
@@ -58,6 +54,17 @@ public class LexicalReader
 
             currentIndex++;
         }
+    }
+
+    public bool Consume(char c)
+    {
+        if (Current == c)
+        {
+            Step(1);
+            return true;
+        }
+
+        return false;
     }
     
 

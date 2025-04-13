@@ -8,6 +8,7 @@ public class ProcedureDefinitionNode : SyntaxNode
     public Token Identifier;
 
     public ParameterDefinitionNode[] Parameters;
+    public bool Extern;
 
     public BodyNode Body;
 }

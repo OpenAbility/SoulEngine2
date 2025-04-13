@@ -43,7 +43,7 @@ public class SceneRenderer
 
             cameraSettings.ViewMatrix = camera.GetView();
             cameraSettings.ProjectionMatrix = camera.GetProjection(surfaceSize.X / surfaceSize.Y);
-
+            
 
             cameraSettings.CameraPosition = camera.Entity.Position;
             cameraSettings.CameraDirection = camera.Entity.Forward;
@@ -99,6 +99,7 @@ public class SceneRenderer
         renderContext.Enable(EnableCap.DepthTest);
         renderContext.Disable(EnableCap.CullFace);
         renderContext.DepthFunction(DepthFunction.Less);
+        renderContext.Enable(EnableCap.FramebufferSrgb);
         renderContext.DepthRange(-1, 1);
         
         SceneRenderData renderData = new SceneRenderData();
@@ -109,6 +110,8 @@ public class SceneRenderer
             if(frustum.InFrustum(prop.Position))
                 prop.Render(renderContext, renderData, deltaTime);
         }
+        
+        renderContext.Disable(EnableCap.FramebufferSrgb);
 
         if (cameraSettings.ShowUI)
         {
@@ -150,6 +153,8 @@ public class SceneRenderer
             gizmoContext.ProjectionMatrix = cameraSettings.ProjectionMatrix;
             gizmoContext.ViewMatrix = cameraSettings.ViewMatrix;
             gizmoContext.SceneRenderData = renderData;
+            gizmoContext.CameraFrustum = frustum;
+            gizmoContext.CurrentAspectRatio = surfaceSize.X / surfaceSize.Y;
             
             foreach (var prop in Scene.Props)
             {

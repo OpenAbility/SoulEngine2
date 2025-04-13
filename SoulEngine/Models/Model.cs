@@ -97,8 +97,6 @@ public class Model : Resource
             Meshes[i] = meshData;
         }
         
-        Logger.Get<Model>().Info("Loaded!");
-        
     }
     
     public struct MeshData

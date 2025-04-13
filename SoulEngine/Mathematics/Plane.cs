@@ -22,4 +22,15 @@ public struct Plane
     {
         return Vector3.Dot(Normal, point) - Distance;
     }
+
+    public static Vector3 Intersection(Plane p1, Plane p2, Plane p3)
+    {
+        Matrix3 M = new Matrix3(p1.Normal, p2.Normal, p3.Normal);
+
+        if (M.Determinant == 0)
+            throw new InvalidOperationException("Planes do not intersect at a single point.");
+
+        Vector3 d = new Vector3(p1.Distance, p2.Distance, p3.Distance);
+        return M.Inverted() * d;
+    }
 }

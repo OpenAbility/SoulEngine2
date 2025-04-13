@@ -7,15 +7,15 @@ namespace SoulEngine.Rendering;
 /// <summary>
 /// A default framebuffer
 /// </summary>
-public class Framebuffer
+public class Framebuffer : IRenderSurface
 {
     private readonly Game game;
     public readonly int Handle;
 
     public readonly int ColourBuffer;
-    private readonly int depthBuffer;
+    public readonly int DepthBuffer;
     
-    public readonly Vector2i Size;
+    public Vector2i FramebufferSize { get; private set; }
     
     public Framebuffer(Game game, Vector2i size)
     {
@@ -27,16 +27,18 @@ public class Framebuffer
         this.game = game;
 
         Handle = GL.CreateFramebuffer();
-        Size = size;
+        FramebufferSize = size;
 
         ColourBuffer = GL.CreateTexture(TextureTarget.Texture2d);
-        depthBuffer = GL.CreateRenderbuffer();
+        DepthBuffer = GL.CreateTexture(TextureTarget.Texture2d);
         
-        GL.TextureStorage2D(ColourBuffer, 1, SizedInternalFormat.Rgb8, size.X, size.Y);
-        GL.NamedRenderbufferStorage(depthBuffer, InternalFormat.Depth24Stencil8, size.X, size.Y);
+        GL.TextureStorage2D(ColourBuffer, 1, SizedInternalFormat.Rgb32f, size.X, size.Y);
+        GL.TextureStorage2D(DepthBuffer, 1, SizedInternalFormat.DepthComponent32f, size.X, size.Y);
 
+        
         GL.NamedFramebufferTexture(Handle, FramebufferAttachment.ColorAttachment0, ColourBuffer, 0);
-        GL.NamedFramebufferRenderbuffer(Handle, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
+        GL.NamedFramebufferTexture(Handle, FramebufferAttachment.DepthAttachment, DepthBuffer, 0);
+        //GL.NamedFramebufferRenderbuffer(Handle, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
 
         GL.NamedFramebufferDrawBuffer(Handle, ColorBuffer.ColorAttachment0);
         GL.NamedFramebufferReadBuffer(Handle, ColorBuffer.ColorAttachment0);
@@ -53,7 +55,31 @@ public class Framebuffer
         {
             if(Handle != -1)
                 GL.DeleteFramebuffer(Handle);
+            GL.DeleteTexture(ColourBuffer);
+            GL.DeleteTexture(DepthBuffer);
         });
 
+    }
+
+    public void BindColour(uint index)
+    {
+        GL.BindTextureUnit(index, ColourBuffer);
+    }
+    
+    public void BindDepth(uint index)
+    {
+        GL.BindTextureUnit(index, DepthBuffer);
+    }
+
+    public void BindFramebuffer()
+    {
+        GL.BindFramebuffer(FramebufferTarget.Framebuffer, Handle);
+        GL.Viewport(0, 0, FramebufferSize.X, FramebufferSize.Y);
+    }
+
+
+    public int GetSurfaceHandle()
+    {
+        return Handle;
     }
 }

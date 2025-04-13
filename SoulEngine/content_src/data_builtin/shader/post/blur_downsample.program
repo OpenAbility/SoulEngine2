@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<Shader>
+    <Vertex backend="OPENGL"
+              src_string="
+layout(location = 0) in vec2 a_position;
+layout (location = 0) out vec2 v_uv;
+
+void main() {
+    gl_Position = vec4(a_position * 2 - 1, 0, 1);
+    v_uv = a_position;
+}
+"/>
+
+    <Fragment backend="OPENGL" src="shader/post/blur_downsample.frag"/>
+
+</Shader> 

@@ -1,4 +1,5 @@
 using SoulEngine.SequenceScript.Machine;
+using ValueType = SoulEngine.SequenceScript.Machine.ValueType;
 
 namespace SoulEngine.SequenceScript.Emitter;
 
@@ -13,13 +14,15 @@ public class OpWriter
 
         for (int i = 0; i < templates.Count; i++)
         {
-            if(templates[i].Label != null)
-                buffer[i] = new Instruction(templates[i].OpCode, templates[i].DynValue);
+            Template template = templates[i];
+            
+            if(template.Label == null)
+                buffer[i] = new Instruction(template.OpCode, template.DynValue);
             else
             {
-                if (templates[i].Label!.Location == -1)
+                if (template.Label!.Location == -1)
                     throw new Exception("Label never resolved!");
-                buffer[i] = new Instruction(templates[i].OpCode, new DynValue(templates[i].Label!.Location));
+                buffer[i] = new Instruction(template.OpCode, new DynValue(template.Label.Location));
             }
                 
         }
@@ -59,6 +62,17 @@ public class OpWriter
         return this;
     }
 
+    
+    public OpWriter Instruction(OpCode code)
+    {
+        templates.Add(new Template()
+        {
+            OpCode = code,
+            DynValue = new DynValue(ValueType.Bogus, null!)
+        });
+        return this;
+    }
+
     public OpWriter Label(Label label)
     {
         label.Location = templates.Count;
@@ -78,5 +92,6 @@ public class OpWriter
         public OpCode OpCode;
         public DynValue DynValue;
         public Label? Label;
+        public bool LabelDefinition;
     }
 }

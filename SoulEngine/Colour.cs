@@ -73,6 +73,15 @@ public struct Colour
 		return FromRgba32(r, g, b, a);
 	}
 	
+	public static Colour FromAbgr32(uint encoded)
+	{
+		byte a = (byte)(encoded & 0xFF);
+		byte b = (byte)(encoded >> 8 & 0xFF);
+		byte g = (byte)(encoded >> 16 & 0xFF);
+		byte r = (byte)(encoded >> 24 & 0xFF);
+		return FromRgba32(r, g, b, a);
+	}
+	
 	public static Colour FromBgra32(uint encoded)
 	{
 		byte b = (byte)(encoded & 0xFF);

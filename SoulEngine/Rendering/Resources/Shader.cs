@@ -77,6 +77,13 @@ public class Shader : Resource
         int loc = UniformLocation(name);
         GL.Uniform2f(loc, value.X, value.Y);
     }
+    
+    public void Uniform2i(string name, Vector2i value)
+    {
+        int loc = UniformLocation(name);
+        GL.Uniform2i(loc, value.X, value.Y);
+    }
+    
     public void Uniform3f(string name, Vector3 value)
     {
         int loc = UniformLocation(name);

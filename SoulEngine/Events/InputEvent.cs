@@ -52,11 +52,11 @@ public class KeyEvent : InputEvent
 public class TypeEvent : InputEvent
 {
 
-    public readonly uint Codepoint;
+    public readonly string Text;
 
-    public TypeEvent(uint codepoint)
+    public TypeEvent(string text)
     {
-        Codepoint = codepoint;
+        Text = text;
     }
 }
 

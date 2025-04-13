@@ -1,4 +1,4 @@
-using OpenTK.Graphics.OpenGL.Compatibility;
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 
 namespace SoulEngine.UI.Rendering;
@@ -18,7 +18,7 @@ public class DrawList
         VertexBuffer = GL.CreateBuffer();
     }
 
-    private readonly List<UIVertex> vertices = new List<UIVertex>();
+    private readonly List<UIVertex> vertices = new List<UIVertex>(256);
     private readonly PrimitiveType primitiveType;
     
     public DrawList(PrimitiveType primitiveType)

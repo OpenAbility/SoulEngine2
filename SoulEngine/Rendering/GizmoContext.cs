@@ -1,6 +1,7 @@
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
+using SoulEngine.Mathematics;
 
 namespace SoulEngine.Rendering;
 
@@ -11,13 +12,17 @@ public class GizmoContext
     public Matrix4 ModelMatrix { get; internal set; }
     public Matrix4 ViewMatrix { get; internal set; }
     public Matrix4 ProjectionMatrix { get; internal set; }
+    
+    public Frustum CameraFrustum { get; internal set; }
+    public float CurrentAspectRatio { get; internal set; }
 
     public readonly RenderContext RenderContext;
 
     private PrimitiveType primitiveType;
     public SceneRenderData SceneRenderData { get; internal set; }
 
-    private List<Vertex> vertices = new List<Vertex>();
+    private Vertex[] vertices = new Vertex[256];
+    private int currentVertex = 0;
 
     private Shader shader;
     private readonly int vertexArray;
@@ -48,7 +53,8 @@ public class GizmoContext
     
     public void Begin(PrimitiveType primitiveType, Shader shader)
     {
-        vertices.Clear();
+        currentVertex = 0;
+        
         this.primitiveType = primitiveType;
         this.shader = shader;
         shader.Bind();
@@ -70,7 +76,15 @@ public class GizmoContext
     
     public void Vertex(Vertex vertex)
     {
-        vertices.Add(vertex);
+
+        if (vertices.Length <= currentVertex)
+        {
+            Vertex[] newVertices = new Vertex[vertices.Length << 1];
+            vertices.CopyTo(newVertices, 0);
+            newVertices = vertices;
+        }
+
+        vertices[currentVertex++] = vertex;
     }
     
     public void Vertex(Vector3 vertex)
@@ -90,15 +104,15 @@ public class GizmoContext
 
     public unsafe void End()
     {
-        GL.NamedBufferData(vertexBuffer, vertices.Count * sizeof(Vertex), vertices.ToArray(),
+        GL.NamedBufferData(vertexBuffer, currentVertex * sizeof(Vertex), vertices,
             VertexBufferObjectUsage.StreamDraw);
         
         GL.VertexArrayVertexBuffer(vertexArray, 0, vertexBuffer, 0, sizeof(Vertex));
         
         GL.BindVertexArray(vertexArray);
-        GL.DrawArrays(primitiveType, 0, vertices.Count);
-        
-        vertices.Clear();
+        GL.DrawArrays(primitiveType, 0, currentVertex);
+
+        currentVertex = 0;
     }
 
     public void BillboardedSprite(Texture texture, float size = 1)

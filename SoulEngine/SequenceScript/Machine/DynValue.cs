@@ -78,4 +78,16 @@ public struct DynValue
             throw new Exception("DynValue is not of type " + type);
         underlying = value!;
     }
+
+    public float AsFloat
+    {
+        get
+        {
+            if (Type == ValueType.Integer)
+                return (int)underlying;
+            else if (Type == ValueType.Floating)
+                return (float)underlying;
+            throw new Exception("Cannot interpret DynValue as float!");
+        }
+    }
 }

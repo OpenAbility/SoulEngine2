@@ -15,7 +15,47 @@ public class CompilerContext
     private readonly List<CompileError> errors = new List<CompileError>();
 
     private readonly Dictionary<string, CompilingFile> working = new Dictionary<string, CompilingFile>();
-    
+
+
+    private CompilingFile standardLibrary;
+    public void CreateStandardLib(string code)
+    {
+        standardLibrary = new CompilingFile();
+        standardLibrary.InputPath = "__STDLIB";
+        standardLibrary.OutputPath = "__STDLIB";
+        standardLibrary.ResolvePath = "__STDLIB";
+
+        working["__STDLIB"] = standardLibrary;
+        
+        var lexer = new SequenceLexer(standardLibrary.InputPath, new MemoryStream(Encoding.UTF8.GetBytes(code)), Encoding.UTF8, this);
+        lexer.Process();
+        
+        standardLibrary.Tokens = lexer.GetTokens();
+
+        var parser = new SequenceParser(standardLibrary.Tokens, this);
+
+        standardLibrary.AST = parser.Process();
+
+        foreach (var node in standardLibrary.AST.Nodes)
+        {
+            if (node is GlobalStatement globalStatement)
+            {
+                standardLibrary.globals.Add(globalStatement.Identifier.Value, SequenceRules.KeywordToValueType(globalStatement.Type.TokenType));
+            } 
+            else if (node is ProcedureDefinitionNode procedureDefinitionNode)
+            {
+                CompilingFunction function = new CompilingFunction();
+
+                function.ReturnType = SequenceRules.KeywordToReturnType(procedureDefinitionNode.ReturnType.TokenType);
+                function.Name = procedureDefinitionNode.Identifier.Value;
+                function.ParameterTypes = procedureDefinitionNode.Parameters
+                    .Select(n => SequenceRules.KeywordToValueType(n.Type.TokenType)).ToArray();
+                function.SystemFunction = procedureDefinitionNode.Extern;
+                
+                standardLibrary.functions[function.Name] = function;
+            }
+        }
+    }
 
     public void BeginCompiling(string resolvePath, string inputPath, string outputPath)
     {
@@ -58,9 +98,21 @@ public class CompilerContext
         }
     }
 
+    public IEnumerable<string> GetFileDependencies(string resolvePath)
+    {
+        CompilingFile compilingFile = working[resolvePath];
+
+        foreach (var node in compilingFile.AST.Nodes)
+        {
+            if (node is ImportNode importNode)
+                yield return importNode.Target.Value;
+        }
+
+    }
+
     public CompilingFile? ResolveInclude(string from, string to)
     {
-        string path = Path.Join(Path.GetDirectoryName(from), to);
+        string path = to == "__STDLIB" ? "__STDLIB" : Path.Join(Path.GetDirectoryName(from), to);
         return working.GetValueOrDefault(path);
     }
 
@@ -68,7 +120,10 @@ public class CompilerContext
     {
         foreach (var compilingFile in working.Values)
         {
-            SequenceEmitter emitter = new SequenceEmitter(this, compilingFile.ResolvePath);
+            if(compilingFile == standardLibrary)
+                continue;
+            
+            SequenceEmitter emitter = new SequenceEmitter(this, compilingFile);
             emitter.Process(compilingFile.AST);
         }
     }

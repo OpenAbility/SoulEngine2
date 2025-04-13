@@ -25,5 +25,7 @@ public enum ValueType
     /// <summary>
     /// Not a real value type - shouldn't be allowed
     /// </summary>
-    Bogus
+    Bogus,
+    
+    Void = Bogus
 }

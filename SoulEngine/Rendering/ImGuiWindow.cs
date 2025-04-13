@@ -37,7 +37,7 @@ public class ImGuiWindow : IRenderSurface
             Active = ImGui.IsWindowFocused();
             
             Visible = true;
-            if ((int)ImGui.GetContentRegionAvail().X != framebuffer.Size.X || (int)ImGui.GetContentRegionAvail().Y != framebuffer.Size.Y)
+            if ((int)ImGui.GetContentRegionAvail().X != framebuffer.FramebufferSize.X || (int)ImGui.GetContentRegionAvail().Y != framebuffer.FramebufferSize.Y)
             {
                 framebuffer = new Framebuffer(game, new Vector2i((int)ImGui.GetContentRegionAvail().X, (int)ImGui.GetContentRegionAvail().Y));
             }
@@ -46,7 +46,7 @@ public class ImGuiWindow : IRenderSurface
             
             beforeCallback?.Invoke();
             
-            ImGui.Image(new ImTextureID(framebuffer.ColourBuffer), new Vector2(framebuffer.Size.X, framebuffer.Size.Y), new Vector2(0, 1), new Vector2(1, 0));
+            ImGui.Image(new ImTextureID(framebuffer.ColourBuffer), new Vector2(framebuffer.FramebufferSize.X, framebuffer.FramebufferSize.Y), new Vector2(0, 1), new Vector2(1, 0));
             
             afterCallback?.Invoke();
         }
@@ -57,11 +57,10 @@ public class ImGuiWindow : IRenderSurface
     
     public void BindFramebuffer()
     {
-       GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer.Handle);
-       GL.Viewport(0, 0, framebuffer.Size.X, framebuffer.Size.Y);
+        framebuffer.BindFramebuffer();
     }
 
-    public Vector2i FramebufferSize => framebuffer.Size;
+    public Vector2i FramebufferSize => framebuffer.FramebufferSize;
     public bool Visible { get; private set; }
     public bool Active { get; private set; }
 

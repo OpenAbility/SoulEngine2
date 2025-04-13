@@ -23,6 +23,8 @@ public class ResourceManager
 
     public readonly Game Game;
 
+    public static ResourceManager Global { get; internal set; }
+
     public ResourceManager(Game game)
     {
         Game = game;

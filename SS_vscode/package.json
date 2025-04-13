@@ -1,0 +1,25 @@
+{
+  "name": "sequencescript-support",
+  "displayName": "SequenceScript Support",
+  "description": "Adds basic support for SequenceScript",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.98.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "ss",
+      "aliases": ["SequenceScript", "ss"],
+      "extensions": [".ss"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "ss",
+      "scopeName": "source.sequence",
+      "path": "./syntaxes/ss.tmLanguage.json"
+    }]
+  }
+}

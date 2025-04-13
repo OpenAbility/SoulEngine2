@@ -19,6 +19,7 @@ public struct CameraSettings
     public float FieldOfView;
     public float NearPlane;
     public float FarPlane;
+    
 
     public bool ShowGizmos;
     public Prop? SelectedProp;

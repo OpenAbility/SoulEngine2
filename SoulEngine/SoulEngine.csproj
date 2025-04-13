@@ -17,6 +17,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>x64</PlatformTarget>
     <NoWarn>1701;1702;CS1591</NoWarn>
+    <DefineConstants>TRACE;SDL</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Development' ">
@@ -25,12 +26,14 @@
     <DebugSymbols>true</DebugSymbols>
     <DocumentationFile>bin\Development\net9.0\SoulEngine.xml</DocumentationFile>
     <NoWarn>1701;1702;CS1591</NoWarn>
+    <DefineConstants>TRACE;SDL</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>x64</PlatformTarget>
     <NoWarn>1701;1702;CS1591</NoWarn>
+    <DefineConstants>TRACE;SDL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,6 +51,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OpenTK.Graphics" Version="5.0.0-pre.13" />
     <PackageReference Include="OpenTK.Windowing.GraphicsLibraryFramework" Version="5.0.0-pre.13" />
+    <PackageReference Include="SDL3-CS" Version="3.2.10" />
   </ItemGroup>
   
   <ItemGroup  Condition=" '$(Configuration)' == 'Development' ">

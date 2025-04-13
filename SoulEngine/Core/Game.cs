@@ -1,15 +1,14 @@
 using System.Diagnostics;
 using Hexa.NET.ImGui;
 using OpenAbility.Logging;
-using OpenTK.Mathematics;
 using SoulEngine.Content;
 using SoulEngine.Data;
 using SoulEngine.Events;
 using SoulEngine.Input;
 using SoulEngine.Localization;
+using SoulEngine.PostProcessing;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
-using SoulEngine.UI;
 using SoulEngine.Util;
 using ImGuiWindow = SoulEngine.Rendering.ImGuiWindow;
 using Vector2 = System.Numerics.Vector2;
@@ -25,6 +24,10 @@ namespace SoulEngine.Core;
 
 public abstract class Game
 {
+
+
+    public static Game Current { get; private set; }
+    
     public readonly Logger Logger;
 
 #if DEVELOPMENT
@@ -34,7 +37,6 @@ public abstract class Game
 #endif
 
     public readonly ContentContext Content;
-    public readonly EngineVarContext EngineVar;
     public readonly ResourceManager ResourceManager;
     public readonly ThreadSafety ThreadSafety;
     public readonly DataRegistry GameRegistry;
@@ -66,6 +68,8 @@ public abstract class Game
     public readonly string BinaryDataPath;
     public readonly GameData GameData;
 
+    public readonly PostProcessor PostProcessor;
+
     public readonly EventBus<GameEvent> EventBus;
     public readonly EventBus<InputEvent> InputBus;
 
@@ -81,6 +85,8 @@ public abstract class Game
     public readonly RenderContext RenderContext;
     
     public float DeltaTime { get; private set; }
+
+    private float lastFrameDelta = -1;
     
 
     public GameState State;
@@ -92,6 +98,7 @@ public abstract class Game
     public Game(GameData data)
     {
         MainThread = Thread.CurrentThread;
+        Current = this;
         
         GameData = data;
         EventBus = new EventBus<GameEvent>();
@@ -132,10 +139,11 @@ public abstract class Game
         
         PopulateContent();
 
-        EngineVar = new EngineVarContext(Content);
+        EngineVarContext.Global = new EngineVarContext(Content);
         ResourceManager = new ResourceManager(this);
+        ResourceManager.Global = ResourceManager;
 
-        MainWindow = new Window(this, 1280, 720, data.Name, null);
+        MainWindow = new Window(this, 1280, 720, data.Name);
         
         InputManager = new InputManager(this, InputBus);
 
@@ -149,14 +157,20 @@ public abstract class Game
         BuiltinActions = new BuiltinActions(InputManager);
         Keys = new KeyActions(InputManager);
         
+        PostProcessor = new PostProcessor(this);
+        
 #if DEVELOPMENT
         GameWindow = new ImGuiWindow(this, "Game");
         SceneWindow = new ImGuiWindow(this, "Scene");
 
         SceneCamera = new SceneCamera(this);
+        
+        PostProcessor.RegisterSurface(GameWindow);
 #endif
 
+        PostProcessor.RegisterSurface(MainWindow);
         Localizator = new Localizator(this);
+
 
 
     }
@@ -222,9 +236,26 @@ public abstract class Game
             TimeSpan elapsed = stopwatch.Elapsed;
             stopwatch.Restart();
 
-            DeltaTime = (float)elapsed.TotalSeconds;
-            EngineVar.SetFloat("dt", DeltaTime);
-            EngineVar.SetInt("frameDelta", (int)elapsed.TotalMilliseconds);
+            float currentFrameDelta = (float)elapsed.TotalSeconds;
+            float balancedFrameDelta = currentFrameDelta;
+
+            if (lastFrameDelta == -1 || true)
+                DeltaTime = currentFrameDelta;
+            else
+            {
+                balancedFrameDelta = (currentFrameDelta + lastFrameDelta) / 2;
+                lastFrameDelta = currentFrameDelta;
+                
+                DeltaTime = balancedFrameDelta;
+            }
+
+            if (DeltaTime > 1.0f)
+                DeltaTime = 1.0f;
+            
+            
+            
+            EngineVarContext.Global.SetFloat("dt", DeltaTime);
+            EngineVarContext.Global.SetInt("frameDelta", (int)(balancedFrameDelta * 1000));
 
             fpsHistogram.AddLast(1 / DeltaTime);
             msHistogram.AddLast((float)elapsed.TotalMilliseconds);
@@ -303,10 +334,13 @@ public abstract class Game
             imguiPass.Surface = MainWindow;
             imguiPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
             
-            RenderContext.BeginRendering(imguiPass);
+            if(Development)
+                RenderContext.BeginRendering(imguiPass);
             ImGuiRenderer.EndFrame(MainWindow, !Development);
-            RenderContext.RebuildState();
-            RenderContext.EndRendering();
+            if(Development)
+                RenderContext.RebuildState();
+            if(Development)
+                RenderContext.EndRendering();
             
             MainWindow.Swap();
             Window.Poll();
@@ -635,13 +669,23 @@ public abstract class Game
         sceneWindowSettings.FieldOfView = SceneCamera.FOV;
         sceneWindowSettings.NearPlane = SceneCamera.Near;
         sceneWindowSettings.FarPlane = SceneCamera.Far;
-        
-        if(GameWindow.Visible)
-            sceneRenderer?.Render(RenderContext, GameWindow, DeltaTime, CameraSettings.Game);
+
+        PostProcessedSurface gameSurface = PostProcessor.InitializeFrameSurface(GameWindow);
+
+        if (GameWindow.Visible)
+        {
+            sceneRenderer?.Render(RenderContext, gameSurface, DeltaTime, CameraSettings.Game);
+            PostProcessor.FinishedDrawing(RenderContext, gameSurface);
+        }
+
         if(SceneWindow.Visible)
             sceneRenderer?.Render(RenderContext, SceneWindow, DeltaTime, sceneWindowSettings);
 #else
-        sceneRenderer?.Render(RenderContext, MainWindow, DeltaTime, CameraSettings.Game);
+        PostProcessedSurface postSurface = PostProcessor.InitializeFrameSurface(MainWindow);
+
+        sceneRenderer?.Render(RenderContext, postSurface, DeltaTime, CameraSettings.Game);
+        
+        PostProcessor.FinishedDrawing(RenderContext, postSurface);
 #endif
     }
 
@@ -666,6 +710,22 @@ public abstract class Game
     {
         this.Scene = scene;
         this.sceneRenderer = new SceneRenderer(scene);
+    }
+
+    public void MessageBox(MessageBoxType type, string title, string description)
+    {
+#if !SDL
+        SDL.ShowSimpleMessageBox(type switch
+        {
+            MessageBoxType.Error => SDL.MessageBoxFlags.Error,
+            MessageBoxType.Info => SDL.MessageBoxFlags.Information,
+            MessageBoxType.Warning => SDL.MessageBoxFlags.Warning,
+            _ => SDL.MessageBoxFlags.Information
+        }, title, description, MainWindow.Handle);
+#else
+        Logger.Error("Message box not supported outside SDL3!");
+        Logger.Info("[{}]({}): {}", title, type, description);
+#endif
     }
 }
 

@@ -6,6 +6,7 @@ using Hexa.NET.ImGuizmo;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SoulEngine.Data;
 using SoulEngine.Events;
 using SoulEngine.Mathematics;
 using ResourceManager = SoulEngine.Resources.ResourceManager;
@@ -40,8 +41,8 @@ public unsafe class ImGuiRenderer
         IO = ImGui.GetIO();
 
         
-        if (resourceManager.Game.EngineVar.Exists("imgui_font"))
-            IO.Fonts.AddFontFromFileTTF(resourceManager.Game.EngineVar.GetString("imgui_font"), resourceManager.Game.EngineVar.GetInt("imgui_font_size", 21));
+        if (EngineVarContext.Global.Exists("imgui_font"))
+            IO.Fonts.AddFontFromFileTTF(EngineVarContext.Global.GetString("imgui_font"), EngineVarContext.Global.GetInt("imgui_font_size", 21));
         else
             IO.Fonts.AddFontDefault();
 
@@ -111,10 +112,9 @@ public unsafe class ImGuiRenderer
         IO.Fonts.ClearTexData();
     }
 
-    public void BeginFrame(IRenderSurface renderSurface, float deltaTime)
+    public void BeginFrame(Window window, float deltaTime)
     {
-        Vector2i fbSize = renderSurface.FramebufferSize;
-
+        Vector2i fbSize = window.WindowSize;
 
         IO.DisplaySize = new Vector2(fbSize.X, fbSize.Y);
         IO.DeltaTime = deltaTime;
@@ -158,7 +158,7 @@ public unsafe class ImGuiRenderer
                 keyEvent.Handle();
         } else if (inputEvent is TypeEvent typeEvent)
         {
-            IO.AddInputCharacter(typeEvent.Codepoint);
+            IO.AddInputCharactersUTF8(typeEvent.Text);
             if (IO.WantCaptureKeyboard)
                 typeEvent.Handle();
         } else if (inputEvent is ScrollEvent scrollEvent)

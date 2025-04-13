@@ -1,3 +1,4 @@
+using SoulEngine.SequenceScript.Compile;
 using SoulEngine.SequenceScript.Lexing;
 
 namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes.Expressions;
@@ -13,5 +14,10 @@ public class BinaryExpressionNode : ExpressionNode
         Left = left;
         Operand = operand;
         Right = right;
+    }
+
+    public override CodeLocation GetLocation()
+    {
+        return Left.GetLocation();
     }
 }

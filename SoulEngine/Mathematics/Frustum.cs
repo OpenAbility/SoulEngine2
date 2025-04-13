@@ -27,6 +27,7 @@ public struct Frustum
 
         frustum.NearFace = new Plane(position + near * front, front);
         frustum.FarFace = new Plane(position + farPoint, -front);
+        
         frustum.RightFace = new Plane(position, Vector3.Cross(farPoint - right * halfHSide, up));
         frustum.LeftFace = new Plane(position, Vector3.Cross(up, farPoint + right * halfHSide));
 
@@ -39,11 +40,31 @@ public struct Frustum
 
     public bool InFrustum(Vector3 point)
     {
-        return true;
-        
         return 
                LeftFace.GetDistanceToPlane(point) > 0 &&
-               RightFace.GetDistanceToPlane(point) > 0;
+               RightFace.GetDistanceToPlane(point) > 0 &&
+               NearFace.GetDistanceToPlane(point) > 0 &&
+               FarFace.GetDistanceToPlane(point) > 0 &&
+               TopFace.GetDistanceToPlane(point) > 0 &&
+               BottomFace.GetDistanceToPlane(point) > 0;
+    }
+    
+    public Vector3[] GetCorners()
+    {
+        return
+        [
+            // Near Plane Corners
+            Plane.Intersection(NearFace, TopFace, LeftFace),   // Near-Top-Left
+            Plane.Intersection(NearFace, TopFace, RightFace),  // Near-Top-Right
+            Plane.Intersection(NearFace, BottomFace, LeftFace),// Near-Bottom-Left
+            Plane.Intersection(NearFace, BottomFace, RightFace),// Near-Bottom-Right
+
+            // Far Plane Corners
+            Plane.Intersection(FarFace, TopFace, LeftFace),   // Far-Top-Left
+            Plane.Intersection(FarFace, TopFace, RightFace),  // Far-Top-Right
+            Plane.Intersection(FarFace, BottomFace, LeftFace),// Far-Bottom-Left
+            Plane.Intersection(FarFace, BottomFace, RightFace)// Far-Bottom-Right
+        ];
     }
 
 }

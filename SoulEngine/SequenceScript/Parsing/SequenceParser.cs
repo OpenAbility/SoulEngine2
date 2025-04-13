@@ -29,8 +29,8 @@ public class SequenceParser
             if(CurrentType == TokenType.ImportKw) programRootNode.Nodes.Add(ParseImport());
             else if(CurrentType == TokenType.GlobalKw) programRootNode.Nodes.Add(ParseGlobal());
             else if(CurrentType == TokenType.ProcKw) programRootNode.Nodes.Add(ParseProcedure());
-
-
+            else if(CurrentType == TokenType.MetaCharacter) programRootNode.Nodes.Add(ParseMeta());
+            
             else
             {
                 if (CurrentToken.Value != "")
@@ -43,6 +43,18 @@ public class SequenceParser
         }        
 
         return programRootNode;
+    }
+
+    private MetaStatement ParseMeta()
+    {
+        Consume(TokenType.MetaCharacter);
+
+        MetaStatement metaStatement = new MetaStatement();
+        metaStatement.Key = Consume(TokenType.Identifier);
+        metaStatement.Value = Consume(TokenType.String);
+
+        return metaStatement;
+
     }
 
     private ImportNode ParseImport()
@@ -90,6 +102,8 @@ public class SequenceParser
     {
         Consume(TokenType.ProcKw);
 
+        bool isExtern = TryConsume(TokenType.ExternKw);
+
         Token typeToken = Consume(TokenType.VoidKw, TokenType.IntKw, TokenType.FloatKw, TokenType.BoolKw,
             TokenType.StringKw, TokenType.HandleKw);
 
@@ -124,8 +138,12 @@ public class SequenceParser
         procedureDefinitionNode.Identifier = identifierToken;
         procedureDefinitionNode.ReturnType = typeToken;
         procedureDefinitionNode.Parameters = parameterDefinitionNodes.ToArray();
+        procedureDefinitionNode.Extern = isExtern;
 
-        procedureDefinitionNode.Body = ParseBody();
+        if(!isExtern)
+            procedureDefinitionNode.Body = ParseBody();
+        else
+            Consume(TokenType.EndStatement);
 
         return procedureDefinitionNode;
     }
@@ -234,6 +252,9 @@ public class SequenceParser
         VariableAssignationExpression variableEditorExpression = new VariableAssignationExpression();
 
         variableEditorExpression.Variable = Consume(TokenType.Identifier);
+
+        Consume(TokenType.Assign);
+        
         variableEditorExpression.Value = ParseExpression(false);
 
         return variableEditorExpression;
@@ -290,8 +311,10 @@ public class SequenceParser
                 "Unexpected token '" + CurrentToken.Value + "' (" + CurrentType + ")!");
         else
             context.Error(Location, "SS2002", "Unexpected token type " + CurrentType + "!");
+        
+        BogusExpression bogusExpression = new BogusExpression(Location);
         Step(1);
-        return new BogusExpression();
+        return bogusExpression;
     }
 
     private ExpressionNode ParseParenthesisedExpression()
@@ -492,7 +515,8 @@ public class SequenceParser
         ReturnStatement returnStatement = new ReturnStatement();
         Consume(TokenType.ReturnKw);
 
-        returnStatement.ExpressionNode = ParseExpression(false);
+        if(CurrentType != TokenType.EndStatement)
+            returnStatement.ExpressionNode = ParseExpression(false);
 
         Consume(TokenType.EndStatement);
 
@@ -519,7 +543,7 @@ public class SequenceParser
 
         Consume(TokenType.OpenParenthesis);
         
-        forStatement.Incrementor = ParseStatement(true);
+        forStatement.Initializer = ParseStatement(true);
         forStatement.Comparison = ParseExpression(false);
         Consume(TokenType.EndStatement);
         forStatement.Incrementor = ParseStatement(false);
