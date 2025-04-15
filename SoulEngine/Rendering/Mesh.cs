@@ -7,7 +7,8 @@ namespace SoulEngine.Rendering;
 /// <summary>
 /// Stores mesh data
 /// </summary>
-public unsafe class Mesh<T> where T : unmanaged, IVertex
+public unsafe class Mesh<T> : IDrawableMesh
+        where T : unmanaged, IVertex
 {
 
     private static readonly Dictionary<Type, int> VertexArrays = new Dictionary<Type, int>();
@@ -139,4 +140,13 @@ public unsafe struct MeshBuildData<T> where T : unmanaged, IVertex
 
     internal int VertexBuffer;
     internal int IndexBuffer;
+}
+
+/// <summary>
+/// Should only ever be implemented by <see cref="Mesh{T}"/>, unless you're feeling really daring.
+/// Makes it possible to work around the fact that <see cref="Mesh{T}"/> is generic
+/// </summary>
+public interface IDrawableMesh
+{
+    public void Draw();
 }

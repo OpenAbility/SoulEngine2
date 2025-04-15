@@ -120,6 +120,24 @@ public class EngineVarContext
 
 		return true;
 	}
+	
+	public bool SetEntry(string name, EngineVarEntry entry)
+	{
+		EngineVarEntry? existing = GetEntry(name);
+
+		if (existing != null)
+		{
+			if (existing.Value.Locked)
+				return false;
+
+			if (existing.Value.Type != entry.Type)
+				return false;
+		}
+
+		Entries[name] = entry;
+
+		return true;
+	}
 
 	public void Set(string name, object value) => Set(name, value, null);
 
@@ -258,5 +276,6 @@ public class EngineVarContext
 		Double,
 		Enum
 	}
+
 
 }

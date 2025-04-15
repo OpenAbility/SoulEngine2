@@ -2,11 +2,13 @@ using System.Diagnostics;
 using Hexa.NET.ImGui;
 using OpenAbility.Logging;
 using SoulEngine.Content;
+using SoulEngine.Core.Tools;
 using SoulEngine.Data;
 using SoulEngine.Events;
 using SoulEngine.Input;
 using SoulEngine.Localization;
 using SoulEngine.PostProcessing;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
 using SoulEngine.Util;
@@ -49,7 +51,7 @@ public abstract class Game
     private readonly ImGuiWindow GameWindow;
     private readonly ImGuiWindow SceneWindow;
 
-    private Prop? CurrentProp;
+    internal Prop? CurrentProp;
     
     private SceneCamera SceneCamera;
 
@@ -75,8 +77,10 @@ public abstract class Game
 
     public readonly InputManager InputManager;
     public readonly KeyActions Keys;
+    
 
     private SceneRenderer? sceneRenderer;
+    
     public Scene? Scene { get; private set; }
 
     public readonly Window MainWindow;
@@ -90,8 +94,12 @@ public abstract class Game
     
 
     public GameState State;
+    
+    public IRenderPipeline RenderPipeline { get; private set; }
 
     internal readonly BuiltinActions BuiltinActions;
+
+    private readonly List<Tool> tools = new List<Tool>();
 
 
 
@@ -170,9 +178,13 @@ public abstract class Game
 
         PostProcessor.RegisterSurface(MainWindow);
         Localizator = new Localizator(this);
-
-
-
+        
+        AddTool(new DebuggerTool());
+        AddTool(new DirectorTool());
+        AddTool(new Inspector());
+        AddTool(new SceneView());
+        AddTool(new InputViewer());
+        AddTool(new EngineVarEditor());
     }
     
 #if DEVELOPMENT
@@ -198,6 +210,8 @@ public abstract class Game
     public void Run()
     {
         State = GameState.Loading;
+        
+        RenderPipeline = CreateDefaultRenderPipeline();
         
         EarlyLoad();
         
@@ -239,7 +253,7 @@ public abstract class Game
             float currentFrameDelta = (float)elapsed.TotalSeconds;
             float balancedFrameDelta = currentFrameDelta;
 
-            if (lastFrameDelta == -1 || true)
+            if (lastFrameDelta == -1 || !EngineVarContext.Global.GetBool("e_dt_smoothing"))
                 DeltaTime = currentFrameDelta;
             else
             {
@@ -384,9 +398,6 @@ public abstract class Game
         
     }
 
-    private bool inputViewer = false;
-    private bool showBuiltin = false;
-
     private void RunningFrame()
     {
 #if DEVELOPMENT
@@ -412,11 +423,6 @@ public abstract class Game
         if (MenuContext.IsPressed("File", "New"))
         { 
             SetScene(new Scene(this));
-        }
-
-        if (MenuContext.IsPressed("Tools", "Input Viewer"))
-        {
-            inputViewer = !inputViewer;
         }
         
         if (MenuContext.IsPressed("File", "Open"))
@@ -450,6 +456,14 @@ public abstract class Game
                 File.WriteAllText(result.Path, TagIO.WriteSNBT(Scene!.Write()));
             }
         }
+
+        foreach (var tool in tools)
+        {
+            if (MenuContext.IsPressed(tool.GetToolPath()))
+            {
+                tool.Enabled = !tool.Enabled;
+            }
+        }
         
         
         SceneWindow.Draw(false, () =>
@@ -475,169 +489,13 @@ public abstract class Game
         InputManager.WindowOffset = GameWindow.Position;
         InputManager.WindowSize = new Vector2(GameWindow.FramebufferSize.X, GameWindow.FramebufferSize.Y);
 
-        if (ImGui.Begin("Debug"))
+        foreach (var tool in tools)
         {
-            ImGui.Text("Window Offset: " + InputManager.WindowOffset);
-            ImGui.Text("Window Size: " + InputManager.WindowSize);
-            ImGui.Text("Cursor Pos: " + InputManager.MousePosition);
-            ImGui.Text("Cursor Raw: " + InputManager.RawMousePosition);
-            ImGui.Text("Cursor Inside: " + InputManager.MouseInWindow);
-            ImGui.Text("Cursor Captured: " + MainWindow.MouseCaptured);
-
-            ImGui.Text("ImGui Pos: " + ImGui.GetMousePos());
-            ImGui.Text("ImGui Clicked: " + ImGui.GetIO().MouseClicked[0]);
-        }
-        ImGui.End();
-
-        if (ImGui.Begin("Inspector"))
-        {
-            if (CurrentProp != null && Scene != null)
-            {
-                CurrentProp.Edit();
-            }
-            else
-            {
-                ImGui.Text("Select a prop to edit it!");
-            }
-        }
-        ImGui.End();
-
-        if (ImGui.Begin("Scene View"))
-        {
-            if (Scene == null)
-            {
-                ImGui.Text("No scene is loaded!");
-            }
-            else
-            {
-                bool hoveredButton = false;
-                
-                foreach (var prop in new List<Prop>(Scene.Props))
-                {
-                    
-                    if (ImGuiUtil.ImageSelectable(prop.propIcon, prop.Name + "##" + prop.GetHashCode(), CurrentProp == prop))
-                        CurrentProp = prop;
-
-                    if (ImGui.IsItemHovered())
-                        hoveredButton = true;
-                    
-                    /*
-                    if (ImGui.BeginPopupContextItem())
-                    {
-                        if (ImGui.Selectable("Delete"))
-                        {
-                            Scene.Props.Remove(prop);
-                            if (CurrentProp == prop)
-                                CurrentProp = null;
-                        }
-                        
-                        ImGui.EndPopup();
-                    }
-                    */
-                    
-                    
-                }
-
-                if (!hoveredButton && ImGui.BeginPopupContextWindow())
-                {
-                    foreach (var prop in PropLoader.Types)
-                    {
-                        if (ImGui.Selectable(prop))
-                        {
-                            Scene.AddProp(prop, prop + " (" + Random.Shared.Next(1000, 9999) + ")");
-                        }
-                    }
-                    
-                    ImGui.EndPopup();
-                }
-                
-                
-            }
-        }
-        ImGui.End();
-
-        if (ImGui.Begin("Director"))
-        {
-            if (Scene == null)
-            {
-                ImGui.Text("No scene is loaded!");
-            }
-            else if (Scene.Director == null)
-            {
-                ImGui.Text("No director is loaded!");
-            }
-            else
-            {
-                ImGui.Text("Director - " + Scene.Director.Type);
-                ImGui.Separator();
-                
-                Scene.Director.Edit();
-            }
-
-            if (Scene != null)
-            {
-                if (ImGui.BeginPopupContextWindow())
-                {
-                    ImGui.TextDisabled("Create new director");
-                    foreach (var type in DirectorLoader.Types)
-                    {
-                        if (ImGui.Selectable(type))
-                        {
-                            Scene.Director = DirectorLoader.Create(Scene, type);
-                        }
-                    }
-                    
-                    ImGui.EndPopup();
-                }
-            }
-
-        }
-
-        ImGui.End();
-
-        if (inputViewer)
-        {
-            if (ImGui.Begin("Input Viewer", ref inputViewer))
-            {
-                if (ImGui.BeginTable("Inputs", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable))
-                {
-
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Name");
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Down");
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Pressed");
-                    ImGui.TableNextColumn();
-                    ImGui.TableHeader("Released");
-
-                    foreach (var action in InputManager.Actions)
-                    {
-                        if(action.Name.StartsWith("builtin.") && !showBuiltin)
-                            continue;
-                        ImGui.TableNextRow();
-                        
-                        ImGui.TableNextColumn();
-                        ImGui.Text(action.Name);
-                        
-                        ImGui.TableNextColumn();
-                        ImGui.Text(action.Down.ToString());
-      
-                        ImGui.TableNextColumn();
-                        ImGui.Text(action.Pressed.ToString());
-    
-                        ImGui.TableNextColumn();
-                        ImGui.Text(action.Released.ToString());
-                    }
-                    
-                    ImGui.EndTable();
-                }
-
-                ImGui.Checkbox("Show builtin actions", ref showBuiltin);
-            }
-
-            ImGui.End();
+            if(tool.Enabled)
+                tool.Perform(this);
+#if DEVELOPMENT
+            DevelopmentRegistry.SetInt32("_EDITOR_TOOLS." + tool.GetType() + ".enabled", tool.Enabled ? 1 : 0);
+#endif
         }
 
         
@@ -674,12 +532,18 @@ public abstract class Game
 
         if (GameWindow.Visible)
         {
-            sceneRenderer?.Render(RenderContext, gameSurface, DeltaTime, CameraSettings.Game);
+            sceneRenderer?.Render(RenderPipeline, gameSurface, DeltaTime, CameraSettings.Game);
+            RenderPipeline.DrawFrame(RenderContext, gameSurface, DeltaTime,
+                sceneRenderer?.MakePipelineCamera(CameraSettings.Game, gameSurface) ?? new CameraSettings());
+
             PostProcessor.FinishedDrawing(RenderContext, gameSurface);
         }
 
-        if(SceneWindow.Visible)
-            sceneRenderer?.Render(RenderContext, SceneWindow, DeltaTime, sceneWindowSettings);
+        if (SceneWindow.Visible)
+        {
+            sceneRenderer?.Render(RenderPipeline, SceneWindow, DeltaTime, sceneWindowSettings);
+            RenderPipeline.DrawFrame(RenderContext, SceneWindow, DeltaTime, sceneRenderer?.MakePipelineCamera(sceneWindowSettings, SceneWindow) ?? new CameraSettings());
+        }
 #else
         PostProcessedSurface postSurface = PostProcessor.InitializeFrameSurface(MainWindow);
 
@@ -712,6 +576,8 @@ public abstract class Game
         this.sceneRenderer = new SceneRenderer(scene);
     }
 
+    protected abstract IRenderPipeline CreateDefaultRenderPipeline();
+
     public void MessageBox(MessageBoxType type, string title, string description)
     {
 #if !SDL
@@ -727,6 +593,26 @@ public abstract class Game
         Logger.Info("[{}]({}): {}", title, type, description);
 #endif
     }
+    
+    public abstract class Tool
+    {
+        public bool Enabled;
+        
+        public abstract void Perform(Game game);
+
+        public abstract string[] GetToolPath();
+    }
+
+    protected void AddTool(Tool tool)
+    {
+#if DEVELOPMENT
+        if (DevelopmentRegistry.Exists("_EDITOR_TOOLS." + tool.GetType() + ".enabled"))
+            tool.Enabled = DevelopmentRegistry.GetInt32("_EDITOR_TOOLS." + tool.GetType() + ".enabled") > 0;
+#endif
+        
+        tools.Add(tool);
+    }
+    
 }
 
 public struct GameData

@@ -7,6 +7,7 @@ using OpenTK.Mathematics;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
 using SoulEngine.Mathematics;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 using SoulEngine.Util;
 
@@ -167,14 +168,14 @@ public abstract class Prop : ITransformable
     {
         
     }
-
+    
     /// <summary>
-    /// Render this prop. Do not update non-render logic!
+    /// The new render functionality
     /// </summary>
-    /// <param name="renderContext"></param>
-    /// <param name="sceneRenderData">The scene render data</param>
-    /// <param name="deltaTime">The time that has passed since last render</param>
-    public virtual void Render(RenderContext renderContext, SceneRenderData sceneRenderData, float deltaTime)
+    /// <param name="renderPipeline"></param>
+    /// <param name="renderData"></param>
+    /// <param name="deltaTime"></param>
+    public virtual void Render(IRenderPipeline renderPipeline, SceneRenderData renderData, float deltaTime)
     {
         
     }

@@ -20,11 +20,11 @@ public class Material : Resource
     private ResourceManager ResourceManager;
     
     
-    public void Bind(SceneRenderData data, Matrix4 model)
+    public void Bind(CameraSettings cameraSettings, Matrix4 model)
     {
         Shader.Bind();
-        Shader.Matrix("um_projection", data.CameraSettings.ProjectionMatrix, false);
-        Shader.Matrix("um_view", data.CameraSettings.ViewMatrix, false);
+        Shader.Matrix("um_projection", cameraSettings.ProjectionMatrix, false);
+        Shader.Matrix("um_view", cameraSettings.ViewMatrix, false);
         Shader.Matrix("um_model", model, false);
 
         uint textureBindingPoint = 0;

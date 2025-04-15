@@ -1,3 +1,4 @@
+using System.Buffers;
 using Hexa.NET.ImGui;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
@@ -5,6 +6,7 @@ using SoulEngine.Animation;
 using SoulEngine.Core;
 using SoulEngine.Models;
 using SoulEngine.Props;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 
 namespace SoulEngine.Components;
@@ -116,7 +118,7 @@ public class DynamicModelComponent : Component
     }
 
 
-    public override void Render(RenderContext renderContext, SceneRenderData data, float deltaTime)
+    public override void Render(IRenderPipeline renderPipeline, SceneRenderData data, float deltaTime)
     {
         if(!Visible.Value)
             return;
@@ -130,33 +132,26 @@ public class DynamicModelComponent : Component
         if(skeletonInstance == null)
             return;
 
-        if ((skeletonBuffer?.Length ?? 0) < skeletonInstance.Skeleton.JointCount)
-        {
-            skeletonBuffer?.Dispose();
-            skeletonBuffer = new GpuBuffer<Matrix4>((int)(skeletonInstance.Skeleton.JointCount * 1.5f),
-                BufferStorageMask.MapWriteBit | BufferStorageMask.DynamicStorageBit | BufferStorageMask.MapCoherentBit | BufferStorageMask.MapPersistentBit | BufferStorageMask.ClientStorageBit);
-        }
-
-        BufferMapping<Matrix4> mapping = skeletonBuffer!.Map(0, skeletonInstance.Skeleton.JointCount,
-            MapBufferAccessMask.MapCoherentBit | MapBufferAccessMask.MapPersistentBit | MapBufferAccessMask.MapWriteBit |
-            MapBufferAccessMask.MapInvalidateRangeBit);
-
+        Matrix4[] skeletonBuffer = ArrayPool<Matrix4>.Shared.Rent(skeletonInstance.Skeleton.JointCount);
 
         for (int i = 0; i < skeletonInstance.Skeleton.JointCount; i++)
         {
             SkeletonJointData jointData = skeletonInstance.Skeleton.GetJoint(i);
-            mapping.Span[ModelProperty.Value.skeletonToMeshJoints[jointData.SkeletonID]] = jointData.InverseBind * skeletonInstance.GetJointGlobalMatrix(jointData);
+            skeletonBuffer[ModelProperty.Value.skeletonToMeshJoints[jointData.SkeletonID]] = jointData.InverseBind * skeletonInstance.GetJointGlobalMatrix(jointData);
         }
         
-        mapping.Dispose();
+        
+        MeshRenderProperties renderProperties = new MeshRenderProperties();
+        renderProperties.ModelMatrix = Entity.GlobalMatrix;
+        renderProperties.SkeletonBuffer = skeletonBuffer;
+        renderProperties.SkeletonBufferPool = ArrayPool<Matrix4>.Shared;
+        renderProperties.SkeletonBufferSize = skeletonInstance.Skeleton.JointCount;
 
         foreach (var mesh in ModelProperty.Value.Meshes)
         {
-            
-            mesh.Material.Bind(data, Entity.GlobalMatrix);
-            mesh.Material.Shader.Uniform1i("ub_skeleton", 1);
-            mesh.Material.Shader.BindBuffer("um_joint_buffer", skeletonBuffer, 0, skeletonInstance.Skeleton.JointCount);
-            mesh.ActualMesh.Draw();
+            renderProperties.Mesh = mesh.ActualMesh;
+            renderProperties.Material = mesh.Material;
+            renderPipeline.SubmitMeshRender(DefaultRenderLayers.OpaqueLayer, renderProperties);
         }
     }
 
@@ -180,7 +175,7 @@ public class DynamicModelComponent : Component
             {
                 Matrix4 matrix4 = skeletonInstance.GetJointGlobalMatrix(skeletonInstance.Skeleton.GetJoint(i)) *
                                   Entity.GlobalMatrix;
-                mesh.Material.Bind(context.SceneRenderData, matrix4);
+                mesh.Material.Bind(context.SceneRenderData.CameraSettings, matrix4);
                 mesh.ActualMesh.Draw();
             }
         }

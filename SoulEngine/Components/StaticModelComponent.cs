@@ -1,6 +1,7 @@
 using SoulEngine.Core;
 using SoulEngine.Models;
 using SoulEngine.Props;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 
 namespace SoulEngine.Components;
@@ -19,23 +20,22 @@ public class StaticModelComponent : Component
         ModelProperty = Register(new ResourceProperty<Model>("model", "", Entity.Scene.Game));
     }
     
-    public override void Render(RenderContext renderContext, SceneRenderData data, float deltaTime)
+    public override void Render(IRenderPipeline renderPipeline, SceneRenderData data, float deltaTime)
     {
         if(!Visible.Value)
             return;
         
         if(ModelProperty.Value == null)
             return;
-        
-        renderContext.PushPassName(Entity.Name);
-        
+
+        MeshRenderProperties renderProperties = new MeshRenderProperties();
+        renderProperties.ModelMatrix = Entity.GlobalMatrix;
+
         foreach (var mesh in ModelProperty.Value.Meshes)
         {
-            mesh.Material.Bind(data, Entity.GlobalMatrix);
-            mesh.Material.Shader.Uniform1i("ub_skeleton", 0);
-            mesh.ActualMesh.Draw();
+            renderProperties.Mesh = mesh.ActualMesh;
+            renderProperties.Material = mesh.Material;
+            renderPipeline.SubmitMeshRender(DefaultRenderLayers.OpaqueLayer, renderProperties);
         }
-        
-        renderContext.PopPassName();
     }
 }

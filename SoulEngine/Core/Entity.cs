@@ -3,6 +3,7 @@ using Hexa.NET.ImGui;
 using SoulEngine.Components;
 using SoulEngine.Data.NBT;
 using SoulEngine.Props;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 
 namespace SoulEngine.Core;
@@ -69,11 +70,11 @@ public class Entity : Prop
         }
     }
 
-    public override void Render(RenderContext renderContext, SceneRenderData sceneRenderData, float deltaTime)
+    public override void Render(IRenderPipeline renderPipeline, SceneRenderData sceneRenderData, float deltaTime)
     {
         foreach (var component in components.ToArray())
         {
-            component.Render(renderContext, sceneRenderData, deltaTime);
+            component.Render(renderPipeline, sceneRenderData, deltaTime);
         }
     }
 

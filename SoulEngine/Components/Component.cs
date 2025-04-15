@@ -4,6 +4,7 @@ using Hexa.NET.ImGui;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
 using SoulEngine.Props;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 
 namespace SoulEngine.Components;
@@ -97,10 +98,10 @@ public abstract class Component : EngineObject
     /// <summary>
     /// Render this prop. Do not update non-render logic!
     /// </summary>
-    /// <param name="renderContext"></param>
+    /// <param name="renderPipeline"></param>
     /// <param name="sceneRenderData">The scene render data</param>
     /// <param name="deltaTime">The time that has passed since last render</param>
-    public virtual void Render(RenderContext renderContext, SceneRenderData sceneRenderData, float deltaTime)
+    public virtual void Render(IRenderPipeline renderPipeline, SceneRenderData sceneRenderData, float deltaTime)
     {
         
     }
