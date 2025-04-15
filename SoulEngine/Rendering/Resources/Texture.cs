@@ -71,7 +71,7 @@ public class Texture : Resource
         {
             Game game = resourceManager.Game;
             
-            
+            StbImage.stbi_set_flip_vertically_on_load(1);
             ImageResult loaded = ImageResult.FromStream(context.Load(id)!);
 
             int handle = -1;

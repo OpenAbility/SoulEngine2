@@ -1,3 +1,4 @@
+using System.Diagnostics.Contracts;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
@@ -207,8 +208,9 @@ public class UIContext
         }
     }
     
+    [Pure]
     public Vector2 MeasureText(Font font, string text)
-    {
+    { 
         float x = 0;
         float y = 0;
 

@@ -117,12 +117,12 @@ public class SceneRenderer
         {
             Vector2i targetResolution = new Vector2i(3840, 2160);
 
-            float widthScale = targetResolution.Y / surfaceSize.Y;
+            float ratio = surfaceSize.X / surfaceSize.Y;
             
             renderContext.Enable(EnableCap.Blend);
             renderContext.BlendFunction(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             
-            uiContext.OnBegin(renderContext, new Vector2i((int)(surfaceSize.X * widthScale), targetResolution.Y));
+            uiContext.OnBegin(renderContext, new Vector2i(targetResolution.X, (int)(targetResolution.X / ratio)));
             //uiContext.OnBegin(renderContext, surface.FramebufferSize);
 
             Scene.Director?.RenderUI(uiContext);
