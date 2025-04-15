@@ -15,14 +15,11 @@ public class SceneRenderer
     public readonly Scene Scene;
 
     private readonly GizmoContext gizmoContext;
-    private readonly UIContext uiContext;
-
     private float rotateSpeed;
     
     public SceneRenderer(Scene scene)
     {
         Scene = scene;
-        uiContext = new UIContext(Scene.Game);
         gizmoContext = new GizmoContext(Scene.Game);
 
     }
@@ -69,7 +66,7 @@ public class SceneRenderer
         return cameraSettings;
     }
 
-    public void Render(IRenderPipeline renderPipeline, IRenderSurface surface, float deltaTime, CameraSettings cameraSettings)
+    public void Render(IRenderPipeline renderPipeline, IRenderSurface surface, float deltaTime, CameraSettings cameraSettings, UIContext? uiContext)
     {
         
         Vector2 surfaceSize = surface.FramebufferSize;
@@ -118,6 +115,20 @@ public class SceneRenderer
         {
             if(frustum.InFrustum(prop.Position))
                 prop.Render(renderPipeline, renderData, deltaTime);
+        }
+        
+        if (cameraSettings.ShowUI && uiContext != null)
+        {
+            Vector2i targetResolution = new Vector2i(3840, 2160);
+
+            float ratio = surfaceSize.X / surfaceSize.Y;
+            
+            uiContext.OnBegin(new Vector2i(targetResolution.X, (int)(targetResolution.X / ratio)));
+            //uiContext.OnBegin(renderContext, surface.FramebufferSize);
+
+            Scene.Director?.RenderUI(uiContext);
+            
+            uiContext.EnsureEnded();
         }
         
     }

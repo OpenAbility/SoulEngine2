@@ -1,4 +1,5 @@
 using SoulEngine.Rendering;
+using SoulEngine.UI.Rendering;
 
 namespace SoulEngine.Renderer;
 
@@ -8,7 +9,8 @@ namespace SoulEngine.Renderer;
 public interface IRenderPipeline
 {
     public void SubmitMeshRender(RenderLayer renderLayer, MeshRenderProperties renderProperties);
+    public void SubmitDrawList(RenderLayer renderLayer, DrawListData drawListData);
     public IEnumerable<RenderLayer> GetLayers();
     
-    public void DrawFrame(RenderContext renderContext, IRenderSurface targetSurface, float deltaTime, CameraSettings cameraSettings);
+    public void DrawFrame(PipelineData pipelineData);
 }

@@ -23,7 +23,8 @@ public class UIContext
 
 
     private Matrix4 projection;
-    private RenderContext renderContext;
+
+    private readonly Queue<UIDraw> draws = new Queue<UIDraw>();
 
     private Sprite noneSprite;
 
@@ -37,9 +38,8 @@ public class UIContext
             new Vector2i(1, 1));
     }
 
-    public void OnBegin(RenderContext renderContext, Vector2i size)
+    public void OnBegin(Vector2i size)
     {
-        this.renderContext = renderContext;
         Size = size;
         projection = Matrix4.CreateOrthographicOffCenter(0, size.X, size.Y, 0, -10, 10);
 
@@ -57,8 +57,7 @@ public class UIContext
         
         EnsureEnded();
         
-        if(drawList == null || currentType != primitiveType)
-            drawList = new DrawList(primitiveType);
+        drawList = new DrawList(primitiveType);
         currentTexture = texture;
         currentType = primitiveType;
         currentShader = shader;
@@ -79,12 +78,12 @@ public class UIContext
         if (drawList == null!) 
             return;
         
-        renderContext.Disable(EnableCap.DepthTest);
+        UIDraw uiDraw = new UIDraw();
+        uiDraw.Shader = currentShader;
+        uiDraw.Texture = currentTexture;
+        uiDraw.DrawList = drawList;
         
-        currentShader.Bind();
-        currentShader.Matrix("um_projection", projection, false);
-        currentTexture?.Bind(0);
-        drawList.Submit();
+        draws.Enqueue(uiDraw);
     }
     
 
@@ -238,5 +237,25 @@ public class UIContext
         }
 
         return new Vector2(maxX, y);
+    }
+    
+    private struct UIDraw
+    {
+        public Texture? Texture;
+        public DrawList DrawList;
+        public Shader Shader;
+    }
+
+    public void DrawAll()
+    {
+        while (draws.Count > 0)
+        {
+            UIDraw draw = draws.Dequeue();
+            
+            draw.Shader.Bind();
+            draw.Shader.Matrix("um_projection", projection, false);
+            draw.Texture?.Bind(0);
+            draw.DrawList.Submit();
+        }
     }
 }

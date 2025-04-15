@@ -2,6 +2,7 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
+using SoulEngine.UI.Rendering;
 
 namespace SoulEngine.Renderer;
 
@@ -10,6 +11,7 @@ public class DefaultRenderPipeline : IRenderPipeline
 
     private readonly Material defaultMaterial = ResourceManager.Global.Load<Material>("default.mat");
     private readonly List<MeshRenderProperties> renders = new List<MeshRenderProperties>();
+    private readonly List<DrawListData> drawLists = new List<DrawListData>();
 
     private GpuBuffer<Matrix4>? skeletonBuffer;
     
@@ -22,18 +24,28 @@ public class DefaultRenderPipeline : IRenderPipeline
         renders.Add(renderProperties);
     }
 
+    public void SubmitDrawList(RenderLayer renderLayer, DrawListData drawListData)
+    {
+        if(drawListData.Material == null!)
+            drawListData.Material = defaultMaterial;
+        
+        
+        drawLists.Add(drawListData);
+    }
+
     public IEnumerable<RenderLayer> GetLayers()
     {
         yield return DefaultRenderLayers.OpaqueLayer;
     }
 
-    public void DrawFrame(RenderContext renderContext, IRenderSurface targetSurface, float deltaTime, CameraSettings cameraSettings)
+    public void DrawFrame(PipelineData pipelineData)
     {
+        RenderContext renderContext = pipelineData.RenderContext;
         
         RenderPass pass = new RenderPass
         {
             Name = "Main Pass",
-            Surface = targetSurface,
+            Surface = pipelineData.TargetSurface,
         };
         pass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
         pass.DepthStencilSettings.StoreOp = AttachmentStoreOp.Store;
@@ -63,7 +75,7 @@ public class DefaultRenderPipeline : IRenderPipeline
 
         foreach (var render in renders)
         {
-            render.Material.Bind(cameraSettings, render.ModelMatrix);
+            render.Material.Bind(pipelineData.CameraSettings, render.ModelMatrix);
             render.Material.Shader.Uniform1i("ub_skeleton", 0);
 
             if (render.SkeletonBuffer != null)
@@ -99,8 +111,45 @@ public class DefaultRenderPipeline : IRenderPipeline
             render.Mesh.Draw();
         }
         renderContext.EndRendering();
-        renderContext.Disable(EnableCap.FramebufferSrgb);
         
+        
+        RenderPass uiPass = new RenderPass
+        {
+            Name = "UI Pass",
+            Surface = pipelineData.TargetSurface,
+        };
+        uiPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
+        uiPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.DontCare;
+        uiPass.DepthStencilSettings.ClearValue.Depth = 1;
+
+        uiPass.ColorSettings =
+        [
+            new FramebufferAttachmentSettings()
+            {
+                LoadOp = AttachmentLoadOp.Load,
+                StoreOp =  AttachmentStoreOp.Store
+            }
+        ];
+        
+        
+        renderContext.BeginRendering(uiPass);
+        
+        renderContext.Disable(EnableCap.DepthTest);
+        renderContext.Disable(EnableCap.CullFace);
+        renderContext.DepthFunction(DepthFunction.Always);
+        renderContext.Enable(EnableCap.Blend);
+        renderContext.DepthRange(-1, 1);
+        
+        renderContext.Disable(EnableCap.FramebufferSrgb);
+
+        if (pipelineData.UIContext != null)
+        {
+            pipelineData.UIContext.DrawAll();
+        }
+        renderContext.EndRendering();
+
+
         renders.Clear();
+        drawLists.Clear();
     }
 }

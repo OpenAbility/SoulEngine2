@@ -11,6 +11,7 @@ using SoulEngine.PostProcessing;
 using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
+using SoulEngine.UI;
 using SoulEngine.Util;
 using ImGuiWindow = SoulEngine.Rendering.ImGuiWindow;
 using Vector2 = System.Numerics.Vector2;
@@ -101,6 +102,8 @@ public abstract class Game
 
     private readonly List<Tool> tools = new List<Tool>();
 
+    private readonly UIContext uiContext;
+
 
 
     public Game(GameData data)
@@ -178,6 +181,8 @@ public abstract class Game
 
         PostProcessor.RegisterSurface(MainWindow);
         Localizator = new Localizator(this);
+
+        uiContext = new UIContext(this);
         
         AddTool(new DebuggerTool());
         AddTool(new DirectorTool());
@@ -532,17 +537,33 @@ public abstract class Game
 
         if (GameWindow.Visible)
         {
-            sceneRenderer?.Render(RenderPipeline, gameSurface, DeltaTime, CameraSettings.Game);
-            RenderPipeline.DrawFrame(RenderContext, gameSurface, DeltaTime,
-                sceneRenderer?.MakePipelineCamera(CameraSettings.Game, gameSurface) ?? new CameraSettings());
+            PipelineData pipelineData = new PipelineData();
+            pipelineData.RenderContext = RenderContext;
+            pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, gameSurface) ??
+                                          new CameraSettings();
+            pipelineData.DeltaTime = DeltaTime;
+            pipelineData.TargetSurface = gameSurface;
+            pipelineData.UIContext = uiContext;
+            
+            
+            sceneRenderer?.Render(RenderPipeline, gameSurface, DeltaTime, CameraSettings.Game, uiContext);
+            RenderPipeline.DrawFrame(pipelineData);
 
             PostProcessor.FinishedDrawing(RenderContext, gameSurface);
         }
 
         if (SceneWindow.Visible)
         {
-            sceneRenderer?.Render(RenderPipeline, SceneWindow, DeltaTime, sceneWindowSettings);
-            RenderPipeline.DrawFrame(RenderContext, SceneWindow, DeltaTime, sceneRenderer?.MakePipelineCamera(sceneWindowSettings, SceneWindow) ?? new CameraSettings());
+            PipelineData pipelineData = new PipelineData();
+            pipelineData.RenderContext = RenderContext;
+            pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(sceneWindowSettings, SceneWindow) ??
+                                          new CameraSettings();
+            pipelineData.DeltaTime = DeltaTime;
+            pipelineData.TargetSurface = SceneWindow;
+
+            
+            sceneRenderer?.Render(RenderPipeline, SceneWindow, DeltaTime, sceneWindowSettings, uiContext);
+            RenderPipeline.DrawFrame(pipelineData);
         }
 #else
         PostProcessedSurface postSurface = PostProcessor.InitializeFrameSurface(MainWindow);

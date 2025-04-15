@@ -1,5 +1,7 @@
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
+using SoulEngine.Renderer;
+using SoulEngine.Rendering;
 
 namespace SoulEngine.UI.Rendering;
 
@@ -39,7 +41,19 @@ public class DrawList
     }
 
 
-    public unsafe void Submit()
+    public void Submit()
+    {
+        Draw();
+        vertices.Clear();
+    }
+
+    public void Submit(IRenderPipeline renderPipeline)
+    {
+        
+    }
+
+
+    public unsafe void Draw()
     {
         GL.NamedBufferData(VertexBuffer, vertices.Count * sizeof(UIVertex), vertices.ToArray(),
             VertexBufferObjectUsage.StreamDraw);
@@ -48,9 +62,5 @@ public class DrawList
         
         GL.BindVertexArray(VertexArray);
         GL.DrawArrays(primitiveType, 0, vertices.Count);
-        
-        vertices.Clear();
     }
-    
-    
 }
