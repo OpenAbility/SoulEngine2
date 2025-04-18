@@ -1,0 +1,13 @@
+{
+  "shader": "shader/simple_cel.program",
+  "values": {
+    "ut_albedoTexture": "null",
+    "uc_albedoColour": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "ub_rimlit": true
+  }
+}

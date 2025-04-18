@@ -18,6 +18,8 @@ public abstract class Component : EngineObject
     public Entity Entity { get; }
     public Scene Scene => Entity.Scene;
     public Game Game => Entity.Scene.Game;
+
+    internal Texture? propIcon;
     
     public Component(Entity entity)
     {
@@ -27,6 +29,13 @@ public abstract class Component : EngineObject
         
         PropertyReflection.RegisterProperties(Entity.Scene, this, p => Register(p));
         
+        
+#if DEVELOPMENT
+        string icon = GetType().GetCustomAttribute<PropAttribute>()?.Icon ?? "object";
+
+        if(icon != "none")
+            propIcon = Scene.Game.ResourceManager.Load<Texture>("icons/" + icon + ".png");
+#endif
     }
     
     /// <summary>

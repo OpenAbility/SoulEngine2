@@ -17,7 +17,7 @@ void main() {
     vec3 normal = v_normal;
     
     f_colour = v_colour * uc_albedoColour;
-    
-    if(f_colour.a < 0.1f)
-            discard;
+
+    if(f_colour.a <= 0.0f)
+        discard;
 }

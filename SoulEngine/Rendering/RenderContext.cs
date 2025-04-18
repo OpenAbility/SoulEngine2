@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using OpenAbility.Logging;
 using OpenTK.Graphics.OpenGL;
 using Buffer = OpenTK.Graphics.OpenGL.Buffer;
 
@@ -84,6 +85,8 @@ public class RenderContext
         enabled.Clear();
         foreach (var cap in ValidCaps)
         {
+            if(enabled.ContainsKey(cap) && enabled[cap] != GL.IsEnabled(cap))
+                Logger.Get<RenderContext>().Warning("Enable cap " + enabled[cap] + " was changed outside of RenderContext!");
             enabled[cap] = GL.IsEnabled(cap);
         }
 
@@ -140,6 +143,7 @@ public class RenderContext
 
     public void BeginRendering(RenderPass pass)
     {
+        //RebuildState();
         if(pass.Name != null)
             PushPassName(pass.Name);
         
@@ -149,6 +153,7 @@ public class RenderContext
 
     public void EndRendering()
     {
+        //RebuildState();
         if(renderPassStack.Peek().Name != null)
             GL.PopDebugGroup();
         

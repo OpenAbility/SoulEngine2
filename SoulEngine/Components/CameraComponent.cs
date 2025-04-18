@@ -7,7 +7,7 @@ using SoulEngine.Rendering;
 
 namespace SoulEngine.Components;
 
-[Component("camera")]
+[Component("camera", Icon = "camera")]
 public class CameraComponent : Component, IComparable<CameraComponent>
 {
     [SerializedProperty("fov")] public float FieldOfView { get;

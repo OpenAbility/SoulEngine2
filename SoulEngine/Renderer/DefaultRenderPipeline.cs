@@ -1,5 +1,8 @@
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
+using SoulEngine.Core;
+using SoulEngine.Data;
+using SoulEngine.PostProcessing;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
 using SoulEngine.UI.Rendering;
@@ -13,7 +16,12 @@ public class DefaultRenderPipeline : IRenderPipeline
     private readonly List<MeshRenderProperties> renders = new List<MeshRenderProperties>();
     private readonly List<DrawListData> drawLists = new List<DrawListData>();
 
+    private readonly PostProcessor PostProcessor = new PostProcessor(Game.Current);
+
     private GpuBuffer<Matrix4>? skeletonBuffer;
+
+    private Depthbuffer? shadowBuffer;
+    
     
     public void SubmitMeshRender(RenderLayer renderLayer, MeshRenderProperties renderProperties)
     {
@@ -40,12 +48,92 @@ public class DefaultRenderPipeline : IRenderPipeline
 
     public void DrawFrame(PipelineData pipelineData)
     {
+        if (shadowBuffer == null ||
+            shadowBuffer.FramebufferSize.X != EngineVarContext.Global.GetInt("e_shadow_res", 1024))
+            shadowBuffer = new Depthbuffer(new Vector2i(EngineVarContext.Global.GetInt("e_shadow_res", 1024)));
+        
+        PostProcessor.RegisterSurface(pipelineData.TargetSurface);
+        PostProcessedSurface postProcessableSurface = PostProcessor.InitializeFrameSurface(pipelineData.TargetSurface);
+        
         RenderContext renderContext = pipelineData.RenderContext;
+
+        RenderPass shadowPass = new RenderPass
+        {
+            Name = "Shadow Pass",
+            Surface = shadowBuffer
+        };
+
+        shadowPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
+        shadowPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.Store;
+        shadowPass.ColorSettings =
+        [
+            new FramebufferAttachmentSettings()
+            {
+                LoadOp = AttachmentLoadOp.DontCare,
+                ClearValue = new FramebufferClearValue()
+                {
+                    Colour = Colour.Blank
+                },
+                StoreOp = AttachmentStoreOp.DontCare
+            }
+        ];
+        
+         
+        renderContext.BeginRendering(shadowPass);
+        
+        renderContext.Enable(EnableCap.DepthTest);
+        renderContext.Disable(EnableCap.CullFace);
+        renderContext.DepthFunction(DepthFunction.Less);
+        //renderContext.Enable(EnableCap.FramebufferSrgb);
+        renderContext.DepthRange(-1, 1);
+        
+        foreach (var render in renders)
+        {
+            // TODO: Shadow camera
+            render.Material.Bind(pipelineData.CameraSettings, render.ModelMatrix);
+            render.Material.Shader.Uniform1i("ub_skeleton", 0);
+
+            if (render.SkeletonBuffer != null)
+            {
+                // TODO: Move this around to reduce copies etc
+                
+                // Allocate the skeleton buffer
+                if ((skeletonBuffer?.Length ?? 0) < render.SkeletonBufferSize)
+                {
+                    skeletonBuffer?.Dispose();
+                    skeletonBuffer = new GpuBuffer<Matrix4>((int)(render.SkeletonBufferSize * 1.5f),
+                        BufferStorageMask.MapWriteBit | BufferStorageMask.DynamicStorageBit | BufferStorageMask.MapCoherentBit | BufferStorageMask.MapPersistentBit | BufferStorageMask.ClientStorageBit);
+                }
+                
+                
+                BufferMapping<Matrix4> mapping = skeletonBuffer!.Map(0,  render.SkeletonBufferSize,
+                    MapBufferAccessMask.MapCoherentBit | MapBufferAccessMask.MapPersistentBit | MapBufferAccessMask.MapWriteBit |
+                    MapBufferAccessMask.MapInvalidateRangeBit);
+
+
+                for (int i = 0; i < render.SkeletonBufferSize; i++)
+                {
+                    mapping.Span[i] = render.SkeletonBuffer[i];
+                }
+        
+                mapping.Dispose();
+                
+                
+                render.Material.Shader.Uniform1i("ub_skeleton", 1);
+                render.Material.Shader.BindBuffer("um_joint_buffer", skeletonBuffer, 0, render.SkeletonBufferSize);
+            }
+            
+            render.Mesh.Draw();
+        }
+        
+        
+        renderContext.EndRendering();
+        
         
         RenderPass pass = new RenderPass
         {
             Name = "Main Pass",
-            Surface = pipelineData.TargetSurface,
+            Surface = postProcessableSurface,
         };
         pass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
         pass.DepthStencilSettings.StoreOp = AttachmentStoreOp.Store;
@@ -68,9 +156,9 @@ public class DefaultRenderPipeline : IRenderPipeline
         renderContext.BeginRendering(pass);
         
         renderContext.Enable(EnableCap.DepthTest);
-        renderContext.Disable(EnableCap.CullFace);
+        renderContext.Enable(EnableCap.CullFace);
         renderContext.DepthFunction(DepthFunction.Less);
-        renderContext.Enable(EnableCap.FramebufferSrgb);
+        //renderContext.Enable(EnableCap.FramebufferSrgb);
         renderContext.DepthRange(-1, 1);
 
         foreach (var render in renders)
@@ -110,7 +198,46 @@ public class DefaultRenderPipeline : IRenderPipeline
             
             render.Mesh.Draw();
         }
+        
+        
         renderContext.EndRendering();
+        
+        PostProcessor.FinishedDrawing(renderContext, postProcessableSurface);
+
+        
+        if (pipelineData.CameraSettings.ShowGizmos)
+        {
+            RenderPass gizmoPass = new RenderPass
+            {
+                Name = "Gizmo Pass",
+                Surface = pipelineData.TargetSurface,
+            };
+            gizmoPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.DontCare;
+            gizmoPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.DontCare;
+            gizmoPass.DepthStencilSettings.ClearValue.Depth = 1;
+
+            gizmoPass.ColorSettings =
+            [
+                new FramebufferAttachmentSettings()
+                {
+                    LoadOp = AttachmentLoadOp.Load,
+                    StoreOp =  AttachmentStoreOp.Store
+                }
+            ];
+        
+        
+            renderContext.BeginRendering(gizmoPass);
+        
+            renderContext.Disable(EnableCap.DepthTest);
+            renderContext.Disable(EnableCap.CullFace);
+            renderContext.Enable(EnableCap.Blend);
+            //renderContext.Enable(EnableCap.FramebufferSrgb);
+            renderContext.DepthRange(-1, 1);
+            
+            pipelineData.DrawGizmos();
+            
+            renderContext.EndRendering();
+        }
         
         
         RenderPass uiPass = new RenderPass
@@ -140,7 +267,9 @@ public class DefaultRenderPipeline : IRenderPipeline
         renderContext.Enable(EnableCap.Blend);
         renderContext.DepthRange(-1, 1);
         
-        renderContext.Disable(EnableCap.FramebufferSrgb);
+        renderContext.BlendFunction(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        
+        //renderContext.Disable(EnableCap.FramebufferSrgb);
 
         if (pipelineData.UIContext != null)
         {

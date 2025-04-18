@@ -11,7 +11,7 @@ using SoulEngine.Rendering;
 
 namespace SoulEngine.Components;
 
-[Component("model_dynamic")]
+[Component("model_dynamic", Icon = "skeleton")]
 [Serializable]
 public class DynamicModelComponent : Component
 {

@@ -1,6 +1,8 @@
+using System.IO.Pipelines;
 using OpenTK.Mathematics;
 using SoulEngine.Components;
 using SoulEngine.Core;
+using SoulEngine.Data;
 using SoulEngine.Mathematics;
 using SoulEngine.Rendering;
 using SoulEngine.UI;
@@ -113,7 +115,7 @@ public class SceneRenderer
         renderData.RenderSurface = surface;
         foreach (var prop in Scene.Props)
         {
-            if(frustum.InFrustum(prop.Position))
+            if(!EngineVarContext.Global.GetBool("e_frustum_cull") || frustum.InFrustum(prop.Position))
                 prop.Render(renderPipeline, renderData, deltaTime);
         }
         
@@ -131,5 +133,29 @@ public class SceneRenderer
             uiContext.EnsureEnded();
         }
         
+    }
+
+    public void RenderGizmo(ref PipelineData pipelineData)
+    {
+        PipelineData dataRO = pipelineData;
+        
+        SceneRenderData renderData = new SceneRenderData();
+        renderData.CameraSettings = pipelineData.CameraSettings;
+        renderData.RenderSurface = pipelineData.TargetSurface;
+        
+        GizmoContext gizmoContext = new GizmoContext(pipelineData.Game);
+        gizmoContext.ProjectionMatrix = pipelineData.CameraSettings.ProjectionMatrix;
+        gizmoContext.ViewMatrix = pipelineData.CameraSettings.ViewMatrix;
+        gizmoContext.SceneRenderData = renderData;
+            
+        foreach (var prop in Scene.Props)
+        {
+            pipelineData.DrawGizmos += () =>
+            {
+                gizmoContext.Selected = dataRO.CameraSettings.SelectedProp == prop;
+                gizmoContext.ModelMatrix = prop.GlobalMatrix;
+                prop.RenderGizmo(gizmoContext);
+            };
+        }
     }
 }

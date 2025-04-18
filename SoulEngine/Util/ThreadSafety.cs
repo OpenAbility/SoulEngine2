@@ -7,6 +7,8 @@ namespace SoulEngine.Util;
 /// </summary>
 public class ThreadSafety
 {
+    public static ThreadSafety Instance { get; private set; } = null!;
+    
     public readonly Game Game;
 
     public bool OnMain => Game.MainThread == Thread.CurrentThread;
@@ -14,6 +16,7 @@ public class ThreadSafety
     public ThreadSafety(Game game)
     {
         Game = game;
+        Instance = this;
     }
 
     public T EnsureMain<T>(Func<T> func)

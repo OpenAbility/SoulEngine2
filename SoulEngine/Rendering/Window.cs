@@ -158,7 +158,7 @@ public unsafe class Window : IRenderSurface, IDisposable
         SDL.GLSetAttribute(SDL.GLAttr.ContextMajorVersion, 4);
         SDL.GLSetAttribute(SDL.GLAttr.ContextMinorVersion, 5);
         SDL.GLSetAttribute(SDL.GLAttr.ContextProfileMask, (int)SDL.GLProfile.Core);
-        SDL.GLSetAttribute(SDL.GLAttr.FrameBufferSRGBCapable, 1);
+        //SDL.GLSetAttribute(SDL.GLAttr.FrameBufferSRGBCapable, 1);
         SDL.GLSetAttribute(SDL.GLAttr.DoubleBuffer, 1);
         SDL.GLSetAttribute(SDL.GLAttr.AcceleratedVisual, 1);
         

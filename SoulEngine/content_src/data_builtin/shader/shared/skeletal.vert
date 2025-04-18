@@ -44,13 +44,15 @@ void main() {
         );
     }
     
-    vec4 p = vec4(um_projection * um_view * um_model * joint_matrix * vec4(a_position, 1));
+    mat4 model_complete = um_model * joint_matrix;
+    
+    vec4 p = vec4(um_projection * um_view * model_complete * vec4(a_position, 1));
     gl_Position = p;
     
     v_position = a_position;
     v_uv = a_uv;
     v_uv2 = a_uv2;
     // We need to make sure all normals are applied world-space :D
-    v_normal = mat3(transpose(inverse(um_model))) * a_normal;
+    v_normal = normalize(mat3(transpose(inverse(model_complete))) * a_normal);
     v_colour = a_colour;
 }

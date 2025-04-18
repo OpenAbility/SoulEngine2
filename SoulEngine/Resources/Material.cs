@@ -26,6 +26,7 @@ public class Material : Resource
         Shader.Matrix("um_projection", cameraSettings.ProjectionMatrix, false);
         Shader.Matrix("um_view", cameraSettings.ViewMatrix, false);
         Shader.Matrix("um_model", model, false);
+        Shader.Uniform3f("um_camera_direction", cameraSettings.CameraDirection);
 
         uint textureBindingPoint = 0;
         

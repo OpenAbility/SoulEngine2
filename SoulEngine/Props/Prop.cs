@@ -4,6 +4,7 @@ using Hexa.NET.ImGuizmo;
 using Newtonsoft.Json.Linq;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
+using SoulEngine.Components;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
 using SoulEngine.Mathematics;
@@ -96,10 +97,28 @@ public abstract class Prop : ITransformable
         PropertyReflection.RegisterProperties(scene, this, p => Register(p));
         
 #if DEVELOPMENT
-        string icon = GetType().GetCustomAttribute<PropAttribute>()?.Icon ?? "object";
 
-        if(icon != "none")
-            propIcon = Scene.Game.ResourceManager.Load<Texture>("icons/" + icon + ".dds");
+        if (this is Entity entity)
+        {
+            foreach (var component in entity.GetComponents<Component>())
+            {
+                if (component.propIcon != null)
+                    propIcon ??= component.propIcon;
+            }
+            
+            if(propIcon == null)
+                propIcon = Scene.Game.ResourceManager.Load<Texture>("icons/object.png");
+            
+        }
+        else
+        {
+            string icon = GetType().GetCustomAttribute<PropAttribute>()?.Icon ?? "object";
+
+            if(icon != "none")
+                propIcon = Scene.Game.ResourceManager.Load<Texture>("icons/" + icon + ".png");
+        }
+        
+
 #endif
     }
 

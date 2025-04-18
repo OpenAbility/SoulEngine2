@@ -23,7 +23,7 @@ void main() {
     lighting += clamp(dot(v_normal, sunDir), 0, 1);
     
     f_colour = texture(ut_albedoTexture, v_uv) * v_colour * uc_albedoColour * vec4(lighting, 1);
-    
-    if(f_colour.a < 0.1f)
-            discard;
+
+    if(f_colour.a <= 0.0f)
+        discard;
 }

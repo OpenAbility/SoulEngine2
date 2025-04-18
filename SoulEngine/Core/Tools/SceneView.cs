@@ -10,6 +10,7 @@ public class SceneView : Game.Tool
     {
         if (ImGui.Begin("Scene View", ref Enabled))
         {
+            #if DEVELOPMENT
             if (game.Scene == null)
             {
                 ImGui.Text("No scene is loaded!");
@@ -27,19 +28,6 @@ public class SceneView : Game.Tool
                     if (ImGui.IsItemHovered())
                         hoveredButton = true;
                     
-                    /*
-                    if (ImGui.BeginPopupContextItem())
-                    {
-                        if (ImGui.Selectable("Delete"))
-                        {
-                            Scene.Props.Remove(prop);
-                            if (CurrentProp == prop)
-                                CurrentProp = null;
-                        }
-
-                        ImGui.EndPopup();
-                    }
-                    */
                     
                     
                 }
@@ -59,6 +47,7 @@ public class SceneView : Game.Tool
                 
                 
             }
+#endif
         }
         ImGui.End();
     }

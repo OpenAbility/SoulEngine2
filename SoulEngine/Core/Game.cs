@@ -71,8 +71,6 @@ public abstract class Game
     public readonly string BinaryDataPath;
     public readonly GameData GameData;
 
-    public readonly PostProcessor PostProcessor;
-
     public readonly EventBus<GameEvent> EventBus;
     public readonly EventBus<InputEvent> InputBus;
 
@@ -144,6 +142,13 @@ public abstract class Game
         
         ContentCompileContext = new ContentCompileContext(this);
         CompileContent(ContentCompileContext);
+        
+        if (Environment.GetCommandLineArgs().Contains("-compile"))
+        {
+            PackContent();
+            Environment.Exit(0);
+        }
+        
 #endif
         
         Content = new ContentContext();
@@ -168,18 +173,13 @@ public abstract class Game
         BuiltinActions = new BuiltinActions(InputManager);
         Keys = new KeyActions(InputManager);
         
-        PostProcessor = new PostProcessor(this);
-        
 #if DEVELOPMENT
         GameWindow = new ImGuiWindow(this, "Game");
         SceneWindow = new ImGuiWindow(this, "Scene");
 
         SceneCamera = new SceneCamera(this);
-        
-        PostProcessor.RegisterSurface(GameWindow);
 #endif
-
-        PostProcessor.RegisterSurface(MainWindow);
+        
         Localizator = new Localizator(this);
 
         uiContext = new UIContext(this);
@@ -214,6 +214,8 @@ public abstract class Game
     
     public void Run()
     {
+        
+        
         State = GameState.Loading;
         
         RenderPipeline = CreateDefaultRenderPipeline();
@@ -533,28 +535,27 @@ public abstract class Game
         sceneWindowSettings.NearPlane = SceneCamera.Near;
         sceneWindowSettings.FarPlane = SceneCamera.Far;
 
-        PostProcessedSurface gameSurface = PostProcessor.InitializeFrameSurface(GameWindow);
-
         if (GameWindow.Visible)
         {
             PipelineData pipelineData = new PipelineData();
+            pipelineData.Game = this;
             pipelineData.RenderContext = RenderContext;
-            pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, gameSurface) ??
+            pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, GameWindow) ??
                                           new CameraSettings();
             pipelineData.DeltaTime = DeltaTime;
-            pipelineData.TargetSurface = gameSurface;
+            pipelineData.TargetSurface = GameWindow;
             pipelineData.UIContext = uiContext;
             
             
-            sceneRenderer?.Render(RenderPipeline, gameSurface, DeltaTime, CameraSettings.Game, uiContext);
+            sceneRenderer?.Render(RenderPipeline, GameWindow, DeltaTime, CameraSettings.Game, uiContext);
+            sceneRenderer?.RenderGizmo(ref pipelineData);
             RenderPipeline.DrawFrame(pipelineData);
-
-            PostProcessor.FinishedDrawing(RenderContext, gameSurface);
         }
 
         if (SceneWindow.Visible)
         {
             PipelineData pipelineData = new PipelineData();
+            pipelineData.Game = this;
             pipelineData.RenderContext = RenderContext;
             pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(sceneWindowSettings, SceneWindow) ??
                                           new CameraSettings();
@@ -563,14 +564,25 @@ public abstract class Game
 
             
             sceneRenderer?.Render(RenderPipeline, SceneWindow, DeltaTime, sceneWindowSettings, uiContext);
+            sceneRenderer?.RenderGizmo(ref pipelineData);
             RenderPipeline.DrawFrame(pipelineData);
         }
 #else
-        PostProcessedSurface postSurface = PostProcessor.InitializeFrameSurface(MainWindow);
-
-        sceneRenderer?.Render(RenderContext, postSurface, DeltaTime, CameraSettings.Game);
+        PipelineData pipelineData = new PipelineData();
+        pipelineData.Game = this;
+        pipelineData.RenderContext = RenderContext;
+        pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, MainWindow) ??
+                                      new CameraSettings();
+        pipelineData.DeltaTime = DeltaTime;
+        pipelineData.TargetSurface = MainWindow;
+        pipelineData.UIContext = uiContext;
         
-        PostProcessor.FinishedDrawing(RenderContext, postSurface);
+        sceneRenderer?.Render(RenderPipeline, MainWindow, DeltaTime, CameraSettings.Game, uiContext);
+        sceneRenderer?.RenderGizmo(ref pipelineData);
+        
+        RenderContext.RebuildState();
+        RenderPipeline.DrawFrame(pipelineData);
+        RenderContext.RebuildState();
 #endif
     }
 

@@ -58,41 +58,41 @@ public class Shader : Resource
     public void Matrix(string name, Matrix4 matrix, bool transpose)
     {
         int loc = UniformLocation(name);
-        GL.UniformMatrix4f(loc, 1, transpose, in matrix);
+        GL.ProgramUniformMatrix4f(handle, loc, 1, transpose, in matrix);
     }
     
     public void Uniform1i(string name, int value)
     {
         int loc = UniformLocation(name);
-        GL.Uniform1i(loc, value);
+        GL.ProgramUniform1i(handle, loc, value);
     }
     
     public void Uniform1f(string name, float value)
     {
         int loc = UniformLocation(name);
-        GL.Uniform1f(loc, value);
+        GL.ProgramUniform1f(handle, loc, value);
     }
     public void Uniform2f(string name, Vector2 value)
     {
         int loc = UniformLocation(name);
-        GL.Uniform2f(loc, value.X, value.Y);
+        GL.ProgramUniform2f(handle, loc, value.X, value.Y);
     }
     
     public void Uniform2i(string name, Vector2i value)
     {
         int loc = UniformLocation(name);
-        GL.Uniform2i(loc, value.X, value.Y);
+        GL.ProgramUniform2i(handle, loc, value.X, value.Y);
     }
     
     public void Uniform3f(string name, Vector3 value)
     {
         int loc = UniformLocation(name);
-        GL.Uniform3f(loc, value.X, value.Y, value.Z);
+        GL.ProgramUniform3f(handle, loc, value.X, value.Y, value.Z);
     }
     public void Uniform4f(string name, Vector4 value)
     {
         int loc = UniformLocation(name);
-        GL.Uniform4f(loc, value.X, value.Y, value.Z, value.W);
+        GL.ProgramUniform4f(handle, loc, value.X, value.Y, value.Z, value.W);
     }
 
     public unsafe void BindBuffer<T>(string name, GpuBuffer<T> buffer, int offset, int size) where T : unmanaged
@@ -255,7 +255,7 @@ public class Shader : Resource
                     continue;
                 }
                 
-                ShaderParameter parameter = new ShaderParameter(uniformName, i, size, (ShaderParameterType)type);
+                ShaderParameter parameter = new ShaderParameter(uniformName, GL.GetUniformLocation(handle, uniformName), size, (ShaderParameterType)type);
                 parameters[uniformName] = parameter;
             }
         });

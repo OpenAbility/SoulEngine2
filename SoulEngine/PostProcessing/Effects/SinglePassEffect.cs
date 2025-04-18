@@ -16,6 +16,11 @@ public abstract class SinglePassEffect : PostEffect
         shader = ResourceManager.Global.Load<Shader>(shaderPath);
     }
 
+    protected virtual void BindUniforms(Shader shader)
+    {
+        
+    }
+
     public override void PerformEffect(PostProcessedSurface surface)
     {
 
@@ -25,7 +30,8 @@ public abstract class SinglePassEffect : PostEffect
         }
         
         target.BindFramebuffer();
-        
+
+        BindUniforms(shader);
         
         shader.Bind();
         surface.Framebuffer.BindColour(0);
