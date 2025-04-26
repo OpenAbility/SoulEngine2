@@ -29,7 +29,7 @@ void main() {
     // Dumb but oh well.
     
     mat4 joint_matrix;
-    if(ub_skeleton && a_indices.rgba != uvec4(0, 0, 0, 0) && a_weights != vec4(0, 0, 0, 0)) {
+    if(ub_skeleton) {
         joint_matrix = 
                 um_joints.data[a_indices.x] * a_weights.x +
                 um_joints.data[a_indices.y] * a_weights.y +

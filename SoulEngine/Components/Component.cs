@@ -129,7 +129,7 @@ public abstract class Component : EngineObject
         
     }
     
-    public void Edit()
+    public override void Edit()
     {
         ImGui.PushID("Component" + ObjectID);
 

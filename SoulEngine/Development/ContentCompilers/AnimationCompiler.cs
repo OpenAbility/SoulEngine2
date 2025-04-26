@@ -60,8 +60,8 @@ public class AnimationCompiler : GLBContentCompiler
             
             int interp = sampler.Interpolation switch
             {
-                "LINEAR" => 0,
-                "STEP" => 1,
+                "LINEAR" => (int)AnimationChannelInterpolation.Linear,
+                "STEP" => (int)AnimationChannelInterpolation.Step,
                 _ => throw new Exception("Unsupported interpolation mode " + sampler.Interpolation)
             };
             
@@ -123,35 +123,49 @@ public class AnimationCompiler : GLBContentCompiler
                     KeyframeData keyframeData = new KeyframeData()
                     {
                         Channel = i,
-                        Data = [0, 0, 0, 0],
+                        FromData = [0, 0, 0, 0],
+                        ToData = [0, 0, 0, 0],
                         Timestamp = frameTs
                     };
 
-                    if (animation.Channels[i].Target.Path == "rotation")
+                    if (animation.Channels[i].Target.Path == "rotation" || animation.Channels[i].Target.Path == "weights")
                     {
-                        keyframeData.Data[0] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 0).CastStruct<float, byte>();
-                        keyframeData.Data[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 1).CastStruct<float, byte>();
-                        keyframeData.Data[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 2).CastStruct<float, byte>();
-                        keyframeData.Data[3] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 3).CastStruct<float, byte>();
+                        keyframeData.FromData[0] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 0).CastStruct<float, byte>();
+                        keyframeData.FromData[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 1).CastStruct<float, byte>();
+                        keyframeData.FromData[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 2).CastStruct<float, byte>();
+                        keyframeData.FromData[3] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 3).CastStruct<float, byte>();
                     }
-                    if (animation.Channels[i].Target.Path == "translation")
+                    if (animation.Channels[i].Target.Path == "translation" || animation.Channels[i].Target.Path == "scale")
                     {
-                        keyframeData.Data[0] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 0).CastStruct<float, byte>();
-                        keyframeData.Data[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 1).CastStruct<float, byte>();
-                        keyframeData.Data[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 2).CastStruct<float, byte>();
+                        keyframeData.FromData[0] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 0).CastStruct<float, byte>();
+                        keyframeData.FromData[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 1).CastStruct<float, byte>();
+                        keyframeData.FromData[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 2).CastStruct<float, byte>();
                     }
-                    if (animation.Channels[i].Target.Path == "scale")
+
+                    // There's another keyframe after this - read it
+                    if (currentFrames[i] + 1 < frameAccessor.Count)
                     {
-                        keyframeData.Data[0] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 0).CastStruct<float, byte>();
-                        keyframeData.Data[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 1).CastStruct<float, byte>();
-                        keyframeData.Data[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 2).CastStruct<float, byte>();
+                        if (animation.Channels[i].Target.Path == "rotation" || animation.Channels[i].Target.Path == "weights")
+                        {
+                            keyframeData.ToData[0] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 0 + 4).CastStruct<float, byte>();
+                            keyframeData.ToData[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 1 + 4).CastStruct<float, byte>();
+                            keyframeData.ToData[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 2 + 4).CastStruct<float, byte>();
+                            keyframeData.ToData[3] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 3 + 4).CastStruct<float, byte>();
+                        }
+                        if (animation.Channels[i].Target.Path == "translation" || animation.Channels[i].Target.Path == "scale")
+                        {
+                            keyframeData.ToData[0] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 0 + 3).CastStruct<float, byte>();
+                            keyframeData.ToData[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 1 + 3).CastStruct<float, byte>();
+                            keyframeData.ToData[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 2 + 3).CastStruct<float, byte>();
+                        }
+
+                        keyframeData.Duration =
+                            loader.GetAccessor(frameAccessor, currentFrames[i] + 1).CastStruct<float, byte>() - frameTs;
                     }
-                    if (animation.Channels[i].Target.Path == "weights")
+                    else
                     {
-                        keyframeData.Data[0] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 0).CastStruct<float, byte>();
-                        keyframeData.Data[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 1).CastStruct<float, byte>();
-                        keyframeData.Data[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 2).CastStruct<float, byte>();
-                        keyframeData.Data[3] = loader.GetAccessor(dataAccessor, currentFrames[i] * 4 + 3).CastStruct<float, byte>();
+                        // It's the last keyframe - might as well be infinite
+                        keyframeData.Duration = Single.PositiveInfinity;
                     }
 
                     keyframeDatas.Add(keyframeData);
@@ -171,10 +185,17 @@ public class AnimationCompiler : GLBContentCompiler
                 AnimationKeyframe keyframe =
                     new AnimationKeyframe(keyframeDatas[i].Channel, keyframeDatas[i].Timestamp);
                 
-                for (int j = 0; j < keyframeDatas[i].Data.Length; j++)
+                for (int j = 0; j < keyframeDatas[i].FromData.Length; j++)
                 {
-                    keyframe.Data[j] = keyframeDatas[i].Data[j];
+                    keyframe.FromData[j] = keyframeDatas[i].FromData[j];
                 }
+                
+                for (int j = 0; j < keyframeDatas[i].ToData.Length; j++)
+                {
+                    keyframe.ToData[j] = keyframeDatas[i].ToData[j];
+                }
+
+                keyframe.Duration = keyframeDatas[i].Duration;
                 
                 writer.Write(new ReadOnlySpan<byte>((byte*)&keyframe, sizeof(AnimationKeyframe)));
                 writtenFrames++;
@@ -226,6 +247,8 @@ public class AnimationCompiler : GLBContentCompiler
     {
         public float Timestamp;
         public int Channel;
-        public float[] Data;
+        public float[] FromData;
+        public float[] ToData;
+        public float Duration;
     }
 }

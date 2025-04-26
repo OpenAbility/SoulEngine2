@@ -1,3 +1,4 @@
+using System.Buffers;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
@@ -21,7 +22,7 @@ public class GizmoContext
     private PrimitiveType primitiveType;
     public SceneRenderData SceneRenderData { get; internal set; }
 
-    private Vertex[] vertices = new Vertex[256];
+    private Vertex[] vertices;
     private int currentVertex = 0;
 
     private Shader shader;
@@ -42,6 +43,8 @@ public class GizmoContext
         
         vertexArray = new Vertex().CreateVertexArray();
         vertexBuffer = GL.CreateBuffer();
+
+        vertices = ArrayPool<Vertex>.Shared.Rent(256);
     }
 
     public Shader Billboard => billboardShader;
@@ -79,9 +82,12 @@ public class GizmoContext
 
         if (vertices.Length <= currentVertex)
         {
-            Vertex[] newVertices = new Vertex[vertices.Length << 1];
+            Vertex[] newVertices = ArrayPool<Vertex>.Shared.Rent(vertices.Length << 1);
             vertices.CopyTo(newVertices, 0);
-            newVertices = vertices;
+            
+            ArrayPool<Vertex>.Shared.Return(vertices);
+            
+            vertices = newVertices;
         }
 
         vertices[currentVertex++] = vertex;

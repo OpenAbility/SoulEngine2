@@ -24,6 +24,9 @@ public unsafe class AnimationClip : Resource
     
     public AnimationClip(Stream source)
     {
+        if(source == Stream.Null)
+            return;
+        
         reader = new BinaryReader(source, Encoding.UTF8, false);
 
         uint magic = reader.ReadUInt32();
@@ -54,6 +57,8 @@ public unsafe class AnimationClip : Resource
         frameStartOffset = reader.BaseStream.Position;
     }
 
+    private readonly byte[] readBuffer = new byte[sizeof(AnimationKeyframe)];
+
     public AnimationKeyframe GetKeyframe(ulong index)
     {
         if (index >= TotalKeyframes)
@@ -63,7 +68,11 @@ public unsafe class AnimationClip : Resource
             throw new EndOfStreamException();
         
         reader.BaseStream.Position = frameStartOffset + (long)index * sizeof(AnimationKeyframe);
-        return ((Span<byte>)reader.ReadBytes(sizeof(AnimationKeyframe))).CastStruct<AnimationKeyframe, byte>();
+
+        if (reader.Read(readBuffer) != readBuffer.Length)
+            throw new EndOfStreamException();
+        
+        return ((Span<byte>)readBuffer).CastStruct<AnimationKeyframe, byte>();
     }
 
     public AnimationChannelInfo GetChannel(int index)
@@ -81,6 +90,9 @@ public unsafe class AnimationClip : Resource
     {
         public AnimationClip LoadResource(ResourceManager resourceManager, string id, ContentContext content)
         {
+            if (!content.Exists(id))
+                return new AnimationClip(Stream.Null);
+            
             return new AnimationClip(content.Load(id)!);
         }
     }
@@ -96,12 +108,14 @@ public struct AnimationChannelInfo(
     public readonly AnimationChannelInterpolation Interpolation = interpolation;
 }
 
-[StructLayout(LayoutKind.Explicit, Pack = 0, CharSet = CharSet.Ansi)]
+[StructLayout(LayoutKind.Sequential, Pack = 0, CharSet = CharSet.Ansi)]
 public unsafe struct AnimationKeyframe(int channel, float timestamp)
 {
-    [FieldOffset(0)] public readonly int Channel = channel;
-    [FieldOffset(4)] public readonly float Timestamp = timestamp;
-    [FieldOffset(8)] public fixed float Data[4];
+    public int Channel = channel;
+    public float Timestamp = timestamp;
+    public fixed float FromData[4];
+    public fixed float ToData[4];
+    public float Duration;
 }
 
 public enum AnimationChannelTarget

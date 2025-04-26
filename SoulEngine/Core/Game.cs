@@ -92,7 +92,7 @@ public abstract class Game
     private float lastFrameDelta = -1;
     
 
-    public GameState State;
+    public CoreGameState State;
     
     public IRenderPipeline RenderPipeline { get; private set; }
 
@@ -216,7 +216,7 @@ public abstract class Game
     {
         
         
-        State = GameState.Loading;
+        State = CoreGameState.Loading;
         
         RenderPipeline = CreateDefaultRenderPipeline();
         
@@ -224,7 +224,7 @@ public abstract class Game
         
         LoadScene();
 
-        State = GameState.Running;
+        State = CoreGameState.Running;
 
         MainLoop();
     }
@@ -272,8 +272,8 @@ public abstract class Game
 
             if (DeltaTime > 1.0f)
                 DeltaTime = 1.0f;
-            
-            
+
+            DeltaTime *= EngineVarContext.Global.GetFloat("e_timescale", 1.0f);
             
             EngineVarContext.Global.SetFloat("dt", DeltaTime);
             EngineVarContext.Global.SetInt("frameDelta", (int)(balancedFrameDelta * 1000));
@@ -343,11 +343,11 @@ public abstract class Game
             
             
 #endif
-            if(State == GameState.Running)
+            if(State == CoreGameState.Running)
                 RunningFrame();
-            else if (State == GameState.Loading)
+            else if (State == CoreGameState.Loading)
                LoadingFrame();
-            else if(State == GameState.ReloadingAssets)
+            else if(State == CoreGameState.ReloadingAssets)
                 ReloadingFrame();
             
             RenderPass imguiPass = new RenderPass();
@@ -545,6 +545,7 @@ public abstract class Game
             pipelineData.DeltaTime = DeltaTime;
             pipelineData.TargetSurface = GameWindow;
             pipelineData.UIContext = uiContext;
+            pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_post", true);
             
             
             sceneRenderer?.Render(RenderPipeline, GameWindow, DeltaTime, CameraSettings.Game, uiContext);
@@ -561,6 +562,7 @@ public abstract class Game
                                           new CameraSettings();
             pipelineData.DeltaTime = DeltaTime;
             pipelineData.TargetSurface = SceneWindow;
+            pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_scene_post") && EngineVarContext.Global.GetBool("e_post", true);
 
             
             sceneRenderer?.Render(RenderPipeline, SceneWindow, DeltaTime, sceneWindowSettings, uiContext);

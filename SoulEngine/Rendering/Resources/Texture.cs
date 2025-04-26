@@ -135,7 +135,7 @@ public class Texture : Resource
                     {
                         for (int x = 0; x < 16; x++)
                         {
-                            Colour colour = coloured ? Colour.Pink : Colour.Black;
+                            Colour colour = coloured ? Colour.DeepPink : Colour.Black;
                             coloured = !coloured;
 
                             textureData[i * 4 + 0] = colour.R;

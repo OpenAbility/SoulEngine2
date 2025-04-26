@@ -49,6 +49,12 @@ public class ResourceProperty<T> : SerializedProperty<T?> where T : Resource
             ImGui.TextColored(new Vector4(1, 0, 0, 1), exception.ToString());
     }
 
+    public void Load(string id)
+    {
+        this.id = id;
+        LoadResource();
+    }
+
     public override Tag Save()
     {
         return new StringTag(Name, id);

@@ -23,7 +23,7 @@ public interface INBTSerializer<T> : INBTSerializer
     }
     
     public Tag Serialize(T value, NBTSerializationContext context);
-    public T? Deserialize(Tag tag, NBTSerializationContext context);
+    public new T? Deserialize(Tag tag, NBTSerializationContext context);
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]

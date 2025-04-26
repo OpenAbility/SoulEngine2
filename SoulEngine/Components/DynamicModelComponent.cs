@@ -24,7 +24,7 @@ public class DynamicModelComponent : Component
         AnimationProperty = Register(new ResourceProperty<AnimationClip>("animation", "", Game));
     }
     
-     public readonly BoolProperty Visible;
+    public readonly BoolProperty Visible;
     public readonly ResourceProperty<Model> ModelProperty;
     public readonly ResourceProperty<Model> JointModelProperty;
     public readonly ResourceProperty<AnimationClip> AnimationProperty;
@@ -61,6 +61,13 @@ public class DynamicModelComponent : Component
         if(AnimationPlayer?.Playing is { Playing: false })
             AnimationPlayer.Playing.Restart();
         
+    }
+
+    public void LoadModel(Model model)
+    {
+        ModelProperty.Set(model);
+        skeletonInstance = model.Skeleton.Instantiate();
+        AnimationPlayer = new SingleAnimationPlayer(skeletonInstance);
     }
 
     private static GpuBuffer<Matrix4>? skeletonBuffer;

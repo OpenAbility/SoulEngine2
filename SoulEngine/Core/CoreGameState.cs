@@ -1,6 +1,6 @@
 namespace SoulEngine.Core;
 
-public enum GameState
+public enum CoreGameState
 {
     Loading,
     Running,

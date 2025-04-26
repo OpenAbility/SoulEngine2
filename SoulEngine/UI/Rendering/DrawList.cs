@@ -1,3 +1,4 @@
+using System.Buffers;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Renderer;
@@ -20,23 +21,42 @@ public class DrawList
         VertexBuffer = GL.CreateBuffer();
     }
 
-    private readonly List<UIVertex> vertices = new List<UIVertex>(256);
+
+    private UIVertex[] vertexBuffer;
+    private int vertexIndex;
+    
     private readonly PrimitiveType primitiveType;
     
     public DrawList(PrimitiveType primitiveType)
     {
         this.primitiveType = primitiveType;
+
+        vertexBuffer = ArrayPool<UIVertex>.Shared.Rent(512);
+    }
+
+    private void Add(UIVertex vertex)
+    {
+        if (vertexIndex >= vertexBuffer.Length)
+        {
+            UIVertex[] newBuffer =  ArrayPool<UIVertex>.Shared.Rent(vertexBuffer.Length * 2);
+            vertexBuffer.CopyTo(newBuffer, 0);
+            
+            ArrayPool<UIVertex>.Shared.Return(vertexBuffer);
+            vertexBuffer = newBuffer;
+        }
+
+        vertexBuffer[vertexIndex++] = vertex;
     }
 
     public DrawList Vertex(float x, float y, float u, float v, Colour colour)
     {
-        vertices.Add(new UIVertex(new Vector2(x, y), new Vector2(u, v), colour));
+        Add(new UIVertex(new Vector2(x, y), new Vector2(u, v), colour));
         return this;
     }
     
     public DrawList Vertex(Matrix4 model, float x, float y, float u, float v, Colour colour)
     {
-        vertices.Add(new UIVertex((model * new Vector4(x, y, 0, 0)).Xy, new Vector2(u, v), colour));
+        Add(new UIVertex((model * new Vector4(x, y, 0, 0)).Xy, new Vector2(u, v), colour));
         return this;
     }
 
@@ -44,23 +64,18 @@ public class DrawList
     public void Submit()
     {
         Draw();
-        vertices.Clear();
-    }
-
-    public void Submit(IRenderPipeline renderPipeline)
-    {
-        
+        vertexIndex = 0;
     }
 
 
     public unsafe void Draw()
     {
-        GL.NamedBufferData(VertexBuffer, vertices.Count * sizeof(UIVertex), vertices.ToArray(),
+        GL.NamedBufferData(VertexBuffer, vertexIndex * sizeof(UIVertex), vertexBuffer,
             VertexBufferObjectUsage.StreamDraw);
         
         GL.VertexArrayVertexBuffer(VertexArray, 0, VertexBuffer, 0, sizeof(UIVertex));
         
         GL.BindVertexArray(VertexArray);
-        GL.DrawArrays(primitiveType, 0, vertices.Count);
+        GL.DrawArrays(primitiveType, 0, vertexIndex);
     }
 }

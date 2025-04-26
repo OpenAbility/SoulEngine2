@@ -20,10 +20,14 @@ public class ThreadPool
     {
         executingThreads = new Thread[size];
         Logger = Logger.Get("ThreadPool", name);
+
+        running = true;
+        
         for (int i = 0; i < size; i++)
         {
             executingThreads[i] = new Thread(ThreadLoop);
             executingThreads[i].Start();
+            executingThreads[i].IsBackground = true;
             executingThreads[i].Name = name + "-Thread" + i;
         }
     }

@@ -22,28 +22,82 @@ public static class StandardLibraryGenerator
             LibraryInterruptAttribute? attribute = function.GetCustomAttribute<LibraryInterruptAttribute>();
             if(attribute == null)
                 continue;
+
+            var matchType = IsValidFunc(attribute, function);
             
-            if(function.GetParameters().Length != 1)
+            if(matchType == MatchType.None)
                 continue;
             
-            if(function.GetParameters()[0].ParameterType != typeof(InterruptContext))
+            if(attribute.ID.StartsWith("$"))
                 continue;
-            
-            
 
             builder.Append("proc extern " + ConvertType(attribute.ReturnValue) + " " + attribute.ID + "(");
+            
             for (int i = 0; i < attribute.Parameters.Length; i++)
             {
-                builder.Append(ConvertType(attribute.Parameters[i]) + " attribute" + i);
+                string name = "attribute" + i;
+
+                if (matchType == MatchType.ParameterInput)
+                    name = function.GetParameters()[i].Name!;
+                else if (matchType == MatchType.ComplexParameterInput)
+                    name = function.GetParameters()[i + 1].Name!;
+                
+                builder.Append(ConvertType(attribute.Parameters[i]) + " " + name);
                 if (i < attribute.Parameters.Length - 1)
                     builder.Append(", ");
             }
 
             builder.AppendLine("); // Generated from " + function.Name);
-
         }
 
         return builder.ToString();
+    }
+
+    private static MatchType IsValidFunc(LibraryInterruptAttribute attribute, MethodInfo function)
+    {
+        ParameterInfo[] parameters = function.GetParameters();
+
+        if (attribute.Parameters.Length == parameters.Length)
+        {
+            var mismatch = !function.ReturnType.IsAssignableTo(ConvertTypeToNative(attribute.ReturnValue ?? ValueType.Void));
+            
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                if(mismatch)
+                    break;
+                
+                if (!parameters[i].ParameterType.IsAssignableFrom(ConvertTypeToNative(attribute.Parameters[i])))
+                    mismatch = true;
+            }
+
+            if (!mismatch)
+                return MatchType.ParameterInput;
+        }
+        
+        if (attribute.Parameters.Length + 1 == parameters.Length)
+        {
+            bool mismatch = parameters[0].ParameterType != typeof(InterruptContext) || !function.ReturnType.IsAssignableTo(ConvertTypeToNative(attribute.ReturnValue ?? ValueType.Void));
+            
+            for (var i = 0; i < parameters.Length - 1; i++)
+            {
+                if(mismatch)
+                    break;
+                
+                if (!parameters[i + 1].ParameterType.IsAssignableFrom(ConvertTypeToNative(attribute.Parameters[i])))
+                    mismatch = true;
+            }
+
+            if (!mismatch)
+                return MatchType.ComplexParameterInput;
+        }
+        
+        
+        if (parameters.Length == 1 &&
+            parameters[0].ParameterType == typeof(InterruptContext))
+            return MatchType.SingleParameter;
+        
+
+        return MatchType.None;
     }
 
     private static string ConvertType(ValueType? valueType)
@@ -60,6 +114,20 @@ public static class StandardLibraryGenerator
             _ => throw new ArgumentOutOfRangeException(nameof(valueType), valueType, null)
         };
     }
+    
+    private static Type ConvertTypeToNative(ValueType? valueType)
+    {
+        return valueType switch
+        {
+            ValueType.Integer => typeof(int),
+            ValueType.Floating => typeof(float),
+            ValueType.Boolean => typeof(bool),
+            ValueType.String => typeof(string),
+            ValueType.Handle => typeof(object),
+            _ => typeof(void)
+        };
+    }
+    
 
     public static void RegisterInterrupts(object handler, SoulEngine.SequenceScript.Machine.ExecutionContext context)
     {
@@ -70,16 +138,57 @@ public static class StandardLibraryGenerator
             LibraryInterruptAttribute? attribute = function.GetCustomAttribute<LibraryInterruptAttribute>();
             if(attribute == null)
                 continue;
+
+            MatchType match = IsValidFunc(attribute, function);
             
-            if(function.GetParameters().Length != 1)
+            if(match == MatchType.None)
                 continue;
             
-            if(function.GetParameters()[0].ParameterType != typeof(InterruptContext))
-                continue;
-            
-            context.RegisterInterrupt(attribute.ID, ctx => function.Invoke(handler, [ctx]));
+            if(match == MatchType.SingleParameter)
+                context.RegisterInterrupt(attribute.ID, ctx => function.Invoke(handler, [ctx]));
+            else if (match == MatchType.ParameterInput)
+            {
+                context.RegisterInterrupt(attribute.ID, ctx =>
+                {
+                    object[] parameters = new object[attribute.Parameters.Length];
+
+                    for (int i = parameters.Length - 1; i >= 0; i--)
+                    {
+                        parameters[i] = ctx.PopStack().Raw;
+                    }
+
+                    object? ret = function.Invoke(handler, parameters);
+                    
+                    if(attribute.ReturnValue != ValueType.Void && attribute.ReturnValue != null)
+                        ctx.PushStack(new DynValue(attribute.ReturnValue.Value, ret!));
+                });
+            } else if (match == MatchType.ComplexParameterInput)
+            {
+                context.RegisterInterrupt(attribute.ID, ctx =>
+                {
+                    object[] parameters = new object[attribute.Parameters.Length + 1];
+
+                    parameters[0] = ctx;
+                    for (int i = attribute.Parameters.Length - 1; i >= 0; i--)
+                    {
+                        parameters[i + 1] = ctx.PopStack().Raw;
+                    }
+
+                    object? ret = function.Invoke(handler, parameters);
+                    if(attribute.ReturnValue != ValueType.Void && attribute.ReturnValue != null)
+                        ctx.PushStack(new DynValue(attribute.ReturnValue.Value, ret!));
+                });
+            }
         }
         
+    }
+    
+    private enum MatchType
+    {
+        None,
+        SingleParameter,
+        ParameterInput,
+        ComplexParameterInput
     }
 }
 

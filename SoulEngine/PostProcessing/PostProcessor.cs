@@ -10,31 +10,26 @@ namespace SoulEngine.PostProcessing;
 
 public class PostProcessor
 {
-    private readonly Dictionary<IRenderSurface, PostProcessedSurface?> framebuffers =
-        new Dictionary<IRenderSurface, PostProcessedSurface?>();
+    private IRenderSurface renderSurface;
 
     private readonly SortedSet<PostEffect> effects = new SortedSet<PostEffect>();
 
     private readonly Game game;
+    private PostProcessedSurface? postProcessedSurface;
 
-    public PostProcessor(Game game)
+    public PostProcessor(Game game, IRenderSurface renderSurface)
     {
         this.game = game;
         
+        this.renderSurface = renderSurface;
+        
         //EnableEffect(new BloomEffect());
         EnableEffect(new ColourEffects());
-   
-    }
+        
+    
 
-    public void RegisterSurface(IRenderSurface renderSurface)
-    {
-        framebuffers.TryAdd(renderSurface, null);
     }
-
-    public void DeregisterSurface(IRenderSurface renderSurface)
-    {
-        framebuffers.Remove(renderSurface);
-    }
+    
 
     public void EnableEffect(PostEffect effect)
     {
@@ -46,18 +41,15 @@ public class PostProcessor
         effects.Remove(effect);
     }
     
-    public PostProcessedSurface InitializeFrameSurface(IRenderSurface source)
+    public PostProcessedSurface InitializeFrameSurface()
     {
-        PostProcessedSurface? framebuffer = framebuffers[source];
-        if (framebuffer == null || framebuffer.FramebufferSize != source.FramebufferSize)
+        if (postProcessedSurface == null || postProcessedSurface.FramebufferSize != renderSurface.FramebufferSize)
         {
-            framebuffer = new PostProcessedSurface(source, this, game, source.FramebufferSize);
-            framebuffers[source] = framebuffer;
+            postProcessedSurface = new PostProcessedSurface(renderSurface, this, game, renderSurface.FramebufferSize);
         }
         
-        framebuffer.InitializeFrame();
-        
-        return framebuffer;
+        postProcessedSurface.InitializeFrame();
+        return postProcessedSurface;
     }
 
     public void FinishedDrawing(RenderContext renderContext, PostProcessedSurface surface)

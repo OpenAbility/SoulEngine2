@@ -93,10 +93,11 @@ public class Scene : Resource
 
     public CameraComponent? Camera => GetComponents<CameraComponent>().OrderDescending().FirstOrDefault();
 
-    public void AddProp(string type, string name)
+    public Prop AddProp(string type, string name)
     {
         Prop prop = PropLoader.Create(this, type, name);
         Props.Add(prop);
+        return prop;
     }
 
     public CompoundTag Write()
@@ -120,6 +121,11 @@ public class Scene : Resource
     public Prop? GetProp(string name)
     {
         return Props.Find(p => p.Name == name);
+    }
+    
+    public void DeleteProp(string name)
+    {
+        Props.RemoveAll(p => p.Name == name);
     }
     
     public Prop? GetProp(string name, Type type)

@@ -16,4 +16,6 @@ public struct PipelineData()
     public Action DrawGizmos = () => {};
 
     public UIContext? UIContext;
+
+    public bool PostProcessing = true;
 }

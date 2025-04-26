@@ -5,7 +5,7 @@ namespace SoulEngine.Data.NBT;
 
 public class ListTag : Tag, IList<Tag>
 {
-    public TagType Type { get; private set; }
+    public new TagType Type { get; private set; }
 
     private List<Tag> tags = new List<Tag>();
     

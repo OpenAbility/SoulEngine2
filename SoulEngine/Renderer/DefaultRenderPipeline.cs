@@ -15,8 +15,8 @@ public class DefaultRenderPipeline : IRenderPipeline
     private readonly Material defaultMaterial = ResourceManager.Global.Load<Material>("default.mat");
     private readonly List<MeshRenderProperties> renders = new List<MeshRenderProperties>();
     private readonly List<DrawListData> drawLists = new List<DrawListData>();
-
-    private readonly PostProcessor PostProcessor = new PostProcessor(Game.Current);
+    private readonly Dictionary<IRenderSurface, PostProcessor> postProcessors =
+        new Dictionary<IRenderSurface, PostProcessor>();
 
     private GpuBuffer<Matrix4>? skeletonBuffer;
 
@@ -51,10 +51,21 @@ public class DefaultRenderPipeline : IRenderPipeline
         if (shadowBuffer == null ||
             shadowBuffer.FramebufferSize.X != EngineVarContext.Global.GetInt("e_shadow_res", 1024))
             shadowBuffer = new Depthbuffer(new Vector2i(EngineVarContext.Global.GetInt("e_shadow_res", 1024)));
+
+        PostProcessedSurface? postProcessableSurface = null;
+        PostProcessor? postProcessor = null;
         
-        PostProcessor.RegisterSurface(pipelineData.TargetSurface);
-        PostProcessedSurface postProcessableSurface = PostProcessor.InitializeFrameSurface(pipelineData.TargetSurface);
-        
+        if (pipelineData.PostProcessing)
+        {
+            if (!postProcessors.TryGetValue(pipelineData.TargetSurface, out postProcessor))
+            {
+                postProcessor = new PostProcessor(pipelineData.Game, pipelineData.TargetSurface);
+                postProcessors[pipelineData.TargetSurface] = postProcessor;
+            }
+            
+            postProcessableSurface = postProcessor.InitializeFrameSurface();
+        }
+
         RenderContext renderContext = pipelineData.RenderContext;
 
         RenderPass shadowPass = new RenderPass
@@ -133,7 +144,7 @@ public class DefaultRenderPipeline : IRenderPipeline
         RenderPass pass = new RenderPass
         {
             Name = "Main Pass",
-            Surface = postProcessableSurface,
+            Surface = pipelineData.PostProcessing ? postProcessableSurface! : pipelineData.TargetSurface,
         };
         pass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
         pass.DepthStencilSettings.StoreOp = AttachmentStoreOp.Store;
@@ -202,7 +213,8 @@ public class DefaultRenderPipeline : IRenderPipeline
         
         renderContext.EndRendering();
         
-        PostProcessor.FinishedDrawing(renderContext, postProcessableSurface);
+        if(pipelineData.PostProcessing)
+            postProcessor!.FinishedDrawing(renderContext, postProcessableSurface!);
 
         
         if (pipelineData.CameraSettings.ShowGizmos)
