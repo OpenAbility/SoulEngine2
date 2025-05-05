@@ -1,3 +1,5 @@
+using SoulEngine.Data.NBT;
+
 namespace SoulEngine.Core;
 
 public abstract class EngineObject
@@ -15,5 +17,15 @@ public abstract class EngineObject
     {
         
     }
-    
+
+    public virtual void Load(CompoundTag tag)
+    {
+        
+    }
+
+    public virtual CompoundTag Save()
+    {
+        return new CompoundTag(null!);
+    }
+
 }

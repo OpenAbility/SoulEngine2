@@ -15,9 +15,4 @@ public struct MeshRenderProperties()
     public Matrix4[]? SkeletonBuffer;
     public ArrayPool<Matrix4> SkeletonBufferPool;
     public int SkeletonBufferSize;
-    
-    public void SubmitSceneData(SceneRenderData renderData)
-    {
-        
-    }
 }

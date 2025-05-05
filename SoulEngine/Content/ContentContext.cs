@@ -1,4 +1,5 @@
 using System.Text;
+using SoulEngine.Core;
 
 namespace SoulEngine.Content;
 
@@ -99,6 +100,11 @@ public class ContentContext
         }
 
         return false;
+    }
+
+    public IEnumerable<string> Search(string prefix, string suffix)
+    {
+        return contentSources.SelectMany(s => s.Search(prefix, suffix));
     }
     
 }

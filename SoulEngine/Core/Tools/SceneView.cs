@@ -1,4 +1,5 @@
 using Hexa.NET.ImGui;
+using SoulEngine.Entities;
 using SoulEngine.Props;
 using SoulEngine.Util;
 
@@ -19,11 +20,11 @@ public class SceneView : Game.Tool
             {
                 bool hoveredButton = false;
                 
-                foreach (var prop in new List<Prop>(game.Scene.Props))
+                foreach (var prop in new List<Entity>(game.Scene.Entities))
                 {
                     
-                    if (ImGuiUtil.ImageSelectable(prop.propIcon, prop.Name + "##" + prop.GetHashCode(), game.CurrentProp == prop))
-                        game.CurrentProp = prop;
+                    if (ImGuiUtil.ImageSelectable(prop.Icon, prop.Name + "##" + prop.GetHashCode(), game.currentEntity == prop))
+                        game.currentEntity = prop;
 
                     if (ImGui.IsItemHovered())
                         hoveredButton = true;
@@ -34,13 +35,15 @@ public class SceneView : Game.Tool
 
                 if (!hoveredButton && ImGui.BeginPopupContextWindow())
                 {
-                    foreach (var prop in PropLoader.Types)
+                    foreach (var type in EntityTemplateFactory.TemplateNames)
                     {
-                        if (ImGui.Selectable(prop))
+                        if (ImGui.Selectable(type))
                         {
-                            game.Scene.AddProp(prop, prop + " (" + Random.Shared.Next(1000, 9999) + ")");
+                            EntityTemplateFactory.Initialize(type, type + " (" + Random.Shared.Next(1000, 9999) + ")", game.Scene);
                         }
                     }
+                    
+                    
                     
                     ImGui.EndPopup();
                 }

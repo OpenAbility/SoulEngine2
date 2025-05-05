@@ -1,7 +1,12 @@
+using System.Numerics;
 using Hexa.NET.ImGui;
+using SoulEngine.Core;
 using SoulEngine.Data;
 using SoulEngine.Data.NBT;
 using SoulEngine.Resources;
+using SoulEngine.Util;
+using Quaternion = OpenTK.Mathematics.Quaternion;
+using Vector3 = OpenTK.Mathematics.Vector3;
 
 namespace SoulEngine.Inspection;
 
@@ -179,5 +184,110 @@ public unsafe class FloatInspector : Inspector<float>, INBTSerializer<float>
         if (tag is FloatTag byteTag)
             return byteTag.Value;
         return 0;
+    }
+}
+
+[Serializable]
+[Inspector(typeof(Vector3))]
+[NBTSerializer(typeof(Vector3))]
+public unsafe class Vector3Inspector : Inspector<Vector3>, INBTSerializer<Vector3>
+{
+    public override Vector3 Edit(Vector3 instance, InspectionContext context)
+    {
+        if (ImGui.InputFloat3(context.AssociatedName ?? "", (float*)&instance))
+            context.MarkEdited();
+        return instance;
+    }
+
+    public Tag Serialize(Vector3 value, NBTSerializationContext context)
+    {
+        CompoundTag compound = new CompoundTag(null);
+        compound.SetFloat("x", value.X);
+        compound.SetFloat("y", value.Y);
+        compound.SetFloat("z", value.Z);
+        return compound;
+    }
+
+    public Vector3 Deserialize(Tag tag, NBTSerializationContext context)
+    {
+        if (tag is CompoundTag compound)
+            return new Vector3(compound.GetFloat("x") ?? 0, compound.GetFloat("y") ?? 0, compound.GetFloat("z") ?? 0);
+        return Vector3.Zero;
+    }
+}
+
+[Serializable]
+[Inspector(typeof(Quaternion))]
+[NBTSerializer(typeof(Quaternion))]
+public unsafe class QuaternionInspector : Inspector<Quaternion>, INBTSerializer<Quaternion>
+{
+    public override Quaternion Edit(Quaternion instance, InspectionContext context)
+    {
+        if (ImGui.InputFloat4(context.AssociatedName ?? "", (float*)&instance))
+            context.MarkEdited();
+        return instance;
+    }
+
+    public Tag Serialize(Quaternion value, NBTSerializationContext context)
+    {
+        CompoundTag compound = new CompoundTag(null);
+        compound.SetFloat("x", value.X);
+        compound.SetFloat("y", value.Y);
+        compound.SetFloat("z", value.Z);
+        compound.SetFloat("w", value.W);
+        return compound;
+    }
+
+    public Quaternion Deserialize(Tag tag, NBTSerializationContext context)
+    {
+        if (tag is CompoundTag compound)
+            return new Quaternion(compound.GetFloat("x") ?? 0, compound.GetFloat("y") ?? 0, compound.GetFloat("z") ?? 0,
+                compound.GetFloat("w") ?? 0);
+        return Quaternion.Identity;
+    }
+}
+
+[Serializable]
+public unsafe class InvalidInspector : Inspector, INBTSerializer<object>
+{
+    public override object? Edit(object? instance, InspectionContext context)
+    {
+        ImGui.Text(instance?.ToString() ?? "null");
+        return instance;
+    }
+
+    public Tag Serialize(object value, NBTSerializationContext context)
+    {
+        CompoundTag compound = new CompoundTag(null);
+        return compound;
+    }
+
+    public object Deserialize(Tag tag, NBTSerializationContext context)
+    {
+        return null!;
+    }
+}
+
+[Inspector(typeof(EngineObjectInspector))]
+[NBTSerializer(typeof(EngineObjectInspector))]
+[Serializable]
+public class EngineObjectInspector : Inspector<EngineObject>, INBTSerializer<EngineObject>
+{
+    public override EngineObject? Edit(EngineObject? instance, InspectionContext context)
+    {
+        instance?.Edit();
+        return instance;
+    }
+
+    public Tag Serialize(EngineObject value, NBTSerializationContext context)
+    {
+        return value.Save();
+    }
+
+    public EngineObject? Deserialize(Tag tag, NBTSerializationContext context)
+    {
+        EngineObject? instance = context.Type.Instantiate<EngineObject>();
+        instance?.Load((CompoundTag)tag);
+        return instance;
     }
 }

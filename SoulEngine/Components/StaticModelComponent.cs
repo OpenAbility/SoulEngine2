@@ -1,4 +1,5 @@
 using SoulEngine.Core;
+using SoulEngine.Entities;
 using SoulEngine.Models;
 using SoulEngine.Props;
 using SoulEngine.Renderer;
@@ -10,28 +11,26 @@ namespace SoulEngine.Components;
 [Serializable]
 public class StaticModelComponent : Component
 {
-    public readonly BoolProperty Visible;
-    public readonly ResourceProperty<Model> ModelProperty;
+    [SerializedProperty("visible")] public bool Visible = true;
+    [SerializedProperty("model")] public Model? Model;
 
     
     public StaticModelComponent(Entity entity) : base(entity)
     {
-        Visible = Register(new BoolProperty("visible", true));
-        ModelProperty = Register(new ResourceProperty<Model>("model", "", Entity.Scene.Game));
     }
     
-    public override void Render(IRenderPipeline renderPipeline, SceneRenderData data, float deltaTime)
+    public override void Render(IRenderPipeline renderPipeline, float deltaTime)
     {
-        if(!Visible.Value)
+        if(!Visible)
             return;
         
-        if(ModelProperty.Value == null)
+        if(Model == null)
             return;
 
         MeshRenderProperties renderProperties = new MeshRenderProperties();
         renderProperties.ModelMatrix = Entity.GlobalMatrix;
 
-        foreach (var mesh in ModelProperty.Value.Meshes)
+        foreach (var mesh in Model.Meshes)
         {
             renderProperties.Mesh = mesh.ActualMesh;
             renderProperties.Material = mesh.Material;

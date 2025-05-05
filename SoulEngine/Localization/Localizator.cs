@@ -3,7 +3,7 @@ using SoulEngine.Core;
 
 namespace SoulEngine.Localization;
 
-public class Localizator
+public class Localizator : EngineObject
 {
 
     private string currentLocale = null!;

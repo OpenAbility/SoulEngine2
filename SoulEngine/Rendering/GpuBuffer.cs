@@ -1,4 +1,5 @@
 using OpenTK.Graphics.OpenGL;
+using SoulEngine.Core;
 
 namespace SoulEngine.Rendering;
 
@@ -6,7 +7,7 @@ namespace SoulEngine.Rendering;
 /// Wrapper for memory stored on the GPU
 /// </summary>
 /// <typeparam name="T">The type to store in the buffer</typeparam>
-public unsafe class GpuBuffer<T> : IDisposable where T : unmanaged
+public unsafe class GpuBuffer<T> : EngineObject, IDisposable where T : unmanaged
 {
     /// <summary>
     /// The underlying object handle

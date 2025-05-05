@@ -3,6 +3,7 @@ using System.Reflection;
 using OpenAbility.Logging;
 using SoulEngine.Components;
 using SoulEngine.Core;
+using SoulEngine.Entities;
 using SoulEngine.Util;
 using BindingFlags = System.Reflection.BindingFlags;
 

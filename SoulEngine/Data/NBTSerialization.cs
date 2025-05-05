@@ -8,7 +8,7 @@ namespace SoulEngine.Data;
 public static class NBTSerialization
 {
 
-    private static readonly Dictionary<Type, INBTSerializer> serializers = new Dictionary<Type, INBTSerializer>();
+    private static readonly Dictionary<Type, INBTSerializer> Serializers = new Dictionary<Type, INBTSerializer>();
     
     static NBTSerialization()
     {
@@ -22,18 +22,18 @@ public static class NBTSerialization
 
             foreach (NBTSerializerAttribute attribute in type.Type.GetCustomAttributes<NBTSerializerAttribute>())
             {
-                serializers[attribute.Type] = type.Type.Instantiate<INBTSerializer>()!;
+                Serializers[attribute.Type] = type.Type.Instantiate<INBTSerializer>()!;
             }
         }
     }
 
     private static INBTSerializer GetSerializer(Type type)
     {
-        if(serializers.TryGetValue(type, out INBTSerializer? serializer))
+        if(Serializers.TryGetValue(type, out INBTSerializer? serializer))
             return serializer;
         
         int lowest = Int32.MaxValue;
-        foreach (var existing in serializers)
+        foreach (var existing in Serializers)
         {
             int level = EngineUtility.GetInheritanceLevel(type, existing.Key);
             if(level == -1)
@@ -49,7 +49,7 @@ public static class NBTSerialization
         if (serializer == null)
             throw new Exception("Unable to fit existing serializer to type " + type);
 
-        serializers[type] = serializer;
+        Serializers[type] = serializer;
         return serializer;
     }
     

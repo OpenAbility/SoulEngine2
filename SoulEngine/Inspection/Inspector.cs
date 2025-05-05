@@ -4,7 +4,7 @@ using SoulEngine.Util;
 
 namespace SoulEngine.Inspection;
 
-public abstract class Inspector
+public abstract class Inspector : EngineObject
 {
 
     private static readonly Dictionary<Type, Inspector> inspectors = new Dictionary<Type, Inspector>();
@@ -43,7 +43,9 @@ public abstract class Inspector
         }
 
         if (inspector == null)
-            throw new Exception("Unable to fit existing inspector to type " + type);
+        {
+            inspector = new InvalidInspector();
+        }
 
         inspectors[type] = inspector;
         return inspector;

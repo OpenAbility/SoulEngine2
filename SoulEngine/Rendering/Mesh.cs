@@ -7,7 +7,7 @@ namespace SoulEngine.Rendering;
 /// <summary>
 /// Stores mesh data
 /// </summary>
-public unsafe class Mesh<T> : IDrawableMesh
+public unsafe class Mesh<T> : EngineObject, IDrawableMesh
         where T : unmanaged, IVertex
 {
 

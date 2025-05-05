@@ -7,7 +7,7 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace SoulEngine.Rendering;
 
-public class ImGuiWindow : IRenderSurface
+public class ImGuiWindow : EngineObject, IRenderSurface
 {
 
     public string Name;

@@ -6,7 +6,7 @@ using ThreadPool = SoulEngine.Processing.ThreadPool;
 
 namespace SoulEngine.Resources;
 
-public class ResourceManager
+public class ResourceManager : EngineObject
 {
     
     private static readonly Logger Logger = Logger.Get<ResourceManager>();

@@ -1,6 +1,7 @@
 using SoulEngine.Components;
 using SoulEngine.Content;
 using SoulEngine.Data.NBT;
+using SoulEngine.Entities;
 using SoulEngine.Props;
 using SoulEngine.Resources;
 
@@ -15,7 +16,7 @@ public class Scene : Resource
 
     public Director? Director;
 
-    public List<Prop> Props = new List<Prop>();
+    public List<Entity> Entities = new List<Entity>();
 
     public Scene(Game game)
     {
@@ -26,9 +27,9 @@ public class Scene : Resource
     {
         Director?.Reset();
         
-        foreach (var prop in Props)
+        foreach (var entity in Entities)
         {
-            prop.Reset();
+            entity.Reset();
         }
     }
 
@@ -39,9 +40,9 @@ public class Scene : Resource
         
         Director?.Update(deltaTime);
 
-        foreach (var prop in Props)
+        foreach (var entity in Entities)
         {
-            prop.Update(deltaTime);
+            entity.Update(deltaTime);
         }
     }
     
@@ -53,27 +54,27 @@ public class Scene : Resource
         {
             Scene scene = new Scene(game);
             
-            CompoundTag propsTag = (CompoundTag)sceneTag["props"];
+            CompoundTag? entitiesTag = sceneTag.GetTag<CompoundTag>("entities");
 
-            foreach (string name in propsTag.Keys)
+            if (entitiesTag != null)
             {
-                CompoundTag propTag = (CompoundTag)propsTag[name];
-
-                string propType = propTag.GetString("$_type")!;
-
-                Prop prop = PropLoader.Create(scene, propType, name);
+                foreach (string name in entitiesTag.Keys)
+                {
+                    CompoundTag propTag = (CompoundTag)entitiesTag[name];
+                    
+                    Entity entity = new Entity(scene, name);
+                    scene.Entities.Add(entity);
+                }
                 
-                scene.Props.Add(prop);
-            }
-
-            foreach (var prop in scene.Props)
-            {
-                CompoundTag propTag = (CompoundTag)propsTag[prop.Name];
-                prop.Load(propTag);
+                foreach (var prop in scene.Entities)
+                {
+                    CompoundTag entityTag = (CompoundTag)entitiesTag[prop.Name];
+                    prop.Load(entityTag);
+                }
             }
             
-            CompoundTag directorTag = (CompoundTag)sceneTag["director"];
-            {
+            CompoundTag? directorTag = sceneTag.GetTag<CompoundTag>("director");
+            if(directorTag != null) {
                 string directorType = directorTag.GetString("$_type")!;
 
                 Director director = DirectorLoader.Create(scene, directorType);
@@ -93,23 +94,23 @@ public class Scene : Resource
 
     public CameraComponent? Camera => GetComponents<CameraComponent>().OrderDescending().FirstOrDefault();
 
-    public Prop AddProp(string type, string name)
+    public Entity AddEntity(string name)
     {
-        Prop prop = PropLoader.Create(this, type, name);
-        Props.Add(prop);
-        return prop;
+        Entity entity = new Entity(this, name);
+        Entities.Add(entity);
+        return entity;
     }
 
     public CompoundTag Write()
     {
         CompoundTag tag = new CompoundTag("scene");
 
-        CompoundTag propsTag = new CompoundTag("props");
-        tag.Add(propsTag);
+        CompoundTag entitesTag = new CompoundTag("entities");
+        tag.Add(entitesTag);
 
-        foreach (var prop in Props)
+        foreach (var entity in Entities)
         {
-            propsTag[prop.Name] = prop.Save();
+            entitesTag[entity.Name] = entity.Save();
         }
 
         if(Director != null)
@@ -118,28 +119,19 @@ public class Scene : Resource
         return tag;
     }
 
-    public Prop? GetProp(string name)
+    public Entity? GetEntity(string name)
     {
-        return Props.Find(p => p.Name == name);
+        return Entities.Find(e => e.Name == name);
     }
     
-    public void DeleteProp(string name)
+    public void DeleteEntity(string name)
     {
-        Props.RemoveAll(p => p.Name == name);
+        Entities.RemoveAll(e => e.Name == name);
     }
     
-    public Prop? GetProp(string name, Type type)
-    {
-        return Props.Find(p => p.Name == name && type.IsInstanceOfType(p));
-    }
-    
-    public T? GetProp<T>(string name) where T : Prop
-    {
-        return Props.Find(p => p.Name == name && p is T) as T;
-    }
 
     public IEnumerable<T> GetComponents<T>() where T : Component
     {
-        return Props.Where(p => p is Entity).Cast<Entity>().SelectMany(e => e.GetComponents<T>());
+        return Entities.SelectMany(e => e.GetComponents<T>());
     }
 }

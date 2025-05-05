@@ -1,16 +1,18 @@
 using Hexa.NET.ImGui;
+using SoulEngine.Core;
 using SoulEngine.Data;
 using SoulEngine.Data.NBT;
+using SoulEngine.Entities;
 using SoulEngine.Props;
 
 namespace SoulEngine.Inspection;
 
-[Inspector(typeof(Prop))]
-[NBTSerializer(typeof(Prop))]
+[Inspector(typeof(Entity))]
+[NBTSerializer(typeof(Entity))]
 [Serializable]
-public class PropInspector : Inspector<Prop>, INBTSerializer<Prop>
+public class EntityInspector : Inspector<Entity>, INBTSerializer<Entity>
 {
-    public override Prop? Edit(Prop? instance, InspectionContext context)
+    public override Entity? Edit(Entity? instance, InspectionContext context)
     {
         if (context.Scene == null)
         {
@@ -20,19 +22,19 @@ public class PropInspector : Inspector<Prop>, INBTSerializer<Prop>
         
         if (ImGui.BeginCombo(context.AssociatedName ?? "", instance?.Name ?? ""))
         {
-            foreach (var prop in context.Scene.Props)
+            foreach (var entity in context.Scene.Entities)
             {
-                if (context.Type.IsInstanceOfType(prop))
+                if (context.Type.IsInstanceOfType(entity))
                 {
-                    if (ImGui.Selectable(prop.Name))
+                    if (ImGui.Selectable(entity.Name))
                     {
-                        instance = prop;
+                        instance = entity;
                         context.MarkEdited();
                     }
 
                     if (ImGui.BeginItemTooltip())
                     {
-                        ImGui.Text(prop.ToString() ?? "no string tooltip found");
+                        ImGui.Text(entity.ToString() ?? "no string tooltip found");
                         ImGui.EndTooltip();
                     }
                 }
@@ -44,15 +46,15 @@ public class PropInspector : Inspector<Prop>, INBTSerializer<Prop>
         return instance;
     }
 
-    public Tag Serialize(Prop value, NBTSerializationContext context)
+    public Tag Serialize(Entity value, NBTSerializationContext context)
     {
         return new StringTag(value.Name);
     }
 
-    public Prop? Deserialize(Tag tag, NBTSerializationContext context)
+    public Entity? Deserialize(Tag tag, NBTSerializationContext context)
     {
         if (context.Scene == null)
             return null;
-        return context.Scene.GetProp(((StringTag)tag).Data, context.Type);
+        return context.Scene.GetEntity(((StringTag)tag).Data);
     }
 }

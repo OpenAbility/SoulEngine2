@@ -5,7 +5,7 @@ using SoulEngine.Rendering;
 
 namespace SoulEngine.Development;
 
-public class SceneCamera
+public class SceneCamera : EngineObject
 {
     public CameraMode CameraMode = CameraMode.FreeCamera;
 

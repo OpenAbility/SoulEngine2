@@ -9,15 +9,15 @@ public class Inspector : Game.Tool
         if (ImGui.Begin("Inspector", ref Enabled))
         {
 #if DEVELOPMENT
-            if (game.CurrentProp != null && game.Scene != null)
+            if (game.currentEntity != null && game.Scene != null)
             {
-                game.CurrentProp.Edit();
+                game.currentEntity.Edit();
                 
                 ImGui.Separator();
                 if (ImGui.Button("Delete"))
                 {
-                    game.Scene.Props.Remove(game.CurrentProp);
-                    game.CurrentProp = null;
+                    game.Scene.Entities.Remove(game.currentEntity);
+                    game.currentEntity = null;
                 }
             }
             else

@@ -1,17 +1,16 @@
 using System.Diagnostics;
 using OpenTK.Mathematics;
+using SoulEngine.Core;
 using SoulEngine.Models;
 using SoulEngine.Util;
 using Vector3 = OpenTK.Mathematics.Vector3;
 
 namespace SoulEngine.Animation;
 
-public class AnimationContext
+public class AnimationContext : EngineObject
 {
 
     private JointTranslation[] translations;
-    private readonly SkeletonInstance skeletonInstance;
-    private readonly AnimationPlayer animationPlayer;
     public readonly AnimationClip Clip;
 
     public TimeSpan Elapsed => timer.Elapsed;
@@ -35,12 +34,9 @@ public class AnimationContext
     
     public AnimationContext(AnimationClip clip, AnimationPlayer animationPlayer)
     {
-        this.Clip = clip;
+        Clip = clip;
 
         SkeletonInstance instance = animationPlayer.Skeleton;
-        this.animationPlayer = animationPlayer;
-        
-        skeletonInstance = instance;
 
         translations = new JointTranslation[instance.Skeleton.JointCount];
         for (int i = 0; i < instance.Skeleton.JointCount; i++)
@@ -72,7 +68,7 @@ public class AnimationContext
     public unsafe void Apply()
     {
         double currentTime = timer.Elapsed.TotalSeconds;
-        
+
         // Poll keyframes into lastKeyframes
         while (true)
         {
@@ -87,6 +83,8 @@ public class AnimationContext
                     break;
                 }
             }
+            
+            currentTime = timer.Elapsed.TotalSeconds;
 
             // Fetch the next keyframe, but only show it if it's not in the future
             AnimationKeyframe keyframe = Clip.GetKeyframe(lastKeyframeIndex);
@@ -168,14 +166,27 @@ public class AnimationContext
             
             // Apply the appropriate translation from the working buffer
             if (channelInfo.Target == AnimationChannelTarget.Rotation)
+            {
                 translations[channelMappings[keyframe.Channel]].Rotation = new Quaternion(workingBuffer[0],
                     workingBuffer[1], workingBuffer[2], workingBuffer[3]);
+
+                translations[channelMappings[keyframe.Channel]].HasRotation = true;
+
+            }
             else if (channelInfo.Target == AnimationChannelTarget.Translation)
+            {
                 translations[channelMappings[keyframe.Channel]].Position = new Vector3(workingBuffer[0],
                     workingBuffer[1], workingBuffer[2]);
+                
+                translations[channelMappings[keyframe.Channel]].HasPosition = true;
+            }
             else if (channelInfo.Target == AnimationChannelTarget.Scale)
+            {
                 translations[channelMappings[keyframe.Channel]].Scale = new Vector3(workingBuffer[0],
                     workingBuffer[1], workingBuffer[2]);
+                
+                translations[channelMappings[keyframe.Channel]].HasScale = true;
+            }
 
             animatedJoints[channelMappings[keyframe.Channel]] = true;
         }
@@ -225,18 +236,10 @@ public class AnimationContext
         for (int i = 0; i < animatedJoints.Length; i++)
         {
             animatedJoints[i] = false;
+            translations[i].HasPosition = false;
+            translations[i].HasRotation = false;
+            translations[i].HasScale = false;
         }
     }
     
-    internal struct JointTranslation(SkeletonJointData jointData)
-    {
-        public Vector3 Position = Vector3.Zero;
-        public Quaternion Rotation = Quaternion.Identity;
-        public Vector3 Scale = Vector3.One;
-        
-        public readonly SkeletonJointData JointData = jointData;
-        
-        public Matrix4 Matrix => Matrix4.CreateScale(Scale) * Matrix4.CreateFromQuaternion(Rotation) *
-                                 Matrix4.CreateTranslation(Position);
-    }
 }

@@ -8,7 +8,7 @@ namespace SoulEngine.Rendering;
 /// <summary>
 /// A default framebuffer
 /// </summary>
-public class Depthbuffer : IRenderSurface
+public class Depthbuffer : EngineObject, IRenderSurface
 {
     public readonly int Handle;
     

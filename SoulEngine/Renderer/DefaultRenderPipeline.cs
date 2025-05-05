@@ -9,7 +9,7 @@ using SoulEngine.UI.Rendering;
 
 namespace SoulEngine.Renderer;
 
-public class DefaultRenderPipeline : IRenderPipeline
+public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 {
 
     private readonly Material defaultMaterial = ResourceManager.Global.Load<Material>("default.mat");
@@ -48,6 +48,9 @@ public class DefaultRenderPipeline : IRenderPipeline
 
     public void DrawFrame(PipelineData pipelineData)
     {
+        
+        using var profilerPass = Profiler.Instance.Segment("renderer");
+        
         if (shadowBuffer == null ||
             shadowBuffer.FramebufferSize.X != EngineVarContext.Global.GetInt("e_shadow_res", 1024))
             shadowBuffer = new Depthbuffer(new Vector2i(EngineVarContext.Global.GetInt("e_shadow_res", 1024)));
@@ -68,6 +71,7 @@ public class DefaultRenderPipeline : IRenderPipeline
 
         RenderContext renderContext = pipelineData.RenderContext;
 
+        /*
         RenderPass shadowPass = new RenderPass
         {
             Name = "Shadow Pass",
@@ -76,6 +80,7 @@ public class DefaultRenderPipeline : IRenderPipeline
 
         shadowPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
         shadowPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.Store;
+        shadowPass.DepthStencilSettings.ClearValue.Depth = 1.0f;
         shadowPass.ColorSettings =
         [
             new FramebufferAttachmentSettings()
@@ -88,7 +93,8 @@ public class DefaultRenderPipeline : IRenderPipeline
                 StoreOp = AttachmentStoreOp.DontCare
             }
         ];
-        
+
+        var shadowPassSegment = Profiler.Instance.Segment("shadows");
          
         renderContext.BeginRendering(shadowPass);
         
@@ -97,6 +103,8 @@ public class DefaultRenderPipeline : IRenderPipeline
         renderContext.DepthFunction(DepthFunction.Less);
         //renderContext.Enable(EnableCap.FramebufferSrgb);
         renderContext.DepthRange(-1, 1);
+
+        CameraSettings shadowCamera = new CameraSettings();
         
         foreach (var render in renders)
         {
@@ -139,7 +147,8 @@ public class DefaultRenderPipeline : IRenderPipeline
         
         
         renderContext.EndRendering();
-        
+        shadowPassSegment.Dispose();
+        */
         
         RenderPass pass = new RenderPass
         {
@@ -212,6 +221,7 @@ public class DefaultRenderPipeline : IRenderPipeline
         
         
         renderContext.EndRendering();
+        
         
         if(pipelineData.PostProcessing)
             postProcessor!.FinishedDrawing(renderContext, postProcessableSurface!);
@@ -292,5 +302,8 @@ public class DefaultRenderPipeline : IRenderPipeline
 
         renders.Clear();
         drawLists.Clear();
+        
+        if(EngineVarContext.Global.GetBool("e_gl_wait", true))
+            GL.Finish();
     }
 }

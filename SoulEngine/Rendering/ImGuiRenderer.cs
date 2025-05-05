@@ -3,9 +3,11 @@
 using System.Resources;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGuizmo;
+using Hexa.NET.ImPlot;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SoulEngine.Core;
 using SoulEngine.Data;
 using SoulEngine.Events;
 using SoulEngine.Mathematics;
@@ -14,11 +16,12 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace SoulEngine.Rendering;
 
-public unsafe class ImGuiRenderer
+public unsafe class ImGuiRenderer : EngineObject
 {
 
     public readonly ImGuiContextPtr Context;
     public readonly IntPtr GizmoContext;
+    private readonly ImPlotContextPtr PlotContext;
     public readonly ImGuiIOPtr IO;
 
     private int fontTexture = -1;
@@ -37,6 +40,7 @@ public unsafe class ImGuiRenderer
 
         ImGui.SetCurrentContext(Context);
         ImGuizmo.SetImGuiContext(Context);
+        PlotContext = ImPlot.CreateContext();
 
         IO = ImGui.GetIO();
 

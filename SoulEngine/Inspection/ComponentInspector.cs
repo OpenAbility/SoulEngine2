@@ -3,6 +3,7 @@ using SoulEngine.Components;
 using SoulEngine.Core;
 using SoulEngine.Data;
 using SoulEngine.Data.NBT;
+using SoulEngine.Entities;
 
 namespace SoulEngine.Inspection;
 
@@ -18,34 +19,33 @@ public class ComponentInspector : Inspector<Component>, INBTSerializer<Component
             ImGui.Text(context.AssociatedName ?? "" + " = "  + (instance == null ? "null" : instance.Entity.Name));
             return instance;
         }
-        
+
         if (ImGui.BeginCombo(context.AssociatedName ?? "", instance?.Entity.Name ?? ""))
         {
-            foreach (var prop in context.Scene.Props)
+            foreach (var entity in context.Scene.Entities)
             {
-                if (prop is Entity entity)
-                {
-                    int index = 0;
-                    foreach (var component in entity.GetComponents<Component>())
-                    {
-                        if (context.Type.IsInstanceOfType(component))
-                        {
-                            if (ImGui.Selectable(prop.Name + " (" + index + ")"))
-                            {
-                                instance = component;
-                                context.MarkEdited();
-                            }
 
-                            if (ImGui.BeginItemTooltip())
-                            {
-                                ImGui.Text(prop.ToString() ?? "no string tooltip found");
-                                ImGui.EndTooltip();
-                            }
+                int index = 0;
+                foreach (var component in entity.GetComponents<Component>())
+                {
+                    if (context.Type.IsInstanceOfType(component))
+                    {
+                        if (ImGui.Selectable(entity.Name + " (" + index + ")"))
+                        {
+                            instance = component;
+                            context.MarkEdited();
+                        }
+
+                        if (ImGui.BeginItemTooltip())
+                        {
+                            ImGui.Text(entity.ToString() ?? "no string tooltip found");
+                            ImGui.EndTooltip();
                         }
                     }
                 }
+
             }
-            
+
             ImGui.EndCombo();
         }
 
@@ -68,7 +68,7 @@ public class ComponentInspector : Inspector<Component>, INBTSerializer<Component
 
         CompoundTag compoundTag = (CompoundTag)tag;
 
-        Entity entity = context.Scene.GetProp<Entity>(compoundTag.GetString("entity")!)!;
+        Entity entity = context.Scene.GetEntity(compoundTag.GetString("entity")!)!;
         return entity.IndexedComponent(compoundTag.GetInt("index")!.Value);
     }
 }

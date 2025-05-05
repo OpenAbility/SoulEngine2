@@ -4,6 +4,7 @@ using OpenAbility.Logging;
 using SoulEngine.Content;
 using SoulEngine.Core.Tools;
 using SoulEngine.Data;
+using SoulEngine.Entities;
 using SoulEngine.Events;
 using SoulEngine.Input;
 using SoulEngine.Localization;
@@ -27,8 +28,6 @@ namespace SoulEngine.Core;
 
 public abstract class Game
 {
-
-
     public static Game Current { get; private set; }
     
     public readonly Logger Logger;
@@ -52,7 +51,7 @@ public abstract class Game
     private readonly ImGuiWindow GameWindow;
     private readonly ImGuiWindow SceneWindow;
 
-    internal Prop? CurrentProp;
+    internal Entity? currentEntity;
     
     private SceneCamera SceneCamera;
 
@@ -90,9 +89,6 @@ public abstract class Game
     public float DeltaTime { get; private set; }
 
     private float lastFrameDelta = -1;
-    
-
-    public CoreGameState State;
     
     public IRenderPipeline RenderPipeline { get; private set; }
 
@@ -160,6 +156,7 @@ public abstract class Game
         ResourceManager.Global = ResourceManager;
 
         MainWindow = new Window(this, 1280, 720, data.Name);
+        RenderContext = new RenderContext(this, MainWindow);
         
         InputManager = new InputManager(this, InputBus);
 
@@ -167,7 +164,7 @@ public abstract class Game
         InputBus.BeginListen(ImGuiRenderer.OnInputEvent);
         
 
-        RenderContext = new RenderContext();
+
 
 
         BuiltinActions = new BuiltinActions(InputManager);
@@ -214,17 +211,11 @@ public abstract class Game
     
     public void Run()
     {
-        
-        
-        State = CoreGameState.Loading;
-        
         RenderPipeline = CreateDefaultRenderPipeline();
         
         EarlyLoad();
         
         LoadScene();
-
-        State = CoreGameState.Running;
 
         MainLoop();
     }
@@ -256,118 +247,90 @@ public abstract class Game
         {
             TimeSpan elapsed = stopwatch.Elapsed;
             stopwatch.Restart();
+            RunFrame(elapsed);
+        }
+    }
 
-            float currentFrameDelta = (float)elapsed.TotalSeconds;
-            float balancedFrameDelta = currentFrameDelta;
+    private void RunFrame(TimeSpan delta)
+    {
+        Profiler.Instance.Reset();
+        ProfilerSegment frameSegment = Profiler.Instance.Segment("frame");
 
-            if (lastFrameDelta == -1 || !EngineVarContext.Global.GetBool("e_dt_smoothing"))
-                DeltaTime = currentFrameDelta;
-            else
-            {
-                balancedFrameDelta = (currentFrameDelta + lastFrameDelta) / 2;
-                lastFrameDelta = currentFrameDelta;
-                
-                DeltaTime = balancedFrameDelta;
-            }
+        RenderContext.UseWindow(MainWindow);
 
-            if (DeltaTime > 1.0f)
-                DeltaTime = 1.0f;
+        #region DELTA
+        
+        TimeSpan elapsed = delta;
+        float currentFrameDelta = (float)elapsed.TotalSeconds;
+        float balancedFrameDelta = currentFrameDelta;
 
-            DeltaTime *= EngineVarContext.Global.GetFloat("e_timescale", 1.0f);
-            
-            EngineVarContext.Global.SetFloat("dt", DeltaTime);
-            EngineVarContext.Global.SetInt("frameDelta", (int)(balancedFrameDelta * 1000));
+        if (lastFrameDelta == -1 || !EngineVarContext.Global.GetBool("e_dt_smoothing"))
+            DeltaTime = currentFrameDelta;
+        else
+        {
+            balancedFrameDelta = (currentFrameDelta + lastFrameDelta) / 2;
+            lastFrameDelta = currentFrameDelta;
 
-            fpsHistogram.AddLast(1 / DeltaTime);
-            msHistogram.AddLast((float)elapsed.TotalMilliseconds);
-            
-            if(fpsHistogram.Count > 30)
-                fpsHistogram.RemoveFirst();
-            if(msHistogram.Count > 30)
-                msHistogram.RemoveFirst();
-            
-            if (Keys.Enter.Pressed && Keys.LeftAlt.Down)
-            {
-                MainWindow.Fullscreen = !MainWindow.Fullscreen;
-            }
-            
-            ImGuiRenderer.BeginFrame(MainWindow, DeltaTime);
-            
-#if DEVELOPMENT
-             
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 10);
+            DeltaTime = balancedFrameDelta;
+        }
 
-            float avgFPS = 0;
-            foreach (var sample in fpsHistogram)
-            {
-                avgFPS += sample;
-            }
+        if (DeltaTime > 1.0f)
+            DeltaTime = 1.0f;
 
-            avgFPS /= fpsHistogram.Count;
-            
-            float avgMS = 0;
-            foreach (var sample in msHistogram)
-            {
-                avgMS += sample;
-            }
+        DeltaTime *= EngineVarContext.Global.GetFloat("e_timescale", 1.0f);
 
-            avgMS /= msHistogram.Count;
-            
+        EngineVarContext.Global.SetFloat("dt", DeltaTime);
+        EngineVarContext.Global.SetInt("frameDelta", (int)(balancedFrameDelta * 1000));
 
-            ImGui.SetNextWindowPos(new Vector2(ImGui.GetIO().DisplaySize.X - 5, ImGui.GetIO().DisplaySize.Y - 5), ImGuiCond.Always, new Vector2(1, 1));
-            ImGui.SetNextWindowBgAlpha(0.5f);
-            if (ImGui.Begin("Info", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize))
-            {
-                ImGui.Text(" FPS: " + avgFPS.ToString("F0"));
-                ImGui.Text(" MS: " + avgMS.ToString("F2"));
-            }
-            ImGui.End();
-            
-            ImGui.PopStyleVar();
+        fpsHistogram.AddLast(1 / DeltaTime);
+        msHistogram.AddLast((float)elapsed.TotalMilliseconds);
 
-            if (ImGui.BeginMainMenuBar())
-            {
-                MenuContext.Draw();
-                ImGui.EndMainMenuBar();
-            }
+        if (fpsHistogram.Count > 30)
+            fpsHistogram.RemoveFirst();
+        if (msHistogram.Count > 30)
+            msHistogram.RemoveFirst();
 
-            if (MenuContext.IsPressed("Content", "Refresh All"))
-            {
-                //RefreshContent();
-            }
+        #endregion
+        
+        // Fullscreen toggle
+        if (Keys.Enter.Pressed && Keys.LeftAlt.Down)
+        {
+            MainWindow.Fullscreen = !MainWindow.Fullscreen;
+        }
 
-            if (MenuContext.IsPressed("Content", "Pack"))
-            {
-                PackContent();
-            }
-            
-            
-#endif
-            if(State == CoreGameState.Running)
-                RunningFrame();
-            else if (State == CoreGameState.Loading)
-               LoadingFrame();
-            else if(State == CoreGameState.ReloadingAssets)
-                ReloadingFrame();
-            
+        ImGuiRenderer.BeginFrame(MainWindow, DeltaTime);
+        
+        Update();
+        Render(MainWindow);
+
+        // ImGui
+        if (Development)
+        {
             RenderPass imguiPass = new RenderPass();
             imguiPass.Name = "imgui";
             imguiPass.Surface = MainWindow;
             imguiPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
-            
-            if(Development)
-                RenderContext.BeginRendering(imguiPass);
-            ImGuiRenderer.EndFrame(MainWindow, !Development);
-            if(Development)
-                RenderContext.RebuildState();
-            if(Development)
-                RenderContext.EndRendering();
-            
-            MainWindow.Swap();
-            Window.Poll();
-            ThreadSafety.RunTasks();
-            InputBus.Dispatch();
+
+            RenderContext.BeginRendering(imguiPass);
+
+            ImGuiRenderer.EndFrame(MainWindow, false);
+
+            RenderContext.RebuildState();
+            RenderContext.EndRendering();
         }
+        else
+        {
+            ImGuiRenderer.EndFrame(MainWindow, true);
+        }
+       
+        // End-of-frame stuff
+        MainWindow.Swap();
+        
+        Window.Poll();
+        ThreadSafety.RunTasks();
+        InputBus.Dispatch();
+
+        frameSegment.Dispose();
     }
 
     protected virtual void PackContent()
@@ -375,43 +338,60 @@ public abstract class Game
         
     }
 
-    private void LoadingFrame()
+    private void Update()
     {
-
-        ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
-        ImGui.SetNextWindowSize(new Vector2(700, 300));
-        if (ImGui.Begin("LoadingGame",
-                ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar |
-                ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.Modal))
-        {
-            ImGui.Text("Loading Game...");
-        }
-
-        ImGui.End();
-
-    }
-
-    private void ReloadingFrame()
-    {
-        Vector2 windowSize = new Vector2(200, 100);
-        
-        ImGui.SetNextWindowPos(ImGui.GetIO().DisplaySize / 2, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
-        ImGui.SetNextWindowSize(windowSize);
-        if (ImGui.Begin("ReloadingAssets", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.Modal))
-        {
-            ImGui.Text("Reloading assets!");
-        }
-        ImGui.End();
-        
-    }
-
-    private void RunningFrame()
-    {
-#if DEVELOPMENT
+        #if DEVELOPMENT
 
         ImGui.DockSpaceOverViewport();
+        
+        #region FPS_DISPLAY
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 10);
+
+        float avgFPS = 0;
+        foreach (var sample in fpsHistogram)
+        {
+            avgFPS += sample;
+        }
+
+        avgFPS /= fpsHistogram.Count;
+
+        float avgMS = 0;
+        foreach (var sample in msHistogram)
+        {
+            avgMS += sample;
+        }
+
+        avgMS /= msHistogram.Count;
 
 
+        ImGui.SetNextWindowPos(new Vector2(ImGui.GetIO().DisplaySize.X - 5, ImGui.GetIO().DisplaySize.Y - 5),
+            ImGuiCond.Always, new Vector2(1, 1));
+        ImGui.SetNextWindowBgAlpha(0.5f);
+        if (ImGui.Begin("Info",
+                ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar |
+                ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.Text(" FPS: " + avgFPS.ToString("F0"));
+            ImGui.Text(" MS: " + avgMS.ToString("F2"));
+        }
+
+        ImGui.End();
+
+        ImGui.PopStyleVar();
+        #endregion
+
+        // Draw the meny bar
+        if (ImGui.BeginMainMenuBar())
+        {
+            MenuContext.Draw();
+            ImGui.EndMainMenuBar();
+        }
+
+        if (MenuContext.IsPressed("Content", "Pack"))
+        {
+            PackContent();
+        }
+        
         if (MenuContext.IsPressed("Scene View", "Camera", "Free"))
         {
             SceneCamera.CameraMode = CameraMode.FreeCamera;
@@ -439,7 +419,7 @@ public abstract class Game
             {
                 Logger.Info("Loading from {}" , result.Path);
 
-                CurrentProp = null;
+                currentEntity = null;
 
                 if (result.Path.EndsWith(".scene"))
                 {
@@ -481,9 +461,9 @@ public abstract class Game
             ImGuizmo.SetRect(position.X, position.Y, size.X, size.Y);
         }, () =>
         {
-            if (Scene != null && CurrentProp != null)
+            if (Scene != null && currentEntity != null)
             {
-                CurrentProp.RenderMoveGizmo(SceneCamera.GetView(), SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y));
+                currentEntity.RenderMoveGizmo(SceneCamera.GetView(), SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y));
             }
             
             SceneCamera.Update(DeltaTime, ImGui.IsWindowFocused());
@@ -500,6 +480,7 @@ public abstract class Game
         {
             if(tool.Enabled)
                 tool.Perform(this);
+            tool.PerformAlways(this);
 #if DEVELOPMENT
             DevelopmentRegistry.SetInt32("_EDITOR_TOOLS." + tool.GetType() + ".enabled", tool.Enabled ? 1 : 0);
 #endif
@@ -514,8 +495,14 @@ public abstract class Game
         
         UpdateHook();
         Scene?.Update(DeltaTime);
-            
+    }
+
+    private void Render(Window window)
+    {
+        RenderContext.UseWindow(window);
+        
         RenderHook(RenderContext);
+        
 
 #if DEVELOPMENT
 
@@ -524,7 +511,7 @@ public abstract class Game
         sceneWindowSettings.ProjectionMatrix = SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y);
         sceneWindowSettings.ViewMatrix = SceneCamera.GetView();
         sceneWindowSettings.ShowGizmos = MenuContext.IsFlagSet("View", "Gizmos");
-        sceneWindowSettings.SelectedProp = CurrentProp;
+        sceneWindowSettings.SelectedEntity = currentEntity;
         sceneWindowSettings.ShowUI = false;
         
         sceneWindowSettings.CameraPosition = SceneCamera.Position;
@@ -546,9 +533,16 @@ public abstract class Game
             pipelineData.TargetSurface = GameWindow;
             pipelineData.UIContext = uiContext;
             pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_post", true);
+
+            SceneRendererData data = new SceneRendererData();
+            data.RenderPipeline = RenderPipeline;
+            data.FramebufferSize = SceneWindow.FramebufferSize;
+            data.DeltaTime = DeltaTime;
+            data.CameraSettings = CameraSettings.Game;
+            data.UIContext = uiContext;
+            data.CullPass = EngineVarContext.Global.GetBool("e_frustum_cull");
             
-            
-            sceneRenderer?.Render(RenderPipeline, GameWindow, DeltaTime, CameraSettings.Game, uiContext);
+            sceneRenderer?.Render(data, ref pipelineData);
             sceneRenderer?.RenderGizmo(ref pipelineData);
             RenderPipeline.DrawFrame(pipelineData);
         }
@@ -564,8 +558,15 @@ public abstract class Game
             pipelineData.TargetSurface = SceneWindow;
             pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_scene_post") && EngineVarContext.Global.GetBool("e_post", true);
 
+            SceneRendererData data = new SceneRendererData();
+            data.RenderPipeline = RenderPipeline;
+            data.FramebufferSize = SceneWindow.FramebufferSize;
+            data.DeltaTime = DeltaTime;
+            data.CameraSettings = sceneWindowSettings;
+            data.UIContext = uiContext;
+            data.CullPass = false;
             
-            sceneRenderer?.Render(RenderPipeline, SceneWindow, DeltaTime, sceneWindowSettings, uiContext);
+            sceneRenderer?.Render(data, ref pipelineData);
             sceneRenderer?.RenderGizmo(ref pipelineData);
             RenderPipeline.DrawFrame(pipelineData);
         }
@@ -573,13 +574,20 @@ public abstract class Game
         PipelineData pipelineData = new PipelineData();
         pipelineData.Game = this;
         pipelineData.RenderContext = RenderContext;
-        pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, MainWindow) ??
+        pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, window) ??
                                       new CameraSettings();
         pipelineData.DeltaTime = DeltaTime;
-        pipelineData.TargetSurface = MainWindow;
+        pipelineData.TargetSurface = window;
         pipelineData.UIContext = uiContext;
+
+        SceneRendererData data = new SceneRendererData();
+        data.RenderPipeline = RenderPipeline;
+        data.FramebufferSize = window.FramebufferSize;
+        data.DeltaTime = DeltaTime;
+        data.CameraSettings = sceneWindowSettings;
+        data.UIContext = uiContext;
         
-        sceneRenderer?.Render(RenderPipeline, MainWindow, DeltaTime, CameraSettings.Game, uiContext);
+        sceneRenderer?.Render(data, ref pipelineData);
         sceneRenderer?.RenderGizmo(ref pipelineData);
         
         RenderContext.RebuildState();
@@ -587,6 +595,7 @@ public abstract class Game
         RenderContext.RebuildState();
 #endif
     }
+    
 
     public void FinalizeEngine()
     {
@@ -634,6 +643,8 @@ public abstract class Game
         public bool Enabled;
         
         public abstract void Perform(Game game);
+        public virtual void PerformAlways(Game game) {}
+
 
         public abstract string[] GetToolPath();
     }

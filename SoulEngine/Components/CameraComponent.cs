@@ -1,6 +1,7 @@
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
+using SoulEngine.Entities;
 using SoulEngine.Mathematics;
 using SoulEngine.Props;
 using SoulEngine.Rendering;
@@ -15,8 +16,8 @@ public class CameraComponent : Component, IComparable<CameraComponent>
     } = 60;
     [SerializedProperty("near")] public float NearPlane { get; set => field = Mathf.Clamp(value, float.Epsilon, FarPlane - 0.01f); } = 0.1f;
     [SerializedProperty("far")] public float FarPlane { get; set => field = Mathf.Clamp(value, NearPlane + 0.01f, 10_000_000f); }= 1000f;
-    
-    [SerializedProperty("priority")] public int Priority { get; set; }
+
+    [SerializedProperty("priority")] public int Priority;
     
     
     public CameraComponent(Entity entity) : base(entity)

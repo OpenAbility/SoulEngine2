@@ -8,7 +8,7 @@ using SoulEngine.UI.Rendering;
 
 namespace SoulEngine.PostProcessing;
 
-public class PostProcessor
+public class PostProcessor : EngineObject
 {
     private IRenderSurface renderSurface;
 
@@ -54,6 +54,7 @@ public class PostProcessor
 
     public void FinishedDrawing(RenderContext renderContext, PostProcessedSurface surface)
     {
+        using var profilerSegment = Profiler.Instance.Segment("post_processing");
         renderContext.PushPassName("post");
         renderContext.Disable(EnableCap.DepthTest);
         renderContext.Disable(EnableCap.CullFace);

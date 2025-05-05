@@ -1,6 +1,6 @@
 namespace SoulEngine.Resources;
 
-public  class ExecutionPromise
+public class ExecutionPromise
 {
     public Exception? Exception { get; protected set; }
     public PromiseState State { get; protected set; }

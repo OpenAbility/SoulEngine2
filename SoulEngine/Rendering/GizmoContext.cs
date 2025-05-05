@@ -6,7 +6,7 @@ using SoulEngine.Mathematics;
 
 namespace SoulEngine.Rendering;
 
-public class GizmoContext
+public class GizmoContext : EngineObject
 {
     public bool Selected { get; internal set; }
 
@@ -20,7 +20,6 @@ public class GizmoContext
     public readonly RenderContext RenderContext;
 
     private PrimitiveType primitiveType;
-    public SceneRenderData SceneRenderData { get; internal set; }
 
     private Vertex[] vertices;
     private int currentVertex = 0;

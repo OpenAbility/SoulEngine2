@@ -28,4 +28,9 @@ public class DirectorySource : IContentSource
     {
         return File.Exists(Resolve(id));
     }
+
+    public IEnumerable<string> Search(string prefix, string suffix)
+    {
+        return System.IO.Directory.GetFiles(Directory, prefix + "**" + suffix, SearchOption.AllDirectories);
+    }
 }

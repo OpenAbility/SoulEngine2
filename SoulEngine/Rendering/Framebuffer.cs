@@ -7,7 +7,7 @@ namespace SoulEngine.Rendering;
 /// <summary>
 /// A default framebuffer
 /// </summary>
-public class Framebuffer : IRenderSurface
+public class Framebuffer : EngineObject, IRenderSurface
 {
     private readonly Game game;
     public readonly int Handle;

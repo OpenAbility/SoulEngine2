@@ -97,6 +97,10 @@ public class SkeletonJointData
     public readonly Matrix4 InverseBind;
     public readonly Matrix4 DefaultMatrix;
 
+    public readonly Vector3 DefaultPosition;
+    public readonly Vector3 DefaultScale;
+    public readonly Quaternion DefaultRotation;
+
     public SkeletonJointData(int skeletonId, string name, SkeletonJointData? parent, Matrix4 inverseBind, Matrix4 defaultMatrix)
     {
         SkeletonID = skeletonId;
@@ -104,5 +108,9 @@ public class SkeletonJointData
         Parent = parent;
         InverseBind = inverseBind;
         DefaultMatrix = defaultMatrix;
+
+        DefaultPosition = defaultMatrix.ExtractTranslation();
+        DefaultScale = defaultMatrix.ExtractScale();
+        DefaultRotation = defaultMatrix.ExtractRotation();
     }
 }

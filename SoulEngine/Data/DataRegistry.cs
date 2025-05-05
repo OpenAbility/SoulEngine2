@@ -7,7 +7,7 @@ using SoulEngine.Events;
 
 namespace SoulEngine.Data;
 
-public class DataRegistry
+public class DataRegistry : EngineObject
 {
 	public static DataRegistry CreateData(EventBus<GameEvent> eventBus, string path)
 	{

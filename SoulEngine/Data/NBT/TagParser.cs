@@ -218,16 +218,13 @@ public static class TagParser
 
             ListTag listTag = new ListTag(null);
             
-            while (true)
+            while (Current.Type != TokenType.ArrayCloser)
             {
                 listTag.Add(ParseTag());
-                if (Current.Type == TokenType.ListDelimiter)
+                
+                if (Current.Type != TokenType.ArrayCloser)
                 {
                     Consume(TokenType.ListDelimiter);
-                }
-                else
-                {
-                    break;
                 }
             }
             

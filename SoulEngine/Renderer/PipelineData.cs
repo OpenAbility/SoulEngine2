@@ -13,6 +13,11 @@ public struct PipelineData()
     public float DeltaTime;
     public CameraSettings CameraSettings;
 
+    public CameraSettings ShadowCameraSettings;
+
+    public bool EnableShadows = true;
+    public bool RedrawShadows = true;
+
     public Action DrawGizmos = () => {};
 
     public UIContext? UIContext;

@@ -1,9 +1,10 @@
 using OpenTK.Graphics.OpenGL;
+using SoulEngine.Core;
 using SoulEngine.UI.Rendering;
 
 namespace SoulEngine.PostProcessing;
 
-public abstract class PostEffect : IComparable<PostEffect>
+public abstract class PostEffect : EngineObject, IComparable<PostEffect>
 {
     public readonly int Priority;
 

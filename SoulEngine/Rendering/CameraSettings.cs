@@ -1,4 +1,6 @@
 using OpenTK.Mathematics;
+using SoulEngine.Core;
+using SoulEngine.Entities;
 using SoulEngine.Props;
 
 namespace SoulEngine.Rendering;
@@ -22,7 +24,7 @@ public struct CameraSettings
     
 
     public bool ShowGizmos;
-    public Prop? SelectedProp;
+    public Entity? SelectedEntity;
 
     public bool ShowUI;
 

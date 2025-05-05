@@ -61,10 +61,9 @@
   
   <ItemGroup  Condition=" '$(Configuration)' != 'Development' ">
     <Compile Remove="Development\**" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="vendor\" />
+    <Compile Update="Rendering\RenderContext.StateManagement.cs">
+      <DependentUpon>RenderContext.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>

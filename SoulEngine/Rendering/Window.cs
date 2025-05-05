@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Hexa.NET.ImPlot;
 using OpenAbility.Logging;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
@@ -18,59 +19,23 @@ namespace SoulEngine.Rendering;
 /// <summary>
 /// Provides a native window
 /// </summary>
-public unsafe class Window : IRenderSurface, IDisposable
+public unsafe class Window : EngineObject, IRenderSurface, IDisposable
 {
-
-#if !SDL
-    private static readonly GLFWCallbacks.ErrorCallback GLFWError = (error, description) =>
-    {
-        Logger.Get("Rendering", "GLFW").Error("{}: {}", error, description);
-    };
-#endif
-
-
-
     static Window()
     {
-#if SDL
         if (!SDL.Init(SDL.InitFlags.Video | SDL.InitFlags.Gamepad | SDL.InitFlags.Joystick | SDL.InitFlags.Haptic))
         {
             SDL.Quit();
         }
-
-#else
-
-        if (!GLFW.Init())
-        {
-            GLFW.Terminate();
-            throw new Exception("Could not initialize GLFW!");
-        }
-
-        GLFW.SetErrorCallback(GLFWError);
-
-#endif
     }
-
-#if SDL
+    
     private static readonly Dictionary<uint, Window> windowIds = new Dictionary<uint, Window>();
     
     public readonly IntPtr Handle;
-    private readonly nint GLContext;
+    
     private bool shouldClose;
-#else
-    public readonly GLFWwindow* Handle;
-#endif
 
     private readonly Game Game;
-    private readonly GLDebugProc DebugProc;
-
-#if !SDL
-    private readonly GLFWCallbacks.CursorPosCallback cursorPosCallback;
-    private readonly GLFWCallbacks.MouseButtonCallback mouseButtonCallback;
-    private readonly GLFWCallbacks.KeyCallback keyCallback;
-    private readonly GLFWCallbacks.CharCallback charCallback;
-    private readonly GLFWCallbacks.ScrollCallback scrollCallback;
-#endif
 
     /// <summary>
     /// Create a new window
@@ -82,64 +47,6 @@ public unsafe class Window : IRenderSurface, IDisposable
     public Window(Game game, int width, int height, string title)
     {
         Game = game;
-
-#if !SDL
-
-        GLFW.WindowHint(WindowHintBool.Resizable, EngineVarContext.Global.GetBool("e_resizable"));
-        GLFW.WindowHint(WindowHintBool.Visible, false);
-        GLFW.WindowHint(WindowHintClientApi.ClientApi, ClientApi.OpenGlApi);
-        GLFW.WindowHint(WindowHintInt.ContextVersionMajor, 4);
-        GLFW.WindowHint(WindowHintInt.ContextVersionMinor, 5);
-        GLFW.WindowHint(WindowHintBool.SrgbCapable, false);
-        GLFW.WindowHint(WindowHintBool.ScaleToMonitor, true);
-        
-        #if !RELEASE
-        GLFW.WindowHint(WindowHintBool.OpenGLDebugContext, true);
-        #endif
-        
-        GLFW.WindowHint(WindowHintOpenGlProfile.OpenGlProfile, OpenGlProfile.Core);
-
-        Handle = GLFW.CreateWindow(width, height, title, null, parent == null ? null : parent.Handle);
-            
-             if (Handle == null)
-            throw new NullReferenceException("Window pointer is null!");
-        
-        GLFW.MakeContextCurrent(Handle);
-        
-        cursorPosCallback = (window, x, y) =>
-        {
-            Game.InputBus.Event(new CursorEvent(new Vector2((float)x, (float)y)));
-        };
-        GLFW.SetCursorPosCallback(Handle, cursorPosCallback);
-
-        mouseButtonCallback = (window, button, action, mods) =>
-        {
-            Game.InputBus.Event(new MouseEvent(mods, button, action));
-        };
-        GLFW.SetMouseButtonCallback(Handle, mouseButtonCallback);
-
-        keyCallback = (window, key, code, action, mods) =>
-        {
-            Game.InputBus.Event(new KeyEvent(mods, key, action));
-        };
-        GLFW.SetKeyCallback(Handle, keyCallback);
-
-        charCallback = (window, codepoint) =>
-        {
-            Game.InputBus.Event(new TypeEvent(codepoint));
-        };
-        GLFW.SetCharCallback(Handle, charCallback);
-
-        scrollCallback = (window, x, y) =>
-        {
-            Game.InputBus.Event(new ScrollEvent(new Vector2((float)x, (float)y)));
-        };
-        GLFW.SetScrollCallback(Handle, scrollCallback);
-        
-        GLFW.SwapInterval(1);
-        GLLoader.LoadBindings(new GLFWBindingsContext());
-
-#else
 
         SDL.WindowFlags windowFlags = SDL.WindowFlags.Hidden | SDL.WindowFlags.OpenGL;
 
@@ -155,103 +62,11 @@ public unsafe class Window : IRenderSurface, IDisposable
             SDL.ShowSimpleMessageBox(SDL.MessageBoxFlags.Warning, "HiDpi Warning",
                 "The engine var 'e_hidpi' was set to true - this is still experimental!", Handle);
         
-        SDL.GLSetAttribute(SDL.GLAttr.ContextMajorVersion, 4);
-        SDL.GLSetAttribute(SDL.GLAttr.ContextMinorVersion, 5);
-        SDL.GLSetAttribute(SDL.GLAttr.ContextProfileMask, (int)SDL.GLProfile.Core);
-        //SDL.GLSetAttribute(SDL.GLAttr.FrameBufferSRGBCapable, 1);
-        SDL.GLSetAttribute(SDL.GLAttr.DoubleBuffer, 1);
-        SDL.GLSetAttribute(SDL.GLAttr.AcceleratedVisual, 1);
-        
-#if !RELEASE
-        SDL.GLSetAttribute(SDL.GLAttr.ContextFlags, (int)SDL.GLContextFlag.Debug);
-#endif
-        
-        GLContext = SDL.GLCreateContext(Handle);
-
-
-        
-        SDL.GLMakeCurrent(Handle, GLContext);
-        GLLoader.LoadBindings(new SDLBindingsContext());
-
-        SDL.GLSetSwapInterval(1);
-
         windowIds[SDL.GetWindowID(Handle)] = this;
         
         // TODO: This should be toggled by the game whenever needed
         TextInput = true;
         
-#endif
-
-
-
-
-        int majorVersion = GL.GetInteger(GetPName.MajorVersion);
-        int minorVersion = GL.GetInteger(GetPName.MinorVersion);
-        string? renderer = GL.GetString(StringName.Renderer);
-        string? glsl = GL.GetString(StringName.ShadingLanguageVersion);
-
-        Logger.Get("Rendering", "Window").Debug("Running OpenGL {}.{}, GLSL {} on '{}'", majorVersion, minorVersion,
-            glsl ?? "NULL", renderer ?? "NULL");
-
-        const string outOfDateError = "Either OpenGL >= 4.3 and ARB_direct_state_access, or OpenGL >= 4.5 required!";
-
-        if (majorVersion < 4)
-            throw new Exception(outOfDateError);
-
-        if (minorVersion < 3)
-            throw new Exception(outOfDateError);
-
-        if (minorVersion < 5 && !ExtensionSupported("ARB_direct_state_access"))
-        {
-            throw new Exception(outOfDateError);
-        }
-
-        // TODO: Maybe some people don't care?
-        if (minorVersion < 6 && !ExtensionSupported("GL_EXT_texture_filter_anisotropic"))
-        {
-            throw new Exception(outOfDateError);
-        }
-
-#if !RELEASE
-
-        GL.Enable(EnableCap.DebugOutput);
-        GL.Enable(EnableCap.DebugOutputSynchronous);
-
-        DebugProc = (source, type, id, severity, length, message, param) =>
-        {
-            if (type == DebugType.DebugTypePushGroup || type == DebugType.DebugTypePopGroup)
-                return;
-
-            if (severity == DebugSeverity.DebugSeverityNotification && !EngineVarContext.Global.GetBool("r_gl_notifs"))
-                return;
-
-            string msg =
-                $"{source}, {type} ({severity}): {id}: {Encoding.UTF8.GetString(new Span<byte>((byte*)message, length))}";
-
-            game.EventBus.Event(new RendererDebugCallback(msg));
-
-            var logger = Logger.Get("Rendering", "OpenGL");
-            if (type == DebugType.DebugTypeError)
-                logger.Error(msg);
-            else
-                logger.Debug(msg);
-
-            if (type == DebugType.DebugTypeError && EngineVarContext.Global.GetBool("r_gl_error_break"))
-                Debugger.Break();
-        };
-
-        GL.DebugMessageCallback(DebugProc, IntPtr.Zero);
-
-#endif
-    }
-
-    private bool ExtensionSupported(string name)
-    {
-#if SDL
-        return SDL.GLExtensionSupported(name);
-#else
-        return GLFW.ExtensionSupported(name);
-#endif
     }
 
     /// <summary>
@@ -271,28 +86,12 @@ public unsafe class Window : IRenderSurface, IDisposable
     /// </summary>
     public void Hide()
     {
-#if SDL
         SDL.HideWindow(Handle);
-#else
-        GLFW.HideWindow(Handle);
-#endif
     }
-
-    /// <summary>
-    /// Make this the current window
-    /// </summary>
-    public void MakeCurrent()
-    {
-#if SDL
-        SDL.GLMakeCurrent(Handle, GLContext);
-#else
-        GLFW.MakeContextCurrent(Handle);
-#endif
-    }
+    
 
     public static void Poll()
     {
-#if SDL
         while (SDL.PollEvent(out var sdlEvent))
         {
             uint id = SDL.GetWindowID(SDL.GetWindowFromEvent(sdlEvent));
@@ -301,11 +100,6 @@ public unsafe class Window : IRenderSurface, IDisposable
                 registeredWindow.Event(sdlEvent);
 
         }
-        
-        
-#else
-        GLFW.PollEvents();
-#endif
     }
 
     private void Event(SDL.Event sdlEvent)
@@ -342,8 +136,6 @@ public unsafe class Window : IRenderSurface, IDisposable
         
 
     }
-    
-    #if SDL
 
     private static MouseButton FromSDLButton(byte button)
     {
@@ -501,16 +293,10 @@ public unsafe class Window : IRenderSurface, IDisposable
             _ => Keys.Unknown
         };
     }
-    #endif
 
     public void Swap()
     {
-#if SDL
         SDL.GLSwapWindow(Handle);
-#else
-        GLFW.SwapBuffers(Handle);
-#endif
-
     }
 
     /// <summary>
@@ -518,13 +304,8 @@ public unsafe class Window : IRenderSurface, IDisposable
     /// </summary>
     public bool ShouldClose
     {
-#if SDL
         get => shouldClose;
         set => shouldClose = value;
-#else
-        get => GLFW.WindowShouldClose(Handle);
-        set => GLFW.SetWindowShouldClose(Handle, value);
-#endif
     }
 
     public void BindFramebuffer()
@@ -538,11 +319,7 @@ public unsafe class Window : IRenderSurface, IDisposable
     {
         get
         {
-#if SDL
             SDL.GetWindowSizeInPixels(Handle, out var w, out var h);
-#else
-            GLFW.GetFramebufferSize(Handle, out var w, out var h);
-#endif
 
             return new Vector2i(w, h);
         }
@@ -552,25 +329,15 @@ public unsafe class Window : IRenderSurface, IDisposable
     {
         get
         {
-#if SDL
             SDL.GetWindowSize(Handle, out var w, out var h);
             return new Vector2i(w, h);
-#else
-            return FramebufferSize;
-#endif
         }
     }
 
     public bool MouseCaptured
     {
-#if SDL
         get => SDL.GetWindowRelativeMouseMode(Handle);
         set => SDL.SetWindowRelativeMouseMode(Handle, value);
-#else
-        get => GLFW.GetInputMode(Handle, CursorStateAttribute.Cursor) == CursorModeValue.CursorDisabled;
-        set => GLFW.SetInputMode(Handle, CursorStateAttribute.Cursor, value ? CursorModeValue.CursorDisabled : CursorModeValue.CursorNormal);
-
-#endif
     }
 
     private Vector2i pos;
@@ -579,8 +346,6 @@ public unsafe class Window : IRenderSurface, IDisposable
 
     public bool Fullscreen
     {
-#if SDL
-
         get
         {
             return fullscreen;
@@ -590,36 +355,6 @@ public unsafe class Window : IRenderSurface, IDisposable
         {
             SDL.SetWindowFullscreen(Handle, value);
         }
-
-#else
-        get => GLFW.GetWindowMonitor(Handle) != null;
-        set
-        {
-            if (value && !Fullscreen)
-            {
-                GLFW.GetWindowPos(Handle, out var x, out var y);
-                pos.X = x;
-                pos.Y = y;
-                
-                GLFW.GetWindowSize(Handle, out var width, out var height);
-                size.X = width;
-                size.Y = height;
-                
-                Monitor* primaryMonitor = GLFW.GetPrimaryMonitor();
-
-                var videoMode = GLFW.GetVideoMode(primaryMonitor);
-
-
-                GLFW.SetWindowMonitor(Handle, GLFW.GetPrimaryMonitor(), 0, 0, videoMode->Width, videoMode->Height,
-                    videoMode->RefreshRate);
-            }
-            else if(Fullscreen)
-            {
-                GLFW.SetWindowMonitor(Handle, null, pos.X, pos.Y, size.X, size.Y, GLFW.DontCare);
-            }
-        }
-       
-#endif
     }
 
     public bool TextInput

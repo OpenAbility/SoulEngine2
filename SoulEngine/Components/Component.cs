@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
+using SoulEngine.Entities;
 using SoulEngine.Props;
 using SoulEngine.Renderer;
 using SoulEngine.Rendering;
@@ -31,7 +32,7 @@ public abstract class Component : EngineObject
         
         
 #if DEVELOPMENT
-        string icon = GetType().GetCustomAttribute<PropAttribute>()?.Icon ?? "object";
+        string icon = GetType().GetCustomAttribute<ComponentAttribute>()?.Icon ?? "object";
 
         if(icon != "none")
             propIcon = Scene.Game.ResourceManager.Load<Texture>("icons/" + icon + ".png");
@@ -110,7 +111,7 @@ public abstract class Component : EngineObject
     /// <param name="renderPipeline"></param>
     /// <param name="sceneRenderData">The scene render data</param>
     /// <param name="deltaTime">The time that has passed since last render</param>
-    public virtual void Render(IRenderPipeline renderPipeline, SceneRenderData sceneRenderData, float deltaTime)
+    public virtual void Render(IRenderPipeline renderPipeline, float deltaTime)
     {
         
     }

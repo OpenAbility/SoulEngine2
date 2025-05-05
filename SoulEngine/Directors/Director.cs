@@ -7,7 +7,7 @@ namespace SoulEngine.Core;
 /// <summary>
 /// Steers all actors and props in a scene
 /// </summary>
-public abstract class Director
+public abstract class Director : EngineObject
 {
     private readonly Dictionary<string, SerializedProperty> properties = new Dictionary<string, SerializedProperty>();
 
@@ -113,11 +113,11 @@ public abstract class Director
 
     protected IEnumerable<T> FindProps<T>()
     {
-        return Scene.Props.Where(t => t is T).Cast<T>();
+        return Scene.Entities.Where(t => t is T).Cast<T>();
     }
     
     protected T? FindProp<T>()
     {
-        return Scene.Props.Where(t => t is T).Cast<T>().FirstOrDefault();
+        return Scene.Entities.Where(t => t is T).Cast<T>().FirstOrDefault();
     }
 }

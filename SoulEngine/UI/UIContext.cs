@@ -13,7 +13,7 @@ namespace SoulEngine.UI;
 /// <summary>
 /// Handles UI rendering
 /// </summary>
-public class UIContext
+public class UIContext : EngineObject
 {
     public readonly Game Game;
 

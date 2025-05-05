@@ -1,227 +1,126 @@
+
+
 using System.Diagnostics;
-using System.Drawing;
-using System.Numerics;
-using System.Runtime.CompilerServices;
+using System.Text;
 using OpenAbility.Logging;
+using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
-using Buffer = OpenTK.Graphics.OpenGL.Buffer;
+using SDL3;
+using SoulEngine.Core;
+using SoulEngine.Data;
 
 namespace SoulEngine.Rendering;
 
-public class RenderContext
+public unsafe partial class RenderContext : EngineObject
 {
+    private IntPtr glContext;
+    private readonly GLDebugProc DebugProc;
 
-    private static readonly EnableCap[] ValidCaps =
-    [
-        EnableCap.LineSmooth,
-        EnableCap.PolygonSmooth,
-        EnableCap.CullFace,
-        EnableCap.DepthTest,
-        EnableCap.StencilTest,
-        EnableCap.Dither,
-        EnableCap.Blend,
-        EnableCap.ColorLogicOp,
-        EnableCap.ScissorTest,
-        EnableCap.PolygonOffsetPoint,
-        EnableCap.PolygonOffsetLine,
-        EnableCap.ClipDistance0,
-        EnableCap.ClipDistance1,
-        EnableCap.ClipDistance2,
-        EnableCap.ClipDistance3,
-        EnableCap.ClipDistance4,
-        EnableCap.ClipDistance5,
-        EnableCap.ClipDistance6,
-        EnableCap.ClipDistance7,
-        EnableCap.PolygonOffsetFill,
-        EnableCap.Multisample,
-        EnableCap.MultisampleSgis,
-        EnableCap.SampleAlphaToCoverage,
-        EnableCap.SampleAlphaToMaskSgis,
-        EnableCap.SampleAlphaToOne,
-        EnableCap.SampleAlphaToOneSgis,
-        EnableCap.SampleCoverage,
-        EnableCap.DebugOutputSynchronous,
-        EnableCap.ProgramPointSize,
-        EnableCap.DepthClamp,
-        EnableCap.TextureCubeMapSeamless,
-        EnableCap.SampleShading,
-        EnableCap.RasterizerDiscard,
-        EnableCap.PrimitiveRestartFixedIndex,
-        EnableCap.FramebufferSrgb,
-        EnableCap.SampleMask,
-        EnableCap.PrimitiveRestart,
-        EnableCap.DebugOutput,
-    ];
-
-    private Dictionary<EnableCap, bool> enabled = new Dictionary<EnableCap, bool>();
-
-    private Stack<RenderPass> renderPassStack = new Stack<RenderPass>();
-    private uint currentGroupID = 0;
-    private DepthFunction depthFunction;
+    private Window currentWindow;
     
-    public RenderContext()
+    public RenderContext(Game game, Window contextOwner)
     {
+        // Initialize OpenGL
+        
+        // Setup parameters
+        SDL.GLSetAttribute(SDL.GLAttr.ContextMajorVersion, 4);
+        SDL.GLSetAttribute(SDL.GLAttr.ContextMinorVersion, 5);
+        SDL.GLSetAttribute(SDL.GLAttr.ContextProfileMask, (int)SDL.GLProfile.Core);
+        //SDL.GLSetAttribute(SDL.GLAttr.FrameBufferSRGBCapable, 1);
+        SDL.GLSetAttribute(SDL.GLAttr.DoubleBuffer, 0);
+        SDL.GLSetAttribute(SDL.GLAttr.AcceleratedVisual, 1);
+#if !RELEASE
+        SDL.GLSetAttribute(SDL.GLAttr.ContextFlags, (int)SDL.GLContextFlag.Debug);
+#endif
+
+        glContext = SDL.GLCreateContext(contextOwner.Handle);
+        
+        
+        SDL.GLMakeCurrent(contextOwner.Handle, glContext);
+        currentWindow = contextOwner;
+        GLLoader.LoadBindings(new SDLBindingsContext());
+        
+        if (!SDL.GLSetSwapInterval(-1))
+        {
+            Logger.Get<Window>().Warning("Adaptive V-Sync not available: " + SDL.GetError());
+            if (!SDL.GLSetSwapInterval(1))
+            {
+                Logger.Get<Window>().Warning("V-Sync not available: " + SDL.GetError());
+            }
+        }
+
+        if (!EngineVarContext.Global.GetBool("e_vsync", true))
+            SDL.GLSetSwapInterval(0);
+
+        int majorVersion = GL.GetInteger(GetPName.MajorVersion);
+        int minorVersion = GL.GetInteger(GetPName.MinorVersion);
+        string? renderer = GL.GetString(StringName.Renderer);
+        string? glsl = GL.GetString(StringName.ShadingLanguageVersion);
+
+        Logger.Get("Rendering", "Window").Debug("Running OpenGL {}.{}, GLSL {} on '{}'", majorVersion, minorVersion,
+            glsl ?? "NULL", renderer ?? "NULL");
+
+        const string outOfDateError = "Either OpenGL >= 4.3 and ARB_direct_state_access, or OpenGL >= 4.5 required!";
+
+        if (majorVersion < 4)
+            throw new Exception(outOfDateError);
+
+        if (minorVersion < 3)
+            throw new Exception(outOfDateError);
+
+        if (minorVersion < 5 && !SDL.GLExtensionSupported("ARB_direct_state_access"))
+        {
+            throw new Exception(outOfDateError);
+        }
+
+        // TODO: Maybe some people don't care?
+        if (minorVersion < 6 && !SDL.GLExtensionSupported("GL_EXT_texture_filter_anisotropic"))
+        {
+            throw new Exception(outOfDateError);
+        }
+
+#if !RELEASE
+
+        GL.Enable(EnableCap.DebugOutput);
+        GL.Enable(EnableCap.DebugOutputSynchronous);
+
+        DebugProc = (source, type, id, severity, length, message, param) =>
+        {
+            if (type == DebugType.DebugTypePushGroup || type == DebugType.DebugTypePopGroup)
+                return;
+
+            if (severity == DebugSeverity.DebugSeverityNotification && !EngineVarContext.Global.GetBool("r_gl_notifs"))
+                return;
+
+            string msg =
+                $"{source}, {type} ({severity}): {id}: {Encoding.UTF8.GetString(new Span<byte>((byte*)message, length))}";
+
+            game.EventBus.Event(new RendererDebugCallback(msg));
+
+            var logger = Logger.Get("Rendering", "OpenGL");
+            if (type == DebugType.DebugTypeError)
+                logger.Error(msg);
+            else
+                logger.Debug(msg);
+
+            if (type == DebugType.DebugTypeError && EngineVarContext.Global.GetBool("r_gl_error_break"))
+                Debugger.Break();
+        };
+
+        GL.DebugMessageCallback(DebugProc, IntPtr.Zero);
+
+#endif
+        
+        
         RebuildState();
     }
 
-    public void Enable(EnableCap cap)
+    public void UseWindow(Window window)
     {
-        if(enabled[cap])
-            return;
-        enabled[cap] = true;
-        GL.Enable(cap);
-    }
-    
-    public void Disable(EnableCap cap)
-    {
-        if(!enabled[cap])
-            return;
-        enabled[cap] = false;
-        GL.Disable(cap);
+        SDL.GLMakeCurrent(window.Handle, glContext);
     }
 
-    public void RebuildState()
-    {
-        enabled.Clear();
-        foreach (var cap in ValidCaps)
-        {
-            if(enabled.ContainsKey(cap) && enabled[cap] != GL.IsEnabled(cap))
-                Logger.Get<RenderContext>().Warning("Enable cap " + enabled[cap] + " was changed outside of RenderContext!");
-            enabled[cap] = GL.IsEnabled(cap);
-        }
-
-        currentSurface = GL.GetInteger(GetPName.DrawFramebufferBinding);
-        depthFunction = (DepthFunction)GL.GetInteger(GetPName.DepthFunc);
-    }
-    
-    private int currentSurface;
-
-    private void PushPassState(RenderPass pass)
-    {
-        int fbo = pass.Surface.GetSurfaceHandle();
-        
-        currentSurface = fbo;
-        pass.Surface.BindFramebuffer();
-        
-        
-       
-        if (pass.DepthStencilSettings.LoadOp == AttachmentLoadOp.Clear)
-        {
-            GL.ClearDepthf(pass.DepthStencilSettings.ClearValue.Depth);
-            GL.ClearStencil(pass.DepthStencilSettings.ClearValue.Stencil);
-            GL.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-            //GL.ClearNamedFramebufferfi(fbo, Buffer.Stenci, 0, pass.DepthStencilSettings.ClearValue.Depth, pass.DepthStencilSettings.ClearValue.Stencil);
-        }
-        else if (pass.DepthStencilSettings.LoadOp == AttachmentLoadOp.DontCare)
-        {
-            GL.InvalidateNamedFramebufferData(fbo, 1, [FramebufferAttachment.DepthStencilAttachment]);
-        }
-        
+    public Window GetCurrentWindow() => currentWindow;
 
 
-        Span<float> cBuf = stackalloc float[4];
-        
-        for (int i = 0; i < pass.ColorSettings.Length; i++)
-        {
-            if (pass.ColorSettings[i].LoadOp == AttachmentLoadOp.Clear)
-            {
-                
-                cBuf[0] = pass.ColorSettings[i].ClearValue.Colour.R;
-                cBuf[1] = pass.ColorSettings[i].ClearValue.Colour.G;
-                cBuf[2] = pass.ColorSettings[i].ClearValue.Colour.B;
-                cBuf[3] = pass.ColorSettings[i].ClearValue.Colour.A;
-                
-                GL.ClearNamedFramebufferf(fbo, Buffer.Color, i, cBuf);
-            }
-            else if (pass.ColorSettings[i].LoadOp == AttachmentLoadOp.DontCare)
-            {
-                GL.InvalidateNamedFramebufferData(fbo, 1, [(FramebufferAttachment)((uint)FramebufferAttachment.ColorAttachment0 + i)]);
-            }
-        }
-
-    }
-
-    public void BeginRendering(RenderPass pass)
-    {
-        //RebuildState();
-        if(pass.Name != null)
-            PushPassName(pass.Name);
-        
-        renderPassStack.Push(pass);
-        PushPassState(pass);
-    }
-
-    public void EndRendering()
-    {
-        //RebuildState();
-        if(renderPassStack.Peek().Name != null)
-            GL.PopDebugGroup();
-        
-        renderPassStack.Pop();
-        if(renderPassStack.Count != 0)
-            PushPassState(renderPassStack.Peek());
-    }
-
-
-    public void DepthFunction(DepthFunction depthFunction)
-    {
-        if(depthFunction != this.depthFunction)
-            GL.DepthFunc(depthFunction);
-        this.depthFunction = depthFunction;
-    }
-    
-    public void PushPassName(string name)
-    {
-#if DEBUG || DEVELOPMENT
-        GL.PushDebugGroup(DebugSource.DebugSourceApplication, currentGroupID++, name.Length, name);
-#endif
-    }
-
-    public void PopPassName()
-    {
-#if DEBUG || DEVELOPMENT
-        GL.PopDebugGroup();
-#endif
-    }
-
-    public void PresentDisplay(Framebuffer framebuffer, Rectangle src, Rectangle dst)
-    {
-        GL.BlitNamedFramebuffer(framebuffer.Handle, 0, src.X, src.Y, src.X + src.Width, src.Y + src.Height, dst.X, dst.Y, dst.X + dst.Width, dst.Y + dst.Height, ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Nearest);
-    }
-
-    [DebuggerHidden]
-    [StackTraceHidden]
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void EnsureRendering()
-    {
-        if (renderPassStack.Count <= 0)
-            throw new Exception("Not currently rendering!");
-    }
-    
-    public void BindShader(Shader shader)
-    {
-        EnsureRendering();
-        shader.Bind();
-    }
-
-    public void RenderMesh<T>(Mesh<T> mesh) where T : unmanaged, IVertex
-    {
-        EnsureRendering();
-        mesh.Draw();
-    }
-
-    public void DepthRange(float from, float to)
-    {
-        GL.DepthRangef(from, to);
-    }
-
-    public void DepthBias(float factor, float units)
-    {
-        GL.PolygonOffset(factor, units);
-    }
-
-    public void BlendFunction(BlendingFactor sfactor, BlendingFactor dfactor)
-    {
-        GL.BlendFunc(sfactor, dfactor);
-    }
 }

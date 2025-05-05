@@ -1,9 +1,10 @@
 using Hexa.NET.ImGui;
 using OpenAbility.Logging;
+using SoulEngine.Core;
 
 namespace SoulEngine;
 
-public class MenuContext
+public class MenuContext : EngineObject
 {
 	private static readonly Logger Logger = Logger.Get<MenuContext>();
 	

@@ -1,8 +1,9 @@
 using OpenTK.Mathematics;
+using SoulEngine.Core;
 
 namespace SoulEngine.Models;
 
-public class SkeletonInstance
+public class SkeletonInstance : EngineObject
 {
     public readonly Skeleton Skeleton;
 

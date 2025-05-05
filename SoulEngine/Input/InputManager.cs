@@ -5,7 +5,7 @@ using SoulEngine.Events;
 
 namespace SoulEngine.Input;
 
-public class InputManager
+public class InputManager : EngineObject
 {
 
     private readonly List<InputAction> actions = new List<InputAction>();

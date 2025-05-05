@@ -4,10 +4,12 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Animation;
 using SoulEngine.Core;
+using SoulEngine.Entities;
 using SoulEngine.Models;
 using SoulEngine.Props;
 using SoulEngine.Renderer;
 using SoulEngine.Rendering;
+using SoulEngine.Resources;
 
 namespace SoulEngine.Components;
 
@@ -15,136 +17,65 @@ namespace SoulEngine.Components;
 [Serializable]
 public class DynamicModelComponent : Component
 {
+    [SerializedProperty("visible")] public bool Visible = true;
+
+    [SerializedProperty("model")]
+    public Model? Model
+    {
+        get => field;
+        set
+        {
+            field = value;
+            FlushContextObjects();
+        }
+    }
+    public AnimationPlayer? AnimationPlayer { get; private set; }
+
+    public SkeletonInstance? SkeletonInstance;
+    
     public DynamicModelComponent(Entity entity) : base(entity)
     {
-        Visible = Register(new BoolProperty("visible", true)); ;
 
-        ModelProperty = Register(new ResourceProperty<Model>("model", "", Game));
-        JointModelProperty = Register(new ResourceProperty<Model>("jointModel", "mod/joint.mdl", Game));
-        AnimationProperty = Register(new ResourceProperty<AnimationClip>("animation", "", Game));
     }
     
-    public readonly BoolProperty Visible;
-    public readonly ResourceProperty<Model> ModelProperty;
-    public readonly ResourceProperty<Model> JointModelProperty;
-    public readonly ResourceProperty<AnimationClip> AnimationProperty;
-
-    private SkeletonJointData? selectedJoint;
-    
-    private SkeletonInstance? skeletonInstance;
-    public SingleAnimationPlayer? AnimationPlayer;
-    
-
-    public override void Update(float deltaTime)
+    private void FlushContextObjects()
     {
-        if (skeletonInstance?.Skeleton != ModelProperty.Value?.Skeleton)
+        if (SkeletonInstance?.Skeleton != Model?.Skeleton)
         {
             // The model uses a different skeleton.
-            if (ModelProperty.Value?.Skeleton != null)
+            if (Model?.Skeleton != null)
             {
-                skeletonInstance = ModelProperty.Value.Skeleton.Instantiate();
-                AnimationPlayer = new SingleAnimationPlayer(skeletonInstance);
+                SkeletonInstance = Model.Skeleton.Instantiate();
+                AnimationPlayer = new AnimationPlayer(SkeletonInstance);
             }
         }
-
-        if (AnimationPlayer?.CurrentClip != AnimationProperty.Value)
-        {
-            if (AnimationPlayer != null)
-            {
-                AnimationPlayer.CurrentClip = AnimationProperty.Value;
-                AnimationPlayer.Playing?.Restart();
-            }
-        }
-
-        AnimationPlayer?.Apply();
-
-        if(AnimationPlayer?.Playing is { Playing: false })
-            AnimationPlayer.Playing.Restart();
-        
     }
-
-    public void LoadModel(Model model)
+    
+    public override void Update(float deltaTime)
     {
-        ModelProperty.Set(model);
-        skeletonInstance = model.Skeleton.Instantiate();
-        AnimationPlayer = new SingleAnimationPlayer(skeletonInstance);
+        AnimationPlayer?.Apply();
     }
 
     private static GpuBuffer<Matrix4>? skeletonBuffer;
+    
 
-    protected override void OnEdit()
+    public override void Render(IRenderPipeline renderPipeline, float deltaTime)
     {
-        if(skeletonInstance == null)
+        if(!Visible)
+            return;
+        
+        if(Model == null)
+            return;
+        
+        if(SkeletonInstance == null)
             return;
 
-        if (ImGui.Button("Reset Selection"))
+        Matrix4[] skeletonBuffer = ArrayPool<Matrix4>.Shared.Rent(SkeletonInstance.Skeleton.JointCount);
+
+        for (int i = 0; i < SkeletonInstance.Skeleton.JointCount; i++)
         {
-            selectedJoint = null;
-        }
-
-        for (int i = 0; i < skeletonInstance.Skeleton.JointCount; i++)
-        {
-            var joint = skeletonInstance.Skeleton.GetJoint(i);
-            if (ImGui.CollapsingHeader(joint.Name + " - " + joint.SkeletonID))
-            {
-                ImGui.PushID(joint.Name);
-                if (ImGui.Button("Select"))
-                {
-                    selectedJoint = joint;
-                }
-
-                if (ImGui.Button("Reset"))
-                {
-                    skeletonInstance.TranslateJoint(joint, joint.DefaultMatrix);
-                }
-                
-                ImGui.PopID();
-
-            }
-        }
-
-        /*
-        ImGui.BeginDisabled(animationContext == null);
-        
-        if(ImGui.Button("Play"))
-            animationContext!.Play();
-        ImGui.SameLine();
-        if(ImGui.Button("Pause"))
-            animationContext!.Pause();
-        ImGui.SameLine();
-        if(ImGui.Button("Stop"))
-            animationContext!.Stop();
-        
-        if(ImGui.Button("Restart"))
-            animationContext!.Restart();
-        ImGui.SameLine();
-        ImGui.Text(animationContext?.Elapsed.ToString() ?? "NO ANIM");
-        
-        ImGui.EndDisabled();
-        */
-    }
-
-
-    public override void Render(IRenderPipeline renderPipeline, SceneRenderData data, float deltaTime)
-    {
-        if(!Visible.Value)
-            return;
-        
-        if(ModelProperty.Value == null)
-            return;
-        
-        if(JointModelProperty.Value == null)
-            return;
-        
-        if(skeletonInstance == null)
-            return;
-
-        Matrix4[] skeletonBuffer = ArrayPool<Matrix4>.Shared.Rent(skeletonInstance.Skeleton.JointCount);
-
-        for (int i = 0; i < skeletonInstance.Skeleton.JointCount; i++)
-        {
-            SkeletonJointData jointData = skeletonInstance.Skeleton.GetJoint(i);
-            skeletonBuffer[ModelProperty.Value.skeletonToMeshJoints[jointData.SkeletonID]] = jointData.InverseBind * skeletonInstance.GetJointGlobalMatrix(jointData);
+            SkeletonJointData jointData = SkeletonInstance.Skeleton.GetJoint(i);
+            skeletonBuffer[Model.skeletonToMeshJoints[jointData.SkeletonID]] = jointData.InverseBind * SkeletonInstance.GetJointGlobalMatrix(jointData);
         }
         
         
@@ -152,9 +83,9 @@ public class DynamicModelComponent : Component
         renderProperties.ModelMatrix = Entity.GlobalMatrix;
         renderProperties.SkeletonBuffer = skeletonBuffer;
         renderProperties.SkeletonBufferPool = ArrayPool<Matrix4>.Shared;
-        renderProperties.SkeletonBufferSize = skeletonInstance.Skeleton.JointCount;
+        renderProperties.SkeletonBufferSize = SkeletonInstance.Skeleton.JointCount;
 
-        foreach (var mesh in ModelProperty.Value.Meshes)
+        foreach (var mesh in Model.Meshes)
         {
             renderProperties.Mesh = mesh.ActualMesh;
             renderProperties.Material = mesh.Material;
@@ -164,27 +95,27 @@ public class DynamicModelComponent : Component
 
     public override void RenderGizmo(GizmoContext context)
     {
-        if(!Visible.Value)
+        base.RenderGizmo(context);
+        
+        if(!Visible)
             return;
         
-        if(ModelProperty.Value == null)
+        if(Model == null)
             return;
         
-        if(JointModelProperty.Value == null)
+        if(Model == null)
             return;
         
-        if(skeletonInstance == null)
+        if(SkeletonInstance == null)
             return;
         
-        for (int i = 0; i < skeletonInstance.Skeleton.JointCount; i++)
+        for (int i = 0; i < SkeletonInstance.Skeleton.JointCount; i++)
         {
-            foreach (var mesh in JointModelProperty.Value.Meshes)
-            {
-                Matrix4 matrix4 = skeletonInstance.GetJointGlobalMatrix(skeletonInstance.Skeleton.GetJoint(i)) *
-                                  Entity.GlobalMatrix;
-                mesh.Material.Bind(context.SceneRenderData.CameraSettings, matrix4);
-                mesh.ActualMesh.Draw();
-            }
+            Matrix4 matrix4 = SkeletonInstance.GetJointGlobalMatrix(SkeletonInstance.Skeleton.GetJoint(i)) *
+                              Entity.GlobalMatrix;
+
+            context.ModelMatrix = matrix4;
+            context.BillboardedSprite(Scene.Game.ResourceManager.Load<Texture>("icons/bone.png"), 0.2f);
         }
     }
 }

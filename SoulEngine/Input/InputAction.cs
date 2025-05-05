@@ -1,9 +1,10 @@
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SoulEngine.Core;
 using SoulEngine.Events;
 
 namespace SoulEngine.Input;
 
-public class InputAction
+public class InputAction : EngineObject
 {
     private readonly EventListener<InputEvent> listener;
     private readonly InputManager manager;

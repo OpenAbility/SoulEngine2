@@ -1,4 +1,5 @@
 using System.Numerics;
+using SoulEngine.Core;
 
 namespace SoulEngine.Events;
 
@@ -6,7 +7,7 @@ namespace SoulEngine.Events;
 /// Provides event dispatching
 /// </summary>
 /// <typeparam name="T">The type of all event objects</typeparam>
-public class EventBus<T>
+public class EventBus<T> : EngineObject
 {
 	private Queue<T> eventQueue = new Queue<T>();
 	private Queue<(EventListener<T>, bool)> listenQueue = new ();

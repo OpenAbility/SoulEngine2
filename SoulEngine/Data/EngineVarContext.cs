@@ -1,12 +1,13 @@
 using OpenAbility.Logging;
 using SoulEngine.Content;
+using SoulEngine.Core;
 
 namespace SoulEngine.Data;
 
 /// <summary>
 /// Global engine variables indexed by a string name
 /// </summary>
-public class EngineVarContext
+public class EngineVarContext : EngineObject
 {
 	private readonly Dictionary<string, EngineVarEntry> Entries = new Dictionary<string, EngineVarEntry>();
 	private static readonly Logger Logger = Logger.Get("EngineVar");
