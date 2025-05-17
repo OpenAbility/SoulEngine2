@@ -1,9 +1,8 @@
 using OpenTK.Mathematics;
-using SoulEngine.Core;
 using SoulEngine.Mathematics;
 using SoulEngine.Rendering;
 
-namespace SoulEngine.Development;
+namespace SoulEngine.Core.Tools;
 
 public class SceneCamera : EngineObject
 {

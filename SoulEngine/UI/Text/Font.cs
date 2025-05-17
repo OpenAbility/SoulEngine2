@@ -4,6 +4,7 @@ using SoulEngine.Resources;
 namespace SoulEngine.UI.Text;
 
 [Resource(typeof(Loader))]
+[ExpectedExtensions(".fnt")]
 public partial class Font : Resource
 {
     public string Name { get; private set; }

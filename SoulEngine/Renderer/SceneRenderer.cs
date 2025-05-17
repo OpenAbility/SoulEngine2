@@ -110,7 +110,6 @@ public class SceneRenderer : EngineObject
         Frustum frustum = Frustum.CreateFromCamera(data.CameraSettings.CameraPosition, 
             data.CameraSettings.CameraDirection, 
             data.CameraSettings.CameraRight, 
-            data.CameraSettings.CameraUp, 
             surfaceSize.X / surfaceSize.Y, 
             data.CameraSettings.FieldOfView, data.CameraSettings.NearPlane, data.CameraSettings.FarPlane);
         
@@ -135,7 +134,28 @@ public class SceneRenderer : EngineObject
             
             data.UIContext.EnsureEnded();
         }
+
+        pipelineData.EnableShadows = false;
+
+        ShadowCameraComponent? shadowCamera = Scene.ShadowCamera;
+        if (shadowCamera != null)
+        {
+            pipelineData.ShadowCameraSettings.ViewMatrix = shadowCamera.GetView();
+            pipelineData.ShadowCameraSettings.ProjectionMatrix = shadowCamera.GetProjection();
+            
+            pipelineData.ShadowCameraSettings.CameraPosition = shadowCamera.Entity.Position;
+            pipelineData.ShadowCameraSettings.CameraDirection = shadowCamera.Entity.Forward;
+            pipelineData.ShadowCameraSettings.CameraRight = shadowCamera.Entity.Right;
+            pipelineData.ShadowCameraSettings.CameraUp = shadowCamera.Entity.Up;
+            pipelineData.ShadowCameraSettings.FieldOfView = -1;
+            pipelineData.ShadowCameraSettings.NearPlane = -1;
+            pipelineData.ShadowCameraSettings.FarPlane = -1;
+
+            pipelineData.EnableShadows = true;
+        }
         
+        
+
     }
 
     public void RenderGizmo(ref PipelineData pipelineData)

@@ -8,6 +8,7 @@ using SoulEngine.Util;
 namespace SoulEngine.Animation;
 
 [Resource(typeof(Loader))]
+[ExpectedExtensions(".anim")]
 public unsafe class AnimationClip : Resource
 {
     private readonly BinaryReader reader;

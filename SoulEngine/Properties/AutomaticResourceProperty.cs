@@ -1,5 +1,7 @@
 using System.Reflection;
 using Hexa.NET.ImGui;
+using SoulEngine.Content;
+using SoulEngine.Core;
 using SoulEngine.Data.NBT;
 using SoulEngine.Resources;
 using SoulEngine.Util;
@@ -14,11 +16,20 @@ public class AutomaticResourceProperty<T> : SerializedProperty where T : Resourc
     private readonly object? target;
 
     private string? editedID;
+
+    private readonly ContentBrowser<T> browser;
     
     public AutomaticResourceProperty(string name, MemberWrapper wrapper, object? target) : base(name)
     {
         this.wrapper = wrapper;
         this.target = target;
+
+        browser = new ContentBrowser<T>(Game.Current);
+        browser.Callback = (value) =>
+        {
+            wrapper.SetValue(target, value);
+            editedID = value?.ResourceID;
+        };
     }
 
     public override void Edit()
@@ -38,6 +49,12 @@ public class AutomaticResourceProperty<T> : SerializedProperty where T : Resourc
                 T value = ResourceManager.Global.Load<T>(editedID);
                 wrapper.SetValue(target, value);
             }
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Browse"))
+        {
+            browser.Show();
         }
     }
 

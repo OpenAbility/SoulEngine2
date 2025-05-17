@@ -3,11 +3,15 @@ using SoulEngine.Data;
 
 namespace SoulEngine.Core.Tools;
 
-public class EngineVarEditor : Game.Tool
+public class EngineVarEditor : EditorTool
 {
-    public override void Perform(Game game)
+    public EngineVarEditor(Game game, Workspace workspace) : base(game, workspace)
     {
-        if (ImGui.Begin("Engine Vars", ref Enabled))
+    }
+
+    public override void Perform()
+    {
+        if (ImGui.Begin("Engine Vars##" + ID, ref Enabled))
         {
             foreach (var variableName in EngineVarContext.Global.GetEntries())
             {
@@ -28,9 +32,5 @@ public class EngineVarEditor : Game.Tool
 
         ImGui.End();
     }
-
-    public override string[] GetToolPath()
-    {
-        return ["Tools", "Engine Vars"];
-    }
+    
 }

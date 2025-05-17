@@ -10,6 +10,7 @@ namespace SoulEngine.Models;
 // tells us how shit is done.
 
 [Resource(typeof(SkeletonLoader))]
+[ExpectedExtensions(".skeleton")]
 public class Skeleton : Resource
 {
     private List<SkeletonJointData> joints = new List<SkeletonJointData>();

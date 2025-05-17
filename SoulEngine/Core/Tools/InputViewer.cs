@@ -3,13 +3,18 @@ using SoulEngine.Input;
 
 namespace SoulEngine.Core.Tools;
 
-public class InputViewer : Game.Tool
+public class InputViewer : EditorTool
 {
+
     private bool showBuiltin;
     
-    public override void Perform(Game game)
+    public InputViewer(Game game, Workspace workspace) : base(game, workspace)
     {
-        if (ImGui.Begin("Input Viewer", ref Enabled))
+    }
+
+    public override void Perform()
+    {
+        if (ImGui.Begin("Input Viewer##" + ID, ref Enabled))
         {
             if (ImGui.BeginTable("Inputs", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable))
             {
@@ -24,7 +29,7 @@ public class InputViewer : Game.Tool
                 ImGui.TableNextColumn();
                 ImGui.TableHeader("Released");
 
-                foreach (var action in game.InputManager.Actions)
+                foreach (var action in Game.InputManager.Actions)
                 {
                     if(action.Name.StartsWith("builtin.") && !showBuiltin)
                         continue;
@@ -50,10 +55,5 @@ public class InputViewer : Game.Tool
         }
 
         ImGui.End();
-    }
-
-    public override string[] GetToolPath()
-    {
-        return ["Tools", "Input Viewer"];
     }
 }

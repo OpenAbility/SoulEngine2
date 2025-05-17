@@ -5,14 +5,18 @@ using SoulEngine.Util;
 
 namespace SoulEngine.Core.Tools;
 
-public class SceneView : Game.Tool
+public class SceneView : EditorTool
 {
-    public override void Perform(Game game)
+    public SceneView(Game game, Workspace workspace) : base(game, workspace)
     {
-        if (ImGui.Begin("Scene View", ref Enabled))
+    }
+
+    public override  void Perform()
+    {
+        if (ImGui.Begin("Scene View##" + ID, ref Enabled))
         {
             #if DEVELOPMENT
-            if (game.Scene == null)
+            if (Game.Scene == null)
             {
                 ImGui.Text("No scene is loaded!");
             }
@@ -20,11 +24,11 @@ public class SceneView : Game.Tool
             {
                 bool hoveredButton = false;
                 
-                foreach (var prop in new List<Entity>(game.Scene.Entities))
+                foreach (var prop in new List<Entity>(Game.Scene.Entities))
                 {
                     
-                    if (ImGuiUtil.ImageSelectable(prop.Icon, prop.Name + "##" + prop.GetHashCode(), game.currentEntity == prop))
-                        game.currentEntity = prop;
+                    if (ImGuiUtil.ImageSelectable(prop.Icon, prop.Name + "##" + prop.GetHashCode(), Game.currentEntity == prop))
+                        Game.currentEntity = prop;
 
                     if (ImGui.IsItemHovered())
                         hoveredButton = true;
@@ -39,7 +43,7 @@ public class SceneView : Game.Tool
                     {
                         if (ImGui.Selectable(type))
                         {
-                            EntityTemplateFactory.Initialize(type, type + " (" + Random.Shared.Next(1000, 9999) + ")", game.Scene);
+                            EntityTemplateFactory.Initialize(type, type + " (" + Random.Shared.Next(1000, 9999) + ")", Game.Scene);
                         }
                     }
                     
@@ -53,10 +57,5 @@ public class SceneView : Game.Tool
 #endif
         }
         ImGui.End();
-    }
-
-    public override string[] GetToolPath()
-    {
-        return ["Tools", "Scene", "Scene View"];
     }
 }

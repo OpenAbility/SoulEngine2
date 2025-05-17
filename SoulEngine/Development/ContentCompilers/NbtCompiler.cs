@@ -14,13 +14,13 @@ public class NbtCompiler : ContentCompiler
     
     public override bool ShouldRecompile(ContentData contentData)
     {
-        return File.GetLastWriteTime(contentData.InputFilePath) >= contentData.LastOutputWrite;
+        return File.GetLastWriteTime(contentData.InputFile.FullName) >= contentData.LastOutputWrite;
     }
 
     public override void Recompile(ContentData contentData)
     {
-        using FileStream fileStream = File.OpenWrite(contentData.OutputFilePath);
-        Tag tag = TagIO.ReadSNBT(File.ReadAllText(contentData.InputFilePath));
+        using FileStream fileStream = File.OpenWrite(contentData.OutputFile.FullName);
+        Tag tag = TagIO.ReadSNBT(File.ReadAllText(contentData.InputFile.FullName));
         TagIO.WriteCompressed(tag, fileStream);
     }
 

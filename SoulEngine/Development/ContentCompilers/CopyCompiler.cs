@@ -6,12 +6,12 @@ public class CopyCompiler : ContentCompiler
 {
     public override bool ShouldRecompile(ContentData contentData)
     {
-        return File.GetLastWriteTime(contentData.InputFilePath) >= contentData.LastOutputWrite;
+        return contentData.InputFile.LastWriteTimeUtc >= contentData.LastOutputWrite;
     }
 
     public override void Recompile(ContentData contentData)
     {
-        File.Copy(contentData.InputFilePath, contentData.OutputFilePath, true);
+        contentData.InputFile.CopyTo(contentData.OutputFile.FullName, true);
     }
 
     public override string GetCompiledPath(string path)

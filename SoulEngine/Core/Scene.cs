@@ -8,6 +8,7 @@ using SoulEngine.Resources;
 namespace SoulEngine.Core;
 
 [Resource(typeof(Loader))]
+[ExpectedExtensions(".scene")]
 public class Scene : Resource
 {
 
@@ -93,6 +94,7 @@ public class Scene : Resource
     }
 
     public CameraComponent? Camera => GetComponents<CameraComponent>().OrderDescending().FirstOrDefault();
+    public ShadowCameraComponent? ShadowCamera => GetComponents<ShadowCameraComponent>().FirstOrDefault();
 
     public Entity AddEntity(string name)
     {

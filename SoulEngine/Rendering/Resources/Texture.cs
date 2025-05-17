@@ -13,6 +13,7 @@ using StbImageSharp;
 namespace SoulEngine.Rendering;
 
 [Resource(typeof(Loader))]
+[ExpectedExtensions(".dds", ".png", ".tga", ".jpg", ".bmp")]
 public class Texture : Resource
 {
 
@@ -192,6 +193,9 @@ public class Texture : Resource
 
 
             DdsFileData fileData = new DdsFileData(content.Load(id)!);
+            
+            
+            
             PixelFormatInfo format = new PixelFormatInfo(fileData.FormatDxgi);
 
 

@@ -18,7 +18,7 @@ public abstract class GLBContentCompiler : ContentCompiler
 
     public override bool ShouldRecompile(ContentData contentData)
     {
-        if (File.GetLastWriteTime(contentData.InputFilePath) >= contentData.LastOutputWrite)
+        if (contentData.InputFile.LastWriteTimeUtc >= contentData.LastOutputWrite)
             return true;
 
         string glbKey = contentData.FileDataPath("glb_path");
@@ -26,9 +26,9 @@ public abstract class GLBContentCompiler : ContentCompiler
         if (contentData.Registry.Exists(glbKey))
             return File.GetLastWriteTime(contentData.Registry.GetString(glbKey)) >= contentData.LastOutputWrite;
 
-        JObject modelDef = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(contentData.InputFilePath))!;
+        JObject modelDef = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(contentData.InputFile.FullName))!;
 
-        string glbPath = ResolvePath(contentData.InputFilePath, modelDef["glb"].Value<string>());
+        string glbPath = ResolvePath(contentData.InputFile.FullName, modelDef["glb"].Value<string>());
         contentData.Registry.SetString(glbKey, glbPath);
         
         return File.GetLastWriteTime(glbPath) >= contentData.LastOutputWrite;

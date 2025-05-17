@@ -3,29 +3,33 @@ using SoulEngine.Props;
 
 namespace SoulEngine.Core.Tools;
 
-public class DirectorTool : Game.Tool
+public class DirectorTool : EditorTool
 {
-    public override void Perform(Game game)
+    public DirectorTool(Game game, Workspace workspace) : base(game, workspace)
     {
-        if (ImGui.Begin("Director", ref Enabled))
+    }
+
+    public override void Perform()
+    {
+        if (ImGui.Begin("Director##" + ID, ref Enabled))
         {
-            if (game.Scene == null)
+            if (Game.Scene == null)
             {
                 ImGui.Text("No scene is loaded!");
             }
-            else if (game.Scene.Director == null)
+            else if (Game.Scene.Director == null)
             {
                 ImGui.Text("No director is loaded!");
             }
             else
             {
-                ImGui.Text("Director - " + game.Scene.Director.Type);
+                ImGui.Text("Director - " + Game.Scene.Director.Type);
                 ImGui.Separator();
 
-                game.Scene.Director.Edit();
+                Game.Scene.Director.Edit();
             }
 
-            if (game.Scene != null)
+            if (Game.Scene != null)
             {
                 if (ImGui.BeginPopupContextWindow())
                 {
@@ -34,7 +38,7 @@ public class DirectorTool : Game.Tool
                     {
                         if (ImGui.Selectable(type))
                         {
-                            game.Scene.Director = DirectorLoader.Create(game.Scene, type);
+                            Game.Scene.Director = DirectorLoader.Create(Game.Scene, type);
                         }
                     }
 
@@ -46,9 +50,5 @@ public class DirectorTool : Game.Tool
 
         ImGui.End();
     }
-
-    public override string[] GetToolPath()
-    {
-        return ["Tools", "Scene", "Director"];
-    }
+    
 }

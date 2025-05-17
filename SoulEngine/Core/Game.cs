@@ -48,17 +48,22 @@ public abstract class Game
     public readonly DataRegistry DevelopmentRegistry;
     private readonly ContentCompileContext ContentCompileContext;
 
-    private readonly ImGuiWindow GameWindow;
-    private readonly ImGuiWindow SceneWindow;
+    public ImGuiWindow? WorkspaceGameWindow => Workspace.Current?.GameWindow;
+    public ImGuiWindow? WorkspaceSceneWindow => Workspace.Current?.SceneWindow;
 
     internal Entity? currentEntity;
     
-    private SceneCamera SceneCamera;
+    public SceneCamera? WorkspaceSceneCamera => Workspace.Current?.SceneCamera;
+    
 
-    public bool Visible => GameWindow.Visible && GameWindow.Active;
+    public bool Visible => (WorkspaceGameWindow?.Visible ?? false) && WorkspaceGameWindow.Active;
+
+    public float AspectRatio => WorkspaceGameWindow?.FramebufferSize.X ?? 0.0f / WorkspaceGameWindow?.FramebufferSize.X ?? 0.0f;
 
 #else
     public bool Visible => true;
+    
+    public float AspectRatio => (float)MainWindow.FramebufferSize.X / MainWindow.FramebufferSize.Y;
 #endif
     
     public readonly MenuContext MenuContext = new MenuContext();
@@ -94,9 +99,9 @@ public abstract class Game
 
     internal readonly BuiltinActions BuiltinActions;
 
-    private readonly List<Tool> tools = new List<Tool>();
-
     private readonly UIContext uiContext;
+
+    public readonly List<Action> UpdateHooks = new List<Action>();
 
 
 
@@ -106,7 +111,7 @@ public abstract class Game
         Current = this;
         
         GameData = data;
-        EventBus = new EventBus<GameEvent>();
+        EventBus = new EventBus<GameEvent>(true);
         InputBus = new EventBus<InputEvent>();
 
         PersistentDataPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -170,23 +175,25 @@ public abstract class Game
         BuiltinActions = new BuiltinActions(InputManager);
         Keys = new KeyActions(InputManager);
         
-#if DEVELOPMENT
-        GameWindow = new ImGuiWindow(this, "Game");
-        SceneWindow = new ImGuiWindow(this, "Scene");
-
-        SceneCamera = new SceneCamera(this);
-#endif
         
         Localizator = new Localizator(this);
 
         uiContext = new UIContext(this);
         
-        AddTool(new DebuggerTool());
-        AddTool(new DirectorTool());
-        AddTool(new Inspector());
-        AddTool(new SceneView());
-        AddTool(new InputViewer());
-        AddTool(new EngineVarEditor());
+        EditorTool.Register("se.debugger", (game, workspace) => new DebuggerTool(game, workspace), "Tools", "Debugger");
+        EditorTool.Register("se.edit.director", (game, workspace) => new DirectorTool(game, workspace), "Tools", "Game", "Director");
+        EditorTool.Register("se.edit.inspector", (game, workspace) => new Inspector(game, workspace), "Tools", "Game", "Inspector");
+        EditorTool.Register("se.edit.scene", (game, workspace) => new SceneView(game, workspace), "Tools", "Game", "Scene View");
+        EditorTool.Register("se.viewer.input", (game, workspace) => new InputViewer(game, workspace), "Tools", "Input Viewer");
+        EditorTool.Register("se.edit.engine_var", (game, workspace) => new EngineVarEditor(game, workspace), "Tools", "Engine Vars");
+        
+        EditorTool.Register("se.viewer.game", (game, workspace) => new GameViewTool(game, workspace), "Tools", "Game Window");
+        EditorTool.Register("se.viewer.scene", (game, workspace) => new SceneWindowTool(game, workspace), "Tools", "Scene Window");
+        
+        
+#if DEVELOPMENT
+        Workspace.Load(this);
+#endif
     }
     
 #if DEVELOPMENT
@@ -299,9 +306,14 @@ public abstract class Game
         }
 
         ImGuiRenderer.BeginFrame(MainWindow, DeltaTime);
-        
+
+        ProfilerSegment updateSegment = Profiler.Instance.Segment("update_loop");
         Update();
+        updateSegment.Dispose();
+        
+        ProfilerSegment renderSegment = Profiler.Instance.Segment("render_loop");
         Render(MainWindow);
+        renderSegment.Dispose();
 
         // ImGui
         if (Development)
@@ -329,8 +341,13 @@ public abstract class Game
         Window.Poll();
         ThreadSafety.RunTasks();
         InputBus.Dispatch();
+        
+#if DEVELOPMENT
+        Workspace.Save(this);
+#endif
 
         frameSegment.Dispose();
+        
     }
 
     protected virtual void PackContent()
@@ -341,8 +358,7 @@ public abstract class Game
     private void Update()
     {
         #if DEVELOPMENT
-
-        ImGui.DockSpaceOverViewport();
+        
         
         #region FPS_DISPLAY
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 10);
@@ -380,31 +396,24 @@ public abstract class Game
         ImGui.PopStyleVar();
         #endregion
 
-        // Draw the meny bar
-        if (ImGui.BeginMainMenuBar())
-        {
-            MenuContext.Draw();
-            ImGui.EndMainMenuBar();
-        }
-
         if (MenuContext.IsPressed("Content", "Pack"))
         {
             PackContent();
         }
         
-        if (MenuContext.IsPressed("Scene View", "Camera", "Free"))
+        if (MenuContext.IsPressed("Scene View", "Camera", "Free") && WorkspaceSceneCamera != null)
         {
-            SceneCamera.CameraMode = CameraMode.FreeCamera;
+            WorkspaceSceneCamera.CameraMode = CameraMode.FreeCamera;
         }
         
-        if (MenuContext.IsPressed("Scene View", "Camera", "Fly"))
+        if (MenuContext.IsPressed("Scene View", "Camera", "Fly") && WorkspaceSceneCamera != null)
         {
-            SceneCamera.CameraMode = CameraMode.FlyCamera;
+            WorkspaceSceneCamera.CameraMode = CameraMode.FlyCamera;
         }
         
-        if (MenuContext.IsPressed("Scene View", "Camera", "Game"))
+        if (MenuContext.IsPressed("Scene View", "Camera", "Game") && WorkspaceSceneCamera != null)
         {
-            SceneCamera.CameraMode = CameraMode.GameCamera;
+            WorkspaceSceneCamera.CameraMode = CameraMode.GameCamera;
         }
 
         if (MenuContext.IsPressed("File", "New"))
@@ -444,47 +453,48 @@ public abstract class Game
             }
         }
 
-        foreach (var tool in tools)
+        if (MenuContext.IsPressed("Workspace", "New"))
         {
-            if (MenuContext.IsPressed(tool.GetToolPath()))
-            {
-                tool.Enabled = !tool.Enabled;
-            }
+            Workspace.Workspaces.Add(new Workspace(this));
         }
-        
-        
-        SceneWindow.Draw(false, () =>
-        {
-            ImGuizmo.SetDrawlist();
-            Vector2 size = ImGui.GetContentRegionAvail();
-            Vector2 position = ImGui.GetCursorScreenPos();
-            ImGuizmo.SetRect(position.X, position.Y, size.X, size.Y);
-        }, () =>
-        {
-            if (Scene != null && currentEntity != null)
-            {
-                currentEntity.RenderMoveGizmo(SceneCamera.GetView(), SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y));
-            }
-            
-            SceneCamera.Update(DeltaTime, ImGui.IsWindowFocused());
-            
-        });
-        GameWindow.Draw(false, null, null);
         
         ImGuizmo.Enable(true);
 
-        InputManager.WindowOffset = GameWindow.Position;
-        InputManager.WindowSize = new Vector2(GameWindow.FramebufferSize.X, GameWindow.FramebufferSize.Y);
+        InputManager.WindowOffset = WorkspaceGameWindow?.Position ?? Vector2.Zero;
+        InputManager.WindowSize = new Vector2(WorkspaceGameWindow?.FramebufferSize.X ?? 0, WorkspaceGameWindow?.FramebufferSize.Y ?? 0);
 
-        foreach (var tool in tools)
+        ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize, ImGuiCond.Always);
+        
+        if (ImGui.Begin("##workspaces",
+                ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDocking |
+                ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoNavFocus | ImGuiWindowFlags.NoNavInputs |
+                ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar))
         {
-            if(tool.Enabled)
-                tool.Perform(this);
-            tool.PerformAlways(this);
-#if DEVELOPMENT
-            DevelopmentRegistry.SetInt32("_EDITOR_TOOLS." + tool.GetType() + ".enabled", tool.Enabled ? 1 : 0);
-#endif
+            // Draw the menu bar
+            if (ImGui.BeginMenuBar())
+            {
+                MenuContext.Draw();
+                ImGui.EndMenuBar();
+            }
+            
+            if (ImGui.BeginTabBar("##workspace_tabbar",
+                    ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs |
+                    ImGuiTabBarFlags.FittingPolicyMask))
+            {
+                foreach (var workspace in Workspace.Workspaces)
+                {
+                    workspace.Update();
+                }
+                ImGui.EndTabBar();
+            }
+
+
         }
+
+        ImGui.End();
+
+        EditorTool.DrawMenus(MenuContext);
 
         
 #else
@@ -494,6 +504,14 @@ public abstract class Game
         
         
         UpdateHook();
+
+        Queue<Action> hooks = new Queue<Action>(UpdateHooks);
+        foreach (var hook in hooks)
+        {
+            hook();
+        }
+        hooks.Clear();
+        
         Scene?.Update(DeltaTime);
     }
 
@@ -505,38 +523,21 @@ public abstract class Game
         
 
 #if DEVELOPMENT
-
-        CameraSettings sceneWindowSettings = new CameraSettings();
-        sceneWindowSettings.CameraMode = SceneCamera.CameraMode;
-        sceneWindowSettings.ProjectionMatrix = SceneCamera.GetProjection((float)SceneWindow.FramebufferSize.X / SceneWindow.FramebufferSize.Y);
-        sceneWindowSettings.ViewMatrix = SceneCamera.GetView();
-        sceneWindowSettings.ShowGizmos = MenuContext.IsFlagSet("View", "Gizmos");
-        sceneWindowSettings.SelectedEntity = currentEntity;
-        sceneWindowSettings.ShowUI = false;
-        
-        sceneWindowSettings.CameraPosition = SceneCamera.Position;
-        sceneWindowSettings.CameraDirection = SceneCamera.Forward;
-        sceneWindowSettings.CameraRight = SceneCamera.Right;
-        sceneWindowSettings.CameraUp = SceneCamera.Up;
-        sceneWindowSettings.FieldOfView = SceneCamera.FOV;
-        sceneWindowSettings.NearPlane = SceneCamera.Near;
-        sceneWindowSettings.FarPlane = SceneCamera.Far;
-
-        if (GameWindow.Visible)
+        if (WorkspaceGameWindow?.Visible ?? false)
         {
             PipelineData pipelineData = new PipelineData();
             pipelineData.Game = this;
             pipelineData.RenderContext = RenderContext;
-            pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, GameWindow) ??
+            pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, WorkspaceGameWindow) ??
                                           new CameraSettings();
             pipelineData.DeltaTime = DeltaTime;
-            pipelineData.TargetSurface = GameWindow;
+            pipelineData.TargetSurface = WorkspaceGameWindow;
             pipelineData.UIContext = uiContext;
             pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_post", true);
 
             SceneRendererData data = new SceneRendererData();
             data.RenderPipeline = RenderPipeline;
-            data.FramebufferSize = SceneWindow.FramebufferSize;
+            data.FramebufferSize = WorkspaceGameWindow.FramebufferSize;
             data.DeltaTime = DeltaTime;
             data.CameraSettings = CameraSettings.Game;
             data.UIContext = uiContext;
@@ -547,25 +548,45 @@ public abstract class Game
             RenderPipeline.DrawFrame(pipelineData);
         }
 
-        if (SceneWindow.Visible)
+        if (WorkspaceSceneWindow?.Visible ?? false)
         {
+            CameraSettings sceneWindowSettings = new CameraSettings();
+            sceneWindowSettings.CameraMode = WorkspaceSceneCamera.CameraMode;
+            sceneWindowSettings.ProjectionMatrix = WorkspaceSceneCamera.GetProjection(
+                (float)WorkspaceSceneWindow.FramebufferSize.X / WorkspaceSceneWindow.FramebufferSize.Y);
+            sceneWindowSettings.ViewMatrix = WorkspaceSceneCamera.GetView();
+            sceneWindowSettings.ShowGizmos = MenuContext.IsFlagSet("View", "Gizmos");
+            sceneWindowSettings.SelectedEntity = currentEntity;
+            sceneWindowSettings.ShowUI = false;
+
+            sceneWindowSettings.CameraPosition = WorkspaceSceneCamera.Position;
+            sceneWindowSettings.CameraDirection = WorkspaceSceneCamera.Forward;
+            sceneWindowSettings.CameraRight = WorkspaceSceneCamera.Right;
+            sceneWindowSettings.CameraUp = WorkspaceSceneCamera.Up;
+            sceneWindowSettings.FieldOfView = WorkspaceSceneCamera.FOV;
+            sceneWindowSettings.NearPlane = WorkspaceSceneCamera.Near;
+            sceneWindowSettings.FarPlane = WorkspaceSceneCamera.Far;
+
+
             PipelineData pipelineData = new PipelineData();
             pipelineData.Game = this;
             pipelineData.RenderContext = RenderContext;
-            pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(sceneWindowSettings, SceneWindow) ??
-                                          new CameraSettings();
+            pipelineData.CameraSettings =
+                sceneRenderer?.MakePipelineCamera(sceneWindowSettings, WorkspaceSceneWindow) ??
+                new CameraSettings();
             pipelineData.DeltaTime = DeltaTime;
-            pipelineData.TargetSurface = SceneWindow;
-            pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_scene_post") && EngineVarContext.Global.GetBool("e_post", true);
+            pipelineData.TargetSurface = WorkspaceSceneWindow;
+            pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_scene_post") &&
+                                          EngineVarContext.Global.GetBool("e_post", true);
 
             SceneRendererData data = new SceneRendererData();
             data.RenderPipeline = RenderPipeline;
-            data.FramebufferSize = SceneWindow.FramebufferSize;
+            data.FramebufferSize = WorkspaceSceneWindow.FramebufferSize;
             data.DeltaTime = DeltaTime;
             data.CameraSettings = sceneWindowSettings;
             data.UIContext = uiContext;
             data.CullPass = false;
-            
+
             sceneRenderer?.Render(data, ref pipelineData);
             sceneRenderer?.RenderGizmo(ref pipelineData);
             RenderPipeline.DrawFrame(pipelineData);
@@ -584,7 +605,7 @@ public abstract class Game
         data.RenderPipeline = RenderPipeline;
         data.FramebufferSize = window.FramebufferSize;
         data.DeltaTime = DeltaTime;
-        data.CameraSettings = sceneWindowSettings;
+        data.CameraSettings = pipelineData.CameraSettings;
         data.UIContext = uiContext;
         
         sceneRenderer?.Render(data, ref pipelineData);
@@ -638,26 +659,6 @@ public abstract class Game
 #endif
     }
     
-    public abstract class Tool
-    {
-        public bool Enabled;
-        
-        public abstract void Perform(Game game);
-        public virtual void PerformAlways(Game game) {}
-
-
-        public abstract string[] GetToolPath();
-    }
-
-    protected void AddTool(Tool tool)
-    {
-#if DEVELOPMENT
-        if (DevelopmentRegistry.Exists("_EDITOR_TOOLS." + tool.GetType() + ".enabled"))
-            tool.Enabled = DevelopmentRegistry.GetInt32("_EDITOR_TOOLS." + tool.GetType() + ".enabled") > 0;
-#endif
-        
-        tools.Add(tool);
-    }
     
 }
 

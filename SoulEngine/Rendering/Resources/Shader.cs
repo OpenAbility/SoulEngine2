@@ -12,6 +12,7 @@ namespace SoulEngine.Rendering;
 
 
 [Resource(typeof(Loader))]
+[ExpectedExtensions(".program")]
 public class Shader : Resource
 {
     private Logger Logger = Logger.Get<Shader>();

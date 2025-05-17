@@ -44,9 +44,9 @@ public class CameraComponent : Component, IComparable<CameraComponent>
         context.ModelMatrix = Matrix4.Identity;
         context.Begin(PrimitiveType.Lines);
 
-        Vector3[] frustumPoints = Frustum.CreateFromCamera(Entity.Position, Entity.Forward, Entity.Right, Vector3.UnitY,
-            context.CurrentAspectRatio, FieldOfView, NearPlane, FarPlane).GetCorners();
-
+        Vector3[] frustumPoints = Frustum.CreatePointsFromCamera(Entity.Position, Entity.Forward, Entity.Right,
+            Game.AspectRatio, FieldOfView, NearPlane, FarPlane);
+        
         context.Vertex(frustumPoints[0]);
         context.Vertex(frustumPoints[1]);
 
@@ -58,6 +58,7 @@ public class CameraComponent : Component, IComparable<CameraComponent>
 
         context.Vertex(frustumPoints[2]);
         context.Vertex(frustumPoints[0]);
+
 
         context.Vertex(frustumPoints[4]);
         context.Vertex(frustumPoints[5]);
@@ -82,6 +83,7 @@ public class CameraComponent : Component, IComparable<CameraComponent>
 
         context.Vertex(frustumPoints[3]);
         context.Vertex(frustumPoints[7]);
+        
 
         context.End();
         context.ModelMatrix = oldModel;

@@ -10,11 +10,12 @@ using Material = SoulEngine.Resources.Material;
 namespace SoulEngine.Models;
 
 [Resource(typeof(Loader))]
+[ExpectedExtensions(".mdl")]
 public class Model : Resource
 {
 
     public MeshData[] Meshes { get; private set; } = [];
-    public Skeleton Skeleton { get; private set; } = null!;
+    public Skeleton? Skeleton { get; private set; }
 
     public readonly Dictionary<int, int> skeletonToMeshJoints = new Dictionary<int, int>();
 
@@ -31,21 +32,28 @@ public class Model : Resource
         if (Encoding.UTF8.GetString(reader.ReadBytes(4)) != "MODL")
             throw new Exception("File is not SoulEngine mdl!");
 
-        string skeletonPath = reader.ReadString();
-
-        Skeleton = resourceManager.Load<Skeleton>(skeletonPath);
-        
-        int skinJointCount = reader.ReadInt32();
-        
-        for (int i = 0; i < skinJointCount; i++)
+        bool hasSkeleton = reader.ReadBoolean();
+        if (hasSkeleton)
         {
-            string name = reader.ReadString();
-            int index = reader.ReadInt32();
+            string skeletonPath = reader.ReadString();
+            Skeleton = resourceManager.Load<Skeleton>(skeletonPath);
+            
+            int skinJointCount = reader.ReadInt32();
+        
+            for (int i = 0; i < skinJointCount; i++)
+            {
+                string name = reader.ReadString();
+                int index = reader.ReadInt32();
 
-            SkeletonJointData? data = Skeleton.GetJoint(name);
-            if(data != null)
-                skeletonToMeshJoints[data.SkeletonID] = index;
+                SkeletonJointData? data = Skeleton.GetJoint(name);
+                if(data != null)
+                    skeletonToMeshJoints[data.SkeletonID] = index;
+            }
         }
+        
+        
+        
+        
         
         int meshCount = reader.ReadInt32();
         Meshes = new MeshData[meshCount];

@@ -53,9 +53,9 @@ public class Entity : EngineObject, ITransformable
     }
     
     
-    public Vector3 Forward => RotationQuat * -Vector3.UnitZ;
-    public Vector3 Up => RotationQuat * Vector3.UnitY;
-    public Vector3 Right => RotationQuat * Vector3.UnitX;
+    public Vector3 Forward => (RotationQuat * -Vector3.UnitZ).Normalized();
+    public Vector3 Up => (RotationQuat * Vector3.UnitY).Normalized();
+    public Vector3 Right => (RotationQuat * Vector3.UnitX).Normalized();
     
     /// <summary>
     /// The name of the property

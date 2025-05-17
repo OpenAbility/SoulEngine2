@@ -10,8 +10,8 @@ public class AnimationCompiler : GLBContentCompiler
 {
     public override unsafe void Recompile(ContentData contentData)
     {
-        AnimDef modelDef = JsonConvert.DeserializeObject<AnimDef>(File.ReadAllText(contentData.InputFilePath));
-        string glbPath = ResolvePath(contentData.InputFilePath, modelDef.Glb);
+        AnimDef modelDef = JsonConvert.DeserializeObject<AnimDef>(File.ReadAllText(contentData.InputFile.FullName));
+        string glbPath = ResolvePath(contentData.InputFile.FullName, modelDef.Glb);
 
         GLTFLoader loader = new GLTFLoader(File.OpenRead(glbPath), false);
 
@@ -22,7 +22,7 @@ public class AnimationCompiler : GLBContentCompiler
         if (modelDef.AnimationName == null)
             throw new Exception("Animation needs a name!");
 
-        using BinaryWriter writer = new BinaryWriter(File.OpenWrite(contentData.OutputFilePath), Encoding.UTF8, false);
+        using BinaryWriter writer = new BinaryWriter(File.OpenWrite(contentData.OutputFile.FullName), Encoding.UTF8, false);
         
         // Just a small header
         writer.Write(AnimationClip.Magic);

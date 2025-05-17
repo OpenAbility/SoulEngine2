@@ -75,7 +75,11 @@ public class DynamicModelComponent : Component
         for (int i = 0; i < SkeletonInstance.Skeleton.JointCount; i++)
         {
             SkeletonJointData jointData = SkeletonInstance.Skeleton.GetJoint(i);
-            skeletonBuffer[Model.skeletonToMeshJoints[jointData.SkeletonID]] = jointData.InverseBind * SkeletonInstance.GetJointGlobalMatrix(jointData);
+
+            if (Model.skeletonToMeshJoints.TryGetValue(jointData.SkeletonID, out var bufferIndex))
+            {
+                skeletonBuffer[bufferIndex] = jointData.InverseBind * SkeletonInstance.GetJointGlobalMatrix(jointData);
+            }
         }
         
         

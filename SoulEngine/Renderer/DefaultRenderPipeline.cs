@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
@@ -46,32 +47,12 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         yield return DefaultRenderLayers.OpaqueLayer;
     }
 
-    public void DrawFrame(PipelineData pipelineData)
+    private void DrawShadows(PipelineData pipelineData)
     {
+        Debug.Assert(shadowBuffer != null);
         
-        using var profilerPass = Profiler.Instance.Segment("renderer");
-        
-        if (shadowBuffer == null ||
-            shadowBuffer.FramebufferSize.X != EngineVarContext.Global.GetInt("e_shadow_res", 1024))
-            shadowBuffer = new Depthbuffer(new Vector2i(EngineVarContext.Global.GetInt("e_shadow_res", 1024)));
-
-        PostProcessedSurface? postProcessableSurface = null;
-        PostProcessor? postProcessor = null;
-        
-        if (pipelineData.PostProcessing)
-        {
-            if (!postProcessors.TryGetValue(pipelineData.TargetSurface, out postProcessor))
-            {
-                postProcessor = new PostProcessor(pipelineData.Game, pipelineData.TargetSurface);
-                postProcessors[pipelineData.TargetSurface] = postProcessor;
-            }
-            
-            postProcessableSurface = postProcessor.InitializeFrameSurface();
-        }
-
         RenderContext renderContext = pipelineData.RenderContext;
-
-        /*
+        
         RenderPass shadowPass = new RenderPass
         {
             Name = "Shadow Pass",
@@ -90,7 +71,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
                 {
                     Colour = Colour.Blank
                 },
-                StoreOp = AttachmentStoreOp.DontCare
+                StoreOp = AttachmentStoreOp.Store
             }
         ];
 
@@ -101,7 +82,6 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         renderContext.Enable(EnableCap.DepthTest);
         renderContext.Disable(EnableCap.CullFace);
         renderContext.DepthFunction(DepthFunction.Less);
-        //renderContext.Enable(EnableCap.FramebufferSrgb);
         renderContext.DepthRange(-1, 1);
 
         CameraSettings shadowCamera = new CameraSettings();
@@ -109,7 +89,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         foreach (var render in renders)
         {
             // TODO: Shadow camera
-            render.Material.Bind(pipelineData.CameraSettings, render.ModelMatrix);
+            render.Material.Bind(pipelineData.ShadowCameraSettings, render.ModelMatrix);
             render.Material.Shader.Uniform1i("ub_skeleton", 0);
 
             if (render.SkeletonBuffer != null)
@@ -147,8 +127,40 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         
         
         renderContext.EndRendering();
+        
+        renderContext.RebuildState();
         shadowPassSegment.Dispose();
-        */
+    }
+
+    public void DrawFrame(PipelineData pipelineData)
+    {
+        
+        using var profilerPass = Profiler.Instance.Segment("renderer");
+        
+        if (shadowBuffer == null ||
+            shadowBuffer.FramebufferSize.X != EngineVarContext.Global.GetInt("e_shadow_res", 1024))
+            shadowBuffer = new Depthbuffer(new Vector2i(EngineVarContext.Global.GetInt("e_shadow_res", 1024)));
+
+        PostProcessedSurface? postProcessableSurface = null;
+        PostProcessor? postProcessor = null;
+        
+        if (pipelineData.PostProcessing)
+        {
+            if (!postProcessors.TryGetValue(pipelineData.TargetSurface, out postProcessor))
+            {
+                postProcessor = new PostProcessor(pipelineData.Game, pipelineData.TargetSurface);
+                postProcessors[pipelineData.TargetSurface] = postProcessor;
+            }
+            
+            postProcessableSurface = postProcessor.InitializeFrameSurface();
+        }
+
+        RenderContext renderContext = pipelineData.RenderContext;
+
+        if (EngineVarContext.Global.GetBool("e_shadows"))
+        {
+            DrawShadows(pipelineData);
+        }
         
         RenderPass pass = new RenderPass
         {

@@ -16,9 +16,13 @@ public struct Frustum
     public Plane FarFace;
     public Plane NearFace;
 
-    public static Frustum CreateFromCamera(Vector3 position, Vector3 front, Vector3 right, Vector3 up, float aspect, float fov, float near, float far)
+    public static Frustum CreateFromCamera(Vector3 position, Vector3 front, Vector3 right, float aspect, float fov, float near, float far)
     {
         Frustum frustum = new Frustum();
+
+        fov *= Mathf.Deg2Rad;
+
+        Vector3 up = Vector3.Cross(front, right);
 
         float halfVSide = far * MathF.Tan(fov * 0.5f);
         float halfHSide = halfVSide * aspect;
@@ -35,6 +39,36 @@ public struct Frustum
         frustum.BottomFace = new Plane(position, Vector3.Cross(farPoint + up * halfVSide, right));
 
         return frustum;
+    }
+
+    public static Vector3[] CreatePointsFromCamera(Vector3 position, Vector3 front, Vector3 right, float aspect, float fov, float near, float far)
+    {
+        fov *= Mathf.Deg2Rad;
+        
+        Vector3 up = Vector3.Cross(front, right);
+        
+        float farHeight = far * MathF.Tan(fov * 0.5f);
+        float farWidth = farHeight * aspect;
+        
+        float nearHeight = near * MathF.Tan(fov * 0.5f);
+        float nearWidth = nearHeight * aspect;
+        
+
+        return
+        [
+            position + near * front + right * nearWidth + up * nearHeight,
+            position + near * front - right * nearWidth + up * nearHeight,
+            
+            position + near * front + right * nearWidth - up * nearHeight,
+            position + near * front - right * nearWidth - up * nearHeight,
+            
+            position + far * front + right * farWidth + up * farHeight,
+            position + far * front - right * farWidth + up * farHeight,
+            
+            position + far * front + right * farWidth - up * farHeight,
+            position + far * front - right * farWidth - up * farHeight
+        ];
+
     }
     
 

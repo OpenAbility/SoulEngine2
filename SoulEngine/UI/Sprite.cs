@@ -8,6 +8,7 @@ using SoulEngine.Resources;
 namespace SoulEngine.UI;
 
 [Resource(typeof(SpriteLoader))]
+[ExpectedExtensions(".spr")]
 public class Sprite : Resource
 {
     public readonly Texture Texture;

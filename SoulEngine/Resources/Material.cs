@@ -8,6 +8,7 @@ using SoulEngine.Rendering;
 namespace SoulEngine.Resources;
 
 [Resource(typeof(Loader))]
+[ExpectedExtensions(".mat")]
 public class Material : Resource
 {
     

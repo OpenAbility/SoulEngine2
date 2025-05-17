@@ -179,26 +179,22 @@ public class PackedContent
             currentArchiveOffset = sizeof(uint);
         }
 
-        private void AddToArchive(Stream stream)
+        private void AddFile(FileInfo fileInfo)
         {
             if (currentArchiveOffset > MaxArchiveSize)
             {
                 BeginArchive(currentArchiveIndex + 1);
             }
-            
-            stream.CopyTo(currentArchive!);
-            currentArchiveOffset += (ulong)stream.Length;
-        }
 
-        private void AddFile(FileInfo fileInfo)
-        {
+            
             directoryWriter.Write(fileInfo.Name);
             directoryWriter.Write(currentArchiveIndex);
             directoryWriter.Write(currentArchiveOffset);
             directoryWriter.Write((ulong)fileInfo.Length);
 
             using FileStream stream = fileInfo.OpenRead();
-            AddToArchive(stream);
+            stream.CopyTo(currentArchive!);
+            currentArchiveOffset += (ulong)stream.Length;
         }
 
         private void AddDirectory(DirectoryInfo directoryInfo)

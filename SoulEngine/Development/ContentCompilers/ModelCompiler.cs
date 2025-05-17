@@ -13,47 +13,56 @@ public class ModelCompiler : GLBContentCompiler
     public override void Recompile(ContentData contentData)
     {
         
-        ModelDef modelDef = JsonConvert.DeserializeObject<ModelDef>(File.ReadAllText(contentData.InputFilePath));
-        string glbPath = ResolvePath(contentData.InputFilePath, modelDef.Glb);
+        ModelDef modelDef = JsonConvert.DeserializeObject<ModelDef>(File.ReadAllText(contentData.InputFile.FullName));
+        string glbPath = ResolvePath(contentData.InputFile.FullName, modelDef.Glb);
 
         GLTFLoader loader = new GLTFLoader(File.OpenRead(glbPath), false);
 
-        using BinaryWriter writer = new BinaryWriter(File.OpenWrite(contentData.OutputFilePath), Encoding.UTF8, false);
+        using BinaryWriter writer = new BinaryWriter(File.OpenWrite(contentData.OutputFile.FullName), Encoding.UTF8, false);
         
         writer.Write('M');
         writer.Write('O');
         writer.Write('D');
         writer.Write('L');
 
-        modelDef.Skeleton ??= "skele/misc.skeleton";
-        
-        writer.Write(modelDef.Skeleton);
-        
-        // There's no skinning to be done.
-        if(!modelDef.Skin.HasValue || loader.File.Skins == null || loader.File.Skins.Length == 0)
-            writer.Write(0);
+        //modelDef.Skeleton ??= "skele/misc.skeleton";
 
+        // There's a skeleton - write it
+        if (modelDef.Skeleton != null && modelDef.Skeleton != "null")
+        {
+            writer.Write(true);
+            writer.Write(modelDef.Skeleton);
+            
+            // There's no skinning to be done.
+            if(!modelDef.Skin.HasValue || loader.File.Skins == null || loader.File.Skins.Length == 0)
+                writer.Write(0);
+
+            else
+            {
+                // Each mesh keeps track of the skin indices of each bone
+                // These can then be quickly mapped by the engine into an int-int mapping
+                // (or an array if you will).
+            
+                // We need to do it like this because the model compiler knows nothing of
+                // the requested skeleton layout
+                Skin skin = loader.File.Skins[modelDef.Skin!.Value];
+                writer.Write(skin.Joints.Length);
+
+                for (int i = 0; i < skin.Joints.Length; i++)
+                {
+                    writer.Write(loader.File.Nodes[skin.Joints[i]].Name!);
+                    writer.Write(i);
+                }
+            
+            }
+        }
         else
         {
-            // Each mesh keeps track of the skin indices of each bone
-            // These can then be quickly mapped by the engine into an int-int mapping
-            // (or an array if you will).
-            
-            // We need to do it like this because the model compiler knows nothing of
-            // the requested skeleton layout
-            Skin skin = loader.File.Skins[modelDef.Skin!.Value];
-            writer.Write(skin.Joints.Length);
-
-            for (int i = 0; i < skin.Joints.Length; i++)
-            {
-                writer.Write(loader.File.Nodes[skin.Joints[i]].Name!);
-                writer.Write(i);
-            }
-            
+            writer.Write(false);
         }
         
         
-
+        
         int totalMeshCount = 0;
 
         for (int i = 0; i < loader.File.Meshes.Length; i++)

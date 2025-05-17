@@ -28,7 +28,7 @@ public class PackedContentSource : IContentSource
         return content.Has(id);
     }
 
-    public IEnumerable<string> Search(string prefix, string suffix)
+    public IEnumerable<string> Search()
     {
         yield break;
     }

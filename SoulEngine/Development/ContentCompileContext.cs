@@ -58,7 +58,43 @@ public class ContentCompileContext
 
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(0.5f));
         timers.Add(refreshTimer);
+    }
 
+    private void CompileDirectory(DirectoryInfo input, DirectoryInfo output, DirectoryInfo current)
+    {
+        foreach (var file in current.GetFiles())
+        {
+            string relative = Path.GetRelativePath(input.FullName, file.FullName);
+            
+            ContentCompiler? compiler = FindCompiler(relative);
+
+            if (compiler == null)
+                continue;
+
+            FileInfo outputFileInfo = new FileInfo(Path.Combine(output.FullName, compiler.GetCompiledPath(relative)));
+
+            outputFileInfo.Directory!.Create();
+
+            DateTime lastOutput = outputFileInfo.LastWriteTimeUtc;
+
+            ContentData contentData =
+                new ContentData(input, output, file, outputFileInfo, lastOutput, game.DevelopmentRegistry);
+            
+            //Logger.Info("Testing file {}({} => {})", relative, inputFile, outputPath);
+
+            if (!compiler.ShouldRecompile(contentData))
+                continue;
+            
+            //Logger.Info("Compiling!");
+            
+            compiler.Recompile(contentData);
+        }
+
+        foreach (var subdirectory in current.GetDirectories())
+        {
+            CompileDirectory(input, output, subdirectory);
+        }
+        
     }
     
     private void PerformCompile(string input, string output)
@@ -70,40 +106,8 @@ public class ContentCompileContext
             Directory.CreateDirectory(output);
 
         game.DevelopmentRegistry.SetString("_compilerVersion", EngineData.ContentCompiler.ToString());
-            
-        var sourceFiles = Directory.GetFiles(input, "*.*", SearchOption.AllDirectories);
-
-        foreach (var inputFile in sourceFiles)
-        {
-
-            string relative = Path.GetRelativePath(input, inputFile);
-            
-            ContentCompiler? compiler = FindCompiler(relative);
-
-            if (compiler == null)
-                continue;
-            
-            string outputPath = Path.Combine(output, compiler.GetCompiledPath(relative));
-
-            string outputPathDir = Path.GetDirectoryName(outputPath)!;
-            if (!Directory.Exists(outputPathDir))
-                Directory.CreateDirectory(outputPathDir);
-            
-            DateTime lastOutput = File.GetLastWriteTime(outputPath);
-
-            ContentData contentData =
-                new ContentData(input, output, inputFile, outputPath, lastOutput, game.DevelopmentRegistry);
-            
-            //Logger.Info("Testing file {}({} => {})", relative, inputFile, outputPath);
-
-            if (!compiler.ShouldRecompile(contentData))
-                continue;
-            
-            //Logger.Info("Compiling!");
-            
-            compiler.Recompile(contentData);
-        }
         
+        CompileDirectory(new DirectoryInfo(input), new DirectoryInfo(output), new DirectoryInfo(input));
     }
 }
 
@@ -115,20 +119,20 @@ public struct ContentData
     /// <summary>
     /// The input asset directory
     /// </summary>
-    public readonly string InputDirectory;
+    public readonly DirectoryInfo InputDirectory;
     /// <summary>
     /// The output asset directory
     /// </summary>
-    public readonly string OutputDirectory;
+    public readonly DirectoryInfo OutputDirectory;
 
     /// <summary>
-    /// The input file path
+    /// The input file info
     /// </summary>
-    public readonly string InputFilePath;
+    public readonly FileInfo InputFile;
     /// <summary>
-    /// The output file path
+    /// The output file info
     /// </summary>
-    public readonly string OutputFilePath;
+    public readonly FileInfo OutputFile;
 
     /// <summary>
     /// The last time the output file was written
@@ -140,12 +144,12 @@ public struct ContentData
     /// </summary>
     public readonly DataRegistry Registry;
 
-    public ContentData(string inputDirectory, string outputDirectory, string inputFilePath, string outputFilePath, DateTime lastOutputWrite, DataRegistry registry)
+    public ContentData(DirectoryInfo inputDirectory, DirectoryInfo outputDirectory, FileInfo inputFile, FileInfo outputFile, DateTime lastOutputWrite, DataRegistry registry)
     {
         InputDirectory = inputDirectory;
         OutputDirectory = outputDirectory;
-        InputFilePath = inputFilePath;
-        OutputFilePath = outputFilePath;
+        InputFile = inputFile;
+        OutputFile = outputFile;
         LastOutputWrite = lastOutputWrite;
         Registry = registry;
     }
@@ -153,6 +157,6 @@ public struct ContentData
 
     public string FileDataPath(string id)
     {
-        return "_contentCompile." + EngineData.ContentCompiler + "." + OutputFilePath + "=" + InputFilePath + "." + id;
+        return "_contentCompile." + EngineData.ContentCompiler + "." + InputFile.FullName + "=" + OutputFile.FullName + "." + id;
     }
 }

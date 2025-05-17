@@ -12,12 +12,12 @@ public class SkeletonCompiler : GLBContentCompiler
     
     public override void Recompile(ContentData contentData)
     {
-        SkeleDef skeleDef = JsonConvert.DeserializeObject<SkeleDef>(File.ReadAllText(contentData.InputFilePath));
-        string glbPath = ResolvePath(contentData.InputFilePath, skeleDef.Glb);
+        SkeleDef skeleDef = JsonConvert.DeserializeObject<SkeleDef>(File.ReadAllText(contentData.InputFile.FullName));
+        string glbPath = ResolvePath(contentData.InputFile.FullName, skeleDef.Glb);
 
         GLTFLoader loader = new GLTFLoader(File.OpenRead(glbPath), false);
 
-        CompoundTag tag = new CompoundTag(Path.GetRelativePath(contentData.OutputDirectory, contentData.OutputFilePath));
+        CompoundTag tag = new CompoundTag(Path.GetRelativePath(contentData.OutputDirectory.FullName, contentData.OutputFile.FullName));
         
         tag.SetString("compiler", "SoulEngine " + EngineData.EngineVersion + " w/ CC " + EngineData.ContentCompiler + " - SkeletonCompiler v. " + Version);
         
@@ -44,7 +44,7 @@ public class SkeletonCompiler : GLBContentCompiler
         tag.Add("joints", BakeNode(skeleton, inverseAccessor, loader, skin));
         
         
-        TagIO.WriteCompressed(tag, File.OpenWrite(contentData.OutputFilePath), false);
+        TagIO.WriteCompressed(tag, contentData.OutputFile.OpenWrite(), false);
     }
 
     private int FindSkeleton(GLTFLoader loader, string name)

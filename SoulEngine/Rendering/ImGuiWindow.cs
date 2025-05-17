@@ -27,12 +27,12 @@ public class ImGuiWindow : EngineObject, IRenderSurface
         framebuffer = new Framebuffer(game, new Vector2i(1, 1));
     }
 
-    public void Draw(bool padded, Action? beforeCallback, Action? afterCallback)
+    public void Draw(bool padded, Action? beforeCallback, Action? afterCallback, ref bool closed)
     {
         if(!padded)
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(0, 0));
         Visible = false;
-        if (ImGui.Begin(Name))
+        if (ImGui.Begin(Name, ref closed))
         {
             Active = ImGui.IsWindowFocused();
             

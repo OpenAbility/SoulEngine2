@@ -29,8 +29,40 @@ public class DirectorySource : IContentSource
         return File.Exists(Resolve(id));
     }
 
-    public IEnumerable<string> Search(string prefix, string suffix)
+    private IEnumerable<string> RecursiveSearch(DirectoryInfo directory, string currentPath)
     {
-        return System.IO.Directory.GetFiles(Directory, prefix + "**" + suffix, SearchOption.AllDirectories);
+        currentPath += directory.Name + "/";
+        foreach (var file in directory.GetFiles())
+        {
+            yield return currentPath + file.Name;
+        }
+        
+        foreach (var dir in directory.GetDirectories())
+        {
+            foreach (var result in RecursiveSearch(dir, currentPath))
+            {
+                yield return result;
+            }
+        }
+    }
+
+    public IEnumerable<string> Search()
+    {
+        DirectoryInfo directory = new DirectoryInfo(Directory);
+
+        // Avoid including the root dir
+        
+        foreach (var file in directory.GetFiles())
+        {
+            yield return file.Name;
+        }
+        
+        foreach (var dir in directory.GetDirectories())
+        {
+            foreach (var result in RecursiveSearch(dir, ""))
+            {
+                yield return result;
+            }
+        }
     }
 }

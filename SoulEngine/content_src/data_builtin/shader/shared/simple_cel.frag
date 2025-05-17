@@ -27,7 +27,7 @@ void main() {
     f_colour = texture(ut_albedoTexture, v_uv) * v_colour * uc_albedoColour * vec4(lighting, 1);
     
     if(ub_rimlit)
-        f_colour += smoothstep(0.5, 1.0, 1 - abs(dot(normal, um_camera_direction))) * 0.5f;
+        f_colour.rgb += smoothstep(0.5, 1.0, 1 - abs(dot(normal, um_camera_direction))) * 0.5f;
     
     if(f_colour.a <= 0.0f)
             discard;

@@ -2,22 +2,26 @@ using Hexa.NET.ImGui;
 
 namespace SoulEngine.Core.Tools;
 
-public class Inspector : Game.Tool
+public class Inspector : EditorTool
 {
-    public override void Perform(Game game)
+    public Inspector(Game game, Workspace workspace) : base(game, workspace)
     {
-        if (ImGui.Begin("Inspector", ref Enabled))
+    }
+
+    public override void Perform()
+    {
+        if (ImGui.Begin("Inspector##" + ID, ref Enabled))
         {
 #if DEVELOPMENT
-            if (game.currentEntity != null && game.Scene != null)
+            if (Game.currentEntity != null && Game.Scene != null)
             {
-                game.currentEntity.Edit();
+                Game.currentEntity.Edit();
                 
                 ImGui.Separator();
                 if (ImGui.Button("Delete"))
                 {
-                    game.Scene.Entities.Remove(game.currentEntity);
-                    game.currentEntity = null;
+                    Game.Scene.Entities.Remove(Game.currentEntity);
+                    Game.currentEntity = null;
                 }
             }
             else
@@ -27,10 +31,5 @@ public class Inspector : Game.Tool
 #endif
         }
         ImGui.End();
-    }
-
-    public override string[] GetToolPath()
-    {
-        return ["Tools", "Scene", "Inspector"];
     }
 }

@@ -102,9 +102,9 @@ public class ContentContext
         return false;
     }
 
-    public IEnumerable<string> Search(string prefix, string suffix)
+    public IEnumerable<string> Search()
     {
-        return contentSources.SelectMany(s => s.Search(prefix, suffix));
+        return contentSources.SelectMany(s => s.Search());
     }
     
 }

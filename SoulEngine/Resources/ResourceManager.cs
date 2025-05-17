@@ -1,5 +1,6 @@
 using System.Reflection;
 using OpenAbility.Logging;
+using SoulEngine.Content;
 using SoulEngine.Core;
 using SoulEngine.Util;
 using ThreadPool = SoulEngine.Processing.ThreadPool;
@@ -23,11 +24,16 @@ public class ResourceManager : EngineObject
 
     public readonly Game Game;
 
+    public readonly TemporaryResourceSource Temporary;
+
     public static ResourceManager Global { get; internal set; }
 
     public ResourceManager(Game game)
     {
         Game = game;
+
+        Temporary = new TemporaryResourceSource();
+        Game.Content.Mount(Temporary);
     }
 
     private IResourceLoader<T> GetLoader<T>()
@@ -57,6 +63,9 @@ public class ResourceManager : EngineObject
     private ExecutionPromise<T> GetLoadTask<T>(string id, bool synchronized) where T : Resource
     {
         using var scope = loadCacheLock.EnterScope();
+
+        if (!Game.Content.Exists(id))
+            Logger.Warning("File '{}' not present in context!", id);
 
         IResourceLoader<T> loader = GetLoader<T>();
         
@@ -135,6 +144,16 @@ public class ResourceManager : EngineObject
         }
         
         return GetLoadTask<T>(id, true).ReturnValue!;
+    }
+
+    /// <summary>
+    /// Adds a resource to the cache
+    /// </summary>
+    /// <param name="id">The ID of the resource</param>
+    /// <param name="resource">The resource to add</param>
+    public void RegisterResource(string id, Resource resource)
+    {
+        resourceCache[id] = new WeakReference<Resource>(resource);
     }
     
 }
