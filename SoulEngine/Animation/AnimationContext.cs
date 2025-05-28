@@ -67,6 +67,8 @@ public class AnimationContext : EngineObject
 
     public unsafe void Apply()
     {
+        using var segment = Profiler.Instance.Segment("animations.playback");
+        
         double currentTime = timer.Elapsed.TotalSeconds;
 
         // Poll keyframes into lastKeyframes
@@ -76,7 +78,7 @@ public class AnimationContext : EngineObject
             if (lastKeyframeIndex >= Clip.TotalKeyframes)
             {
                 if(Looping)
-                    Restart();
+                    Loop();
                 else
                 {
                     Pause();
@@ -111,7 +113,7 @@ public class AnimationContext : EngineObject
             if(channelMappings[keyframe.Channel] == -1)
                 continue;
             
-            // Calculate keyframe progress
+            // Calculate keyframe progress - if the duration is negative we're looping from the final keyframe
             float progress = (float)(currentTime - keyframe.Timestamp) / keyframe.Duration;
             
             // Fetch the animation channel information - used for interpolation and application
@@ -231,6 +233,28 @@ public class AnimationContext : EngineObject
         for (int i = 0; i < lastKeyframes.Length; i++)
         {
             lastKeyframes[i].Channel = -1;
+        }
+        
+        for (int i = 0; i < animatedJoints.Length; i++)
+        {
+            animatedJoints[i] = false;
+            translations[i].HasPosition = false;
+            translations[i].HasRotation = false;
+            translations[i].HasScale = false;
+        }
+    }
+
+    private void Loop()
+    {
+        lastKeyframeIndex = 0;
+        timer.Restart();
+        
+        // Move the keyframes to the start
+        for (int i = 0; i < lastKeyframes.Length; i++)
+        {
+            if(lastKeyframes[i].Duration < 0)
+                lastKeyframes[i].Duration *= -1;
+            lastKeyframes[i].Timestamp = 0;
         }
         
         for (int i = 0; i < animatedJoints.Length; i++)

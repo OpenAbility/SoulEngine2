@@ -86,6 +86,8 @@ public class AnimationCompiler : GLBContentCompiler
         ulong writtenFrames = 0;
 
         int[] currentFrames = new int[animation.Channels.Length];
+
+        float[,] firstData = new float[animation.Channels.Length, 4];
         
         List<KeyframeData> keyframeDatas = new List<KeyframeData>();
         
@@ -104,6 +106,8 @@ public class AnimationCompiler : GLBContentCompiler
                 Accessor frameAccessor = loader.File.Accessors[sampler.Input];
 
                 Accessor dataAccessor = loader.File.Accessors[sampler.Output];
+
+                float firstFrameTimer = 0.0f;
 
    
                 while (true)
@@ -141,6 +145,17 @@ public class AnimationCompiler : GLBContentCompiler
                         keyframeData.FromData[1] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 1).CastStruct<float, byte>();
                         keyframeData.FromData[2] = loader.GetAccessor(dataAccessor, currentFrames[i] * 3 + 2).CastStruct<float, byte>();
                     }
+                    
+                    // Stow away the initial keyframe for looping around to
+                    if (currentFrames[i] == 0)
+                    {
+                        firstData[i, 0] = keyframeData.FromData[0];
+                        firstData[i, 1] = keyframeData.FromData[1];
+                        firstData[i, 2] = keyframeData.FromData[2];
+                        firstData[i, 3] = keyframeData.FromData[3];
+
+                        firstFrameTimer = keyframeData.Timestamp;
+                    }
 
                     // There's another keyframe after this - read it
                     if (currentFrames[i] + 1 < frameAccessor.Count)
@@ -164,8 +179,15 @@ public class AnimationCompiler : GLBContentCompiler
                     }
                     else
                     {
-                        // It's the last keyframe - might as well be infinite
-                        keyframeData.Duration = Single.PositiveInfinity;
+                        // It's the last keyframe - just loop back to the beginning
+                        // We mark the duration as negative to signal that we've reached the end.
+                        // The animator needs to handle the rest :D
+                        keyframeData.Duration = -firstFrameTimer;
+                        
+                        keyframeData.ToData[0] = firstData[i, 0];
+                        keyframeData.ToData[1] = firstData[i, 1];
+                        keyframeData.ToData[2] = firstData[i, 2];
+                        keyframeData.ToData[3] = firstData[i, 3];
                     }
 
                     keyframeDatas.Add(keyframeData);

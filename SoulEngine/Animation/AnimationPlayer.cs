@@ -25,6 +25,8 @@ public sealed class AnimationPlayer : EngineObject
 
     public void Apply()
     {
+        using var segment = Profiler.Instance.Segment("animations.mix");
+        
         for (int i = 0; i < translations.Length; i++)
         {
             translations[i].Reset();
@@ -68,9 +70,10 @@ public sealed class AnimationPlayer : EngineObject
         }
     }
 
-    public AnimationPlayback Play(AnimationClip clip)
+    public AnimationPlayback Play(AnimationClip clip, bool looping = false)
     {
         AnimationPlayback playback = new AnimationPlayback(this, clip);
+        playback.Looping = looping;
         playbacks.Add(playback);
         playback.Play();
         return playback;
