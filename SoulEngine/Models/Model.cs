@@ -51,10 +51,6 @@ public class Model : Resource
             }
         }
         
-        
-        
-        
-        
         int meshCount = reader.ReadInt32();
         Meshes = new MeshData[meshCount];
 

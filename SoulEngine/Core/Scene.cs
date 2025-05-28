@@ -61,16 +61,14 @@ public class Scene : Resource
             {
                 foreach (string name in entitiesTag.Keys)
                 {
-                    CompoundTag propTag = (CompoundTag)entitiesTag[name];
-                    
                     Entity entity = new Entity(scene, name);
                     scene.Entities.Add(entity);
                 }
                 
-                foreach (var prop in scene.Entities)
+                foreach (var entity in scene.Entities)
                 {
-                    CompoundTag entityTag = (CompoundTag)entitiesTag[prop.Name];
-                    prop.Load(entityTag);
+                    CompoundTag entityTag = (CompoundTag)entitiesTag[entity.Name];
+                    entity.Load(entityTag);
                 }
             }
             

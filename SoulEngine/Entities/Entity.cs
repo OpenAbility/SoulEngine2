@@ -113,10 +113,11 @@ public class Entity : EngineObject, ITransformable
     
     
 
-    public void Attach(Component component)
+    public T Attach<T>(T component) where T : Component
     {
         icon = null;
         components.Add(component);
+        return component;
     }
     
     public void Detach(Component component)
@@ -193,10 +194,10 @@ public class Entity : EngineObject, ITransformable
             
         }
 
-        foreach (var ctag in tags)
+        Parallel.ForEach(tags, ctag =>
         {
             ctag.component.Load(ctag.tag);
-        }
+        });
     }
 
     public void Render(IRenderPipeline renderPipeline, float deltaTime)

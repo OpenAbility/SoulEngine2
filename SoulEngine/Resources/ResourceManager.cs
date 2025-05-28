@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Reflection;
 using OpenAbility.Logging;
 using SoulEngine.Content;
 using SoulEngine.Core;
+using SoulEngine.Data;
 using SoulEngine.Util;
 using ThreadPool = SoulEngine.Processing.ThreadPool;
 
@@ -62,7 +64,7 @@ public class ResourceManager : EngineObject
 
     private ExecutionPromise<T> GetLoadTask<T>(string id, bool synchronized) where T : Resource
     {
-        using var scope = loadCacheLock.EnterScope();
+        //using var scope = loadCacheLock.EnterScope();
 
         if (!Game.Content.Exists(id))
             Logger.Warning("File '{}' not present in context!", id);
@@ -71,12 +73,19 @@ public class ResourceManager : EngineObject
         
         if (synchronized)
         {
+            using var segment = Profiler.Instance.Segment("resources.load");
+            
             T resource = null!;
             
             try
             {
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                
                 resource = loader.LoadResource(this, id, Game.Content);
                 resource.ResourceID = id;
+                
+                Logger.Info("(S) Loading '{}' took {} ms", id, stopwatch.ElapsedMilliseconds);
             }
             catch (Exception e)
             {
@@ -94,12 +103,16 @@ public class ResourceManager : EngineObject
         
         ExecutionPromise<T> promise = ThreadPool.Global.EnqueuePromise(() =>
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             
             T instance = loader.LoadResource(this, id, Game.Content);
             instance.ResourceID = id;
                     
             resourceCache[id] = new WeakReference<Resource>(instance);
 
+            
+            Logger.Info("(A) Loading '{}' took {} ms", id, stopwatch.ElapsedMilliseconds);
             return instance;
 
         });
@@ -124,7 +137,7 @@ public class ResourceManager : EngineObject
             resourceCache.Remove(id);
         }
 
-        return GetLoadTask<T>(id, false);
+        return GetLoadTask<T>(id, EngineVarContext.Global.GetBool("e_force_load_sync"));
     }
     
     /// <summary>
