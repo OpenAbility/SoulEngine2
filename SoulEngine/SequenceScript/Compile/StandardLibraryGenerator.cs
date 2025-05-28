@@ -65,8 +65,18 @@ public static class StandardLibraryGenerator
             {
                 if(mismatch)
                     break;
-                
-                if (!parameters[i].ParameterType.IsAssignableFrom(ConvertTypeToNative(attribute.Parameters[i])))
+
+                if (attribute.Parameters[i] == ValueType.Floating)
+                    mismatch = parameters[i].ParameterType != typeof(float);
+                if (attribute.Parameters[i] == ValueType.String)
+                    mismatch = parameters[i].ParameterType != typeof(string);
+                if (attribute.Parameters[i] == ValueType.Integer)
+                    mismatch = parameters[i].ParameterType != typeof(int);
+                if (attribute.Parameters[i] == ValueType.Boolean)
+                    mismatch = parameters[i].ParameterType != typeof(bool);
+                if (attribute.Parameters[i] == ValueType.Void)
+                    mismatch = true;
+                if (attribute.Parameters[i] == ValueType.Bogus)
                     mismatch = true;
             }
 

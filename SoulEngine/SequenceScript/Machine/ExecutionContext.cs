@@ -245,11 +245,9 @@ public class ExecutionContext
                     left = executionState.PopStack();
 
                     if (left.Type == ValueType.Floating || right.Type == ValueType.Floating)
-                    {
                         executionState.PushStack(new DynValue(left.AsFloat + right.AsFloat));
-                    }
-                    
-                    executionState.PushStack(new DynValue(left.Int + right.Int));
+                    else
+                        executionState.PushStack(new DynValue(left.Int + right.Int));
                     executionState.Step();
                     break;
                     
@@ -258,11 +256,9 @@ public class ExecutionContext
                     left = executionState.PopStack();
 
                     if (left.Type == ValueType.Floating || right.Type == ValueType.Floating)
-                    {
                         executionState.PushStack(new DynValue(left.AsFloat - right.AsFloat));
-                    }
-                    
-                    executionState.PushStack(new DynValue(left.Int - right.Int));
+                    else
+                        executionState.PushStack(new DynValue(left.Int - right.Int));
                     executionState.Step();
                     break;
                 
@@ -271,11 +267,9 @@ public class ExecutionContext
                     left = executionState.PopStack();
 
                     if (left.Type == ValueType.Floating || right.Type == ValueType.Floating)
-                    {
                         executionState.PushStack(new DynValue(left.AsFloat * right.AsFloat));
-                    }
-                    
-                    executionState.PushStack(new DynValue(left.Int * right.Int));
+                    else
+                        executionState.PushStack(new DynValue(left.Int * right.Int));
                     executionState.Step();
                     break;
                 
@@ -284,11 +278,10 @@ public class ExecutionContext
                     left = executionState.PopStack();
 
                     if (left.Type == ValueType.Floating || right.Type == ValueType.Floating)
-                    {
                         executionState.PushStack(new DynValue(left.AsFloat / right.AsFloat));
-                    }
+                    else
+                        executionState.PushStack(new DynValue(left.Int / right.Int));
                     
-                    executionState.PushStack(new DynValue(left.Int / right.Int));
                     executionState.Step();
                     break;
                     
@@ -297,11 +290,10 @@ public class ExecutionContext
                     left = executionState.PopStack();
 
                     if (left.Type == ValueType.Floating || right.Type == ValueType.Floating)
-                    {
                         executionState.PushStack(new DynValue(left.AsFloat % right.AsFloat));
-                    }
+                    else
+                        executionState.PushStack(new DynValue(left.Int % right.Int));
                     
-                    executionState.PushStack(new DynValue(left.Int % right.Int));
                     executionState.Step();
                     break;
                     
@@ -336,11 +328,10 @@ public class ExecutionContext
                     left = executionState.PopStack();
 
                     if (left.Type == ValueType.Floating || right.Type == ValueType.Floating)
-                    {
                         executionState.PushStack(new DynValue(left.AsFloat > right.AsFloat));
-                    }
+                    else
+                        executionState.PushStack(new DynValue(left.Int > right.Int));
                     
-                    executionState.PushStack(new DynValue(left.Int > right.Int));
                     executionState.Step();
                     break;
                     
@@ -349,11 +340,10 @@ public class ExecutionContext
                     left = executionState.PopStack();
 
                     if (left.Type == ValueType.Floating || right.Type == ValueType.Floating)
-                    {
                         executionState.PushStack(new DynValue(left.AsFloat < right.AsFloat));
-                    }
+                    else
+                        executionState.PushStack(new DynValue(left.Int < right.Int));
                     
-                    executionState.PushStack(new DynValue(left.Int < right.Int));
                     executionState.Step();
                     break;
                     

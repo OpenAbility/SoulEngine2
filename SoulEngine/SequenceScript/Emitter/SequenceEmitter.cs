@@ -348,10 +348,32 @@ public class SequenceEmitter
             ProcessVariableAssignationExpression(writer, scope, assignationExpression, wantsValue);
         else if (expression is VariableEditorExpression editorExpression)
             ProcessVariableEditorExpression(writer, scope, editorExpression, wantsValue);
+        else if (expression is UnaryExpressionNode unaryExpression)
+            ParseUnaryExpression(writer, scope, unaryExpression, wantsValue);
         else
         {
             context.Error(expression.GetLocation(), "SS3000", $"Unexpected or unhandled expression node {expression} found!");
         }
+    }
+
+    private void ParseUnaryExpression(OpWriter writer, Scope scope, UnaryExpressionNode unaryExpression, bool wantsValue)
+    {
+        if (!wantsValue)
+            return;
+
+        if (unaryExpression.Operation.TokenType == TokenType.Minus)
+        {
+            // -x = 0 - x
+            writer.Instruction(OpCode.PUSHI, new DynValue(0));
+            ProcessExpression(writer, scope, unaryExpression.Value, wantsValue);
+            writer.Instruction(OpCode.SUB);
+        } else if (unaryExpression.Operation.TokenType == TokenType.Not)
+        {
+            ProcessExpression(writer, scope, unaryExpression.Value, wantsValue);
+            writer.Instruction(OpCode.NOT);
+        }
+        
+        
     }
 
     private void ProcessVariableEditorExpression(OpWriter writer, Scope scope, VariableEditorExpression editorExpression, bool wantsValue)
@@ -786,6 +808,27 @@ public class SequenceEmitter
             }
 
             return functionPrototype.Underlying.ReturnType;
+        } else if (expressionNode is UnaryExpressionNode unaryExpression)
+        {
+            ValueType? valueType = EvaluateExpressionType(scope, unaryExpression.Value);
+
+            if (unaryExpression.Operation.TokenType == TokenType.Minus)
+            {
+                if (valueType == ValueType.Floating || valueType == ValueType.Integer)
+                    return valueType;
+
+                context.Error(unaryExpression.Value.GetLocation(), "SS3000", 
+                    $"Cannot perform unary negation on operand of type {valueType}");
+                return ValueType.Bogus;
+            } else if (unaryExpression.Operation.TokenType == TokenType.Not)
+            {
+                if (valueType == ValueType.Boolean || valueType == ValueType.Integer)
+                    return valueType;
+
+                context.Error(unaryExpression.Value.GetLocation(), "SS3000", 
+                    $"Cannot perform unary negation on operand of type {valueType}");
+                return ValueType.Bogus;
+            }
         }
         
         context.Error(expressionNode.GetLocation(), "SS3000", $"Unexpected or unhandled expression type {expressionNode} found!");

@@ -14,7 +14,6 @@ public static class SequenceRules
         return type switch
         {
             TokenType.Minus => 6,
-            TokenType.Plus => 6,
             TokenType.Not => 6,
 			
             _ => 0
