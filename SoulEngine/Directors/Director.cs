@@ -106,6 +106,11 @@ public abstract class Director : EngineObject
         
     }
 
+    public virtual void OnSceneMadeCurrent()
+    {
+        
+    }
+
     public abstract void RenderUI(UIContext context);
     
     

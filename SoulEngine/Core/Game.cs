@@ -307,11 +307,11 @@ public abstract class Game
 
         ImGuiRenderer.BeginFrame(MainWindow, DeltaTime);
 
-        ProfilerSegment updateSegment = Profiler.Instance.Segment("update_loop");
+        ProfilerSegment updateSegment = Profiler.Instance.Segment("frame.update");
         Update();
         updateSegment.Dispose();
         
-        ProfilerSegment renderSegment = Profiler.Instance.Segment("render_loop");
+        ProfilerSegment renderSegment = Profiler.Instance.Segment("frame.render");
         Render(MainWindow);
         renderSegment.Dispose();
 
@@ -336,11 +336,18 @@ public abstract class Game
         }
        
         // End-of-frame stuff
+        ProfilerSegment swapSegment = Profiler.Instance.Segment("frame.swap");
         MainWindow.Swap();
+        swapSegment.Dispose();
         
+        ProfilerSegment busSegment = Profiler.Instance.Segment("frame.bus");
         Window.Poll();
-        ThreadSafety.RunTasks();
         InputBus.Dispatch();
+        busSegment.Dispose();
+        
+        ProfilerSegment threadSegment = Profiler.Instance.Segment("frame.threading");
+        ThreadSafety.RunTasks();
+        threadSegment.Dispose();
         
 #if DEVELOPMENT
         Workspace.Save(this);
@@ -639,6 +646,8 @@ public abstract class Game
     {
         this.Scene = scene;
         this.sceneRenderer = new SceneRenderer(scene);
+        
+        this.Scene.Director?.OnSceneMadeCurrent();
     }
 
     protected abstract IRenderPipeline CreateDefaultRenderPipeline();
