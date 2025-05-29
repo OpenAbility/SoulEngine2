@@ -48,6 +48,15 @@ public abstract class Tag
 
     }
 
+    public T? AsValue<T>()
+    {
+        var valueTag = this as ValueTag<T>;
+        if (valueTag == null)
+            return default;
+        return valueTag.Value;
+    }
+    
+
     public static Tag ReadNamedTag(BinaryReader reader)
     {
         TagType type = (TagType)reader.ReadByte();
