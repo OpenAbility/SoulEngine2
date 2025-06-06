@@ -19,6 +19,8 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 
     private readonly ComputeShader skinningShader =
         ResourceManager.Global.Load<ComputeShader>("shader/comp/skeleton_anim.comp");
+
+    private readonly int VertexArray = GL.CreateVertexArray();
     private readonly List<MeshRenderProperties> renders = new List<MeshRenderProperties>();
     private readonly List<DrawListData> drawLists = new List<DrawListData>();
     private readonly Dictionary<IRenderSurface, PostProcessor> postProcessors =
@@ -268,7 +270,8 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
             
             render.Material.Shader.BindBuffer("ib_vertex_buffer", vertexBuffer!, 0, vertexBuffer!.Length);
 
-            Mesh.Draw(vertexBuffer, indexBuffer, indexBuffer.Length);
+
+            Mesh.Draw(vertexBuffer, indexBuffer, indexBuffer.Length, VertexArray);
             
             render.Mesh.UnlockUpdates();
         }

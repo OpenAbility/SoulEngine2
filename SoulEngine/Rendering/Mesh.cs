@@ -9,14 +9,6 @@ namespace SoulEngine.Rendering;
 /// </summary>
 public unsafe class Mesh : EngineObject
 {
-
-    private static readonly int VertexArray;
-
-    static Mesh()
-    {
-        VertexArray = new Vertex().CreateVertexArray();
-    }
-
     private GpuBuffer<Vertex>? bakedVertexBuffer;
     private GpuBuffer<VertexSkinning>? skinningBuffer;
     private GpuBuffer<uint>? bakedIndexBuffer;
@@ -103,13 +95,13 @@ public unsafe class Mesh : EngineObject
         }
     }
 
-    public static void Draw(GpuBuffer<Vertex> vertexBuffer, GpuBuffer<uint> indexBuffer, int indexCount)
+    public static void Draw(GpuBuffer<Vertex> vertexBuffer, GpuBuffer<uint> indexBuffer, int indexCount, int vertexArray)
     {
 
-        GL.VertexArrayVertexBuffer(VertexArray, 0, vertexBuffer.Handle, 0, sizeof(Vertex));
-        GL.VertexArrayElementBuffer(VertexArray, indexBuffer.Handle);
+        GL.VertexArrayVertexBuffer(vertexArray, 0, vertexBuffer.Handle, 0, sizeof(Vertex));
+        GL.VertexArrayElementBuffer(vertexArray, indexBuffer.Handle);
 
-        GL.BindVertexArray(VertexArray);
+        GL.BindVertexArray(vertexArray);
 
         GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
 

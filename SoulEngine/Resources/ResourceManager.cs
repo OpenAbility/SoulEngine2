@@ -71,6 +71,8 @@ public class ResourceManager : EngineObject
 
         IResourceLoader<T> loader = GetLoader<T>();
         
+        Logger.Info("Loading '{}'", id);
+        
         if (synchronized)
         {
             using var segment = Profiler.Instance.Segment("resources.load");
