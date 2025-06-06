@@ -4,22 +4,24 @@ using OpenTK.Mathematics;
 using SoulEngine.Development.GLTF;
 using SoulEngine.Rendering;
 using SoulEngine.Util;
+using Mesh = SoulEngine.Development.GLTF.Mesh;
 
 namespace SoulEngine.Development.ContentCompilers;
 
 public class ModelCompiler : GLBContentCompiler
 {
-    
+
     public override void Recompile(ContentData contentData)
     {
-        
+
         ModelDef modelDef = JsonConvert.DeserializeObject<ModelDef>(File.ReadAllText(contentData.InputFile.FullName));
         string glbPath = ResolvePath(contentData.InputFile.FullName, modelDef.Glb);
 
         GLTFLoader loader = new GLTFLoader(File.OpenRead(glbPath), false);
 
-        using BinaryWriter writer = new BinaryWriter(File.OpenWrite(contentData.OutputFile.FullName), Encoding.UTF8, false);
-        
+        using BinaryWriter writer =
+            new BinaryWriter(File.OpenWrite(contentData.OutputFile.FullName), Encoding.UTF8, false);
+
         writer.Write('M');
         writer.Write('O');
         writer.Write('D');
@@ -27,14 +29,17 @@ public class ModelCompiler : GLBContentCompiler
 
         //modelDef.Skeleton ??= "skele/misc.skeleton";
 
+        bool hasSkeleton = false;
+
         // There's a skeleton - write it
         if (modelDef.Skeleton != null && modelDef.Skeleton != "null")
         {
+            hasSkeleton = true;
             writer.Write(true);
             writer.Write(modelDef.Skeleton);
-            
+
             // There's no skinning to be done.
-            if(!modelDef.Skin.HasValue || loader.File.Skins == null || loader.File.Skins.Length == 0)
+            if (!modelDef.Skin.HasValue || loader.File.Skins == null || loader.File.Skins.Length == 0)
                 writer.Write(0);
 
             else
@@ -42,7 +47,7 @@ public class ModelCompiler : GLBContentCompiler
                 // Each mesh keeps track of the skin indices of each bone
                 // These can then be quickly mapped by the engine into an int-int mapping
                 // (or an array if you will).
-            
+
                 // We need to do it like this because the model compiler knows nothing of
                 // the requested skeleton layout
                 Skin skin = loader.File.Skins[modelDef.Skin!.Value];
@@ -53,16 +58,16 @@ public class ModelCompiler : GLBContentCompiler
                     writer.Write(loader.File.Nodes[skin.Joints[i]].Name!);
                     writer.Write(i);
                 }
-            
+
             }
         }
         else
         {
             writer.Write(false);
         }
-        
-        
-        
+
+
+
         int totalMeshCount = 0;
 
         for (int i = 0; i < loader.File.Meshes.Length; i++)
@@ -74,7 +79,7 @@ public class ModelCompiler : GLBContentCompiler
                     totalMeshCount++;
             }
         }
-        
+
         writer.Write(totalMeshCount);
 
         for (int meshIndex = 0; meshIndex < loader.File.Meshes.Length; meshIndex++)
@@ -83,20 +88,21 @@ public class ModelCompiler : GLBContentCompiler
             for (int primitiveIndex = 0; primitiveIndex < mesh.Primitives.Length; primitiveIndex++)
             {
                 Mesh.Primitive primitive = mesh.Primitives[primitiveIndex];
-                
+
                 //if(primitive.Mode != Mesh.PrimitiveMode.Triangles)
                 //    continue;
-                if(primitive.Indices == -1)
+                if (primitive.Indices == -1)
                     continue;
-                
+
                 // Ugly chaining. I genuinely don't know.
-                if(primitive.Material.HasValue && 
-                   loader.File.Materials[primitive.Material.Value].Name != null && 
-                   modelDef.Materials.TryGetValue(loader.File.Materials[primitive.Material.Value].Name!, out string? materialPath))
+                if (primitive.Material.HasValue &&
+                    loader.File.Materials[primitive.Material.Value].Name != null &&
+                    modelDef.Materials.TryGetValue(loader.File.Materials[primitive.Material.Value].Name!,
+                        out string? materialPath))
                     writer.Write(materialPath);
                 else
                     writer.Write("default.mat");
-                
+
                 Accessor? vertexAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "POSITION");
                 if (vertexAccessor == null)
                     throw new Exception("Model primitive does not provide vertex data!");
@@ -106,31 +112,31 @@ public class ModelCompiler : GLBContentCompiler
                 if (vertexAccessor.Value.ComponentType != AccessorComponentType.Float)
                     throw new Exception("Model primitive vertex data is of unsupported type " +
                                         vertexAccessor.Value.ComponentType);
-                
+
                 Accessor? normalAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "NORMAL");
                 Accessor? uvAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "TEXCOORD_0");
                 Accessor? uv2Accessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "TEXCOORD_1");
                 Accessor? colorAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "COLOR_0");
-                
+
                 Accessor? jointsAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "JOINTS_0");
                 Accessor? weightsAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "WEIGHTS_0");
-                
+
                 Accessor indexAccessor = loader.File.Accessors[primitive.Indices];
 
                 int totalVertices = vertexAccessor.Value.Count;
                 writer.Write(totalVertices);
-                
+
                 int totalIndices = indexAccessor.Count;
                 writer.Write(totalIndices);
 
                 for (int i = 0; i < totalVertices; i++)
                 {
-                    
+
                     Vertex vertex = new Vertex();
                     vertex.Colour = Colour.White;
-                    
+
                     // TODO: Account for different input types
-                    
+
                     vertex.Position = new Vector3(
                         loader.GetAccessor(vertexAccessor.Value, i * 3 + 0).CastStruct<float, byte>(),
                         loader.GetAccessor(vertexAccessor.Value, i * 3 + 1).CastStruct<float, byte>(),
@@ -145,7 +151,7 @@ public class ModelCompiler : GLBContentCompiler
                             loader.GetAccessor(normalAccessor.Value, i * 3 + 2).CastStruct<float, byte>()
                         );
                     }
-                    
+
                     if (uvAccessor.HasValue)
                     {
                         // Flip Y uv 'cause glTF is Y-down. We are Y-up :D
@@ -154,7 +160,7 @@ public class ModelCompiler : GLBContentCompiler
                             1 - loader.GetAccessor(uvAccessor.Value, i * 2 + 1).CastStruct<float, byte>()
                         );
                     }
-                    
+
                     if (uv2Accessor.HasValue)
                     {
                         // Flip Y uv 'cause glTF is Y-down. We are Y-up :D
@@ -163,7 +169,8 @@ public class ModelCompiler : GLBContentCompiler
                             1 - loader.GetAccessor(uv2Accessor.Value, i * 2 + 1).CastStruct<float, byte>()
                         );
                     }
-                    
+
+                    /*
                     if (jointsAccessor.HasValue)
                     {
                         vertex.Indices = new JointIndices(
@@ -173,7 +180,7 @@ public class ModelCompiler : GLBContentCompiler
                             loader.GetAccessor(jointsAccessor.Value, i * 4 + 3).CastStruct<byte, byte>()
                         );
                     }
-                    
+
                     if (weightsAccessor.HasValue)
                     {
                         vertex.Weights = new Vector4(
@@ -183,23 +190,56 @@ public class ModelCompiler : GLBContentCompiler
                             loader.GetAccessor(weightsAccessor.Value, i * 4 + 3).CastStruct<float, byte>()
                         );
                     }
-                    
+                    */
+
                     // TODO: COLOURS
-                    
-                    
+
+
                     writer.WriteStruct(vertex);
                 }
+
+                if (hasSkeleton)
+                {
+                    for (int i = 0; i < totalVertices; i++)
+                    {
+                        VertexSkinning vertex = new VertexSkinning();
+
+                        if (jointsAccessor.HasValue)
+                        {
+                            vertex.Indices = new JointIndices(
+                                loader.GetAccessor(jointsAccessor.Value, i * 4 + 0).CastStruct<byte, byte>(),
+                                loader.GetAccessor(jointsAccessor.Value, i * 4 + 1).CastStruct<byte, byte>(),
+                                loader.GetAccessor(jointsAccessor.Value, i * 4 + 2).CastStruct<byte, byte>(),
+                                loader.GetAccessor(jointsAccessor.Value, i * 4 + 3).CastStruct<byte, byte>()
+                            );
+                        }
+
+                        if (weightsAccessor.HasValue)
+                        {
+                            vertex.Weights = new Vector4(
+                                loader.GetAccessor(weightsAccessor!.Value, i * 4 + 0).CastStruct<float, byte>(),
+                                loader.GetAccessor(weightsAccessor.Value, i * 4 + 1).CastStruct<float, byte>(),
+                                loader.GetAccessor(weightsAccessor.Value, i * 4 + 2).CastStruct<float, byte>(),
+                                loader.GetAccessor(weightsAccessor.Value, i * 4 + 3).CastStruct<float, byte>()
+                            );
+                        }
+
+                        writer.WriteStruct(vertex);
+                    }
+                }
+
 
                 for (int i = 0; i < totalIndices; i++)
                 {
                     uint index = 0;
-                    
+
                     if (indexAccessor.ComponentType == AccessorComponentType.Byte ||
                         indexAccessor.ComponentType == AccessorComponentType.UnsignedByte)
                     {
                         index = loader.GetAccessor(indexAccessor, i)[0];
-                    } else if (indexAccessor.ComponentType == AccessorComponentType.Short ||
-                               indexAccessor.ComponentType == AccessorComponentType.UnsignedShort)
+                    }
+                    else if (indexAccessor.ComponentType == AccessorComponentType.Short ||
+                             indexAccessor.ComponentType == AccessorComponentType.UnsignedShort)
                     {
                         index = loader.GetAccessor(indexAccessor, i).CastStruct<ushort, byte>();
                     }
@@ -211,7 +251,7 @@ public class ModelCompiler : GLBContentCompiler
                     {
                         throw new Exception("Weird index format " + indexAccessor.ComponentType);
                     }
-                    
+
                     writer.Write(index);
                 }
 
@@ -224,7 +264,7 @@ public class ModelCompiler : GLBContentCompiler
     {
         return Path.ChangeExtension(path, "mdl");
     }
-    
+
     private struct ModelDef()
     {
         public string Glb = "NULL";

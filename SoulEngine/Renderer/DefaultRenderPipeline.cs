@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
+using SoulEngine.Compute;
 using SoulEngine.Core;
 using SoulEngine.Data;
+using SoulEngine.Mathematics;
 using SoulEngine.PostProcessing;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
@@ -14,12 +16,16 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 {
 
     private readonly Material defaultMaterial = ResourceManager.Global.Load<Material>("default.mat");
+
+    private readonly ComputeShader skinningShader =
+        ResourceManager.Global.Load<ComputeShader>("shader/comp/skeleton_anim.comp");
     private readonly List<MeshRenderProperties> renders = new List<MeshRenderProperties>();
     private readonly List<DrawListData> drawLists = new List<DrawListData>();
     private readonly Dictionary<IRenderSurface, PostProcessor> postProcessors =
         new Dictionary<IRenderSurface, PostProcessor>();
 
     private GpuBuffer<Matrix4>? skeletonBuffer;
+    private GpuBuffer<Vertex>? skinnedMeshBuffer;
 
     private Depthbuffer? shadowBuffer;
     
@@ -47,6 +53,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         yield return DefaultRenderLayers.OpaqueLayer;
     }
 
+    /*
     private void DrawShadows(PipelineData pipelineData)
     {
         Debug.Assert(shadowBuffer != null);
@@ -117,12 +124,15 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         
                 mapping.Dispose();
                 
-                
                 render.Material.Shader.Uniform1i("ub_skeleton", 1);
                 render.Material.Shader.BindBuffer("um_joint_buffer", skeletonBuffer, 0, render.SkeletonBufferSize);
             }
             
-            render.Mesh.Draw();
+            render.Mesh.LockUpdates();
+
+            Mesh.Draw(render.Mesh.GetVertexBuffer(), render.Mesh.GetIndexBuffer(), render.Mesh.GetIndexCount());
+            
+            render.Mesh.UnlockUpdates();
         }
         
         
@@ -131,6 +141,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         renderContext.RebuildState();
         shadowPassSegment.Dispose();
     }
+    */
 
     public void DrawFrame(PipelineData pipelineData)
     {
@@ -159,7 +170,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 
         if (EngineVarContext.Global.GetBool("e_shadows"))
         {
-            DrawShadows(pipelineData);
+            //DrawShadows(pipelineData);
         }
         
         RenderPass pass = new RenderPass
@@ -195,10 +206,21 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 
         foreach (var render in renders)
         {
-            render.Material.Bind(pipelineData.CameraSettings, render.ModelMatrix);
-            render.Material.Shader.Uniform1i("ub_skeleton", 0);
 
-            if (render.SkeletonBuffer != null)
+            render.Mesh.LockUpdates();
+
+            
+            GpuBuffer<Vertex>? vertexBuffer = render.Mesh.GetVertexBuffer();
+            GpuBuffer<uint>? indexBuffer = render.Mesh.GetIndexBuffer();
+            GpuBuffer<VertexSkinning>? skinningBuffer = render.Mesh.GetSkinningBuffer();
+
+            if (vertexBuffer == null || indexBuffer == null)
+            {
+                render.Mesh.UnlockUpdates();
+                continue;
+            }
+            
+            if (render.SkeletonBuffer != null && skinningBuffer != null)
             {
                 // TODO: Move this around to reduce copies etc
                 
@@ -208,6 +230,15 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
                     skeletonBuffer?.Dispose();
                     skeletonBuffer = new GpuBuffer<Matrix4>((int)(render.SkeletonBufferSize * 1.5f),
                         BufferStorageMask.MapWriteBit | BufferStorageMask.DynamicStorageBit | BufferStorageMask.MapCoherentBit | BufferStorageMask.MapPersistentBit | BufferStorageMask.ClientStorageBit);
+                }
+                
+                // Allocate mesh buffer
+                if ((skinnedMeshBuffer?.Length ?? 0) < vertexBuffer.Length)
+                {
+                    skinnedMeshBuffer?.Dispose();
+                    skinnedMeshBuffer = new GpuBuffer<Vertex>((int)(vertexBuffer.Length * 1.5f),
+                        BufferStorageMask.MapWriteBit | BufferStorageMask.DynamicStorageBit |
+                        BufferStorageMask.MapCoherentBit | BufferStorageMask.MapPersistentBit);
                 }
                 
                 
@@ -222,13 +253,24 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
                 }
         
                 mapping.Dispose();
+
+                skinningShader.BindBuffer("ib_joint_buffer", skeletonBuffer, 0, skeletonBuffer.Length);
+                skinningShader.BindBuffer("ib_vertex_buffer", vertexBuffer, 0,  vertexBuffer.Length);
+                skinningShader.BindBuffer("ib_weight_buffer", skinningBuffer, 0,  skinningBuffer.Length);
+                skinningShader.BindBuffer("ob_vertex_buffer", skinnedMeshBuffer!, 0,  skinningBuffer.Length);
+                skinningShader.Dispatch(new Vector3i((int)MathF.Ceiling((float)vertexBuffer.Length / skinningShader.WorkGroupSize.X), 1, 1));
                 
-                
-                render.Material.Shader.Uniform1i("ub_skeleton", 1);
-                render.Material.Shader.BindBuffer("um_joint_buffer", skeletonBuffer, 0, render.SkeletonBufferSize);
+                vertexBuffer = skinnedMeshBuffer;
             }
             
-            render.Mesh.Draw();
+            render.Material.Bind(pipelineData.CameraSettings, render.ModelMatrix);
+            render.Material.Shader.Uniform1i("ub_skeleton", 0);
+            
+            render.Material.Shader.BindBuffer("ib_vertex_buffer", vertexBuffer!, 0, vertexBuffer!.Length);
+
+            Mesh.Draw(vertexBuffer, indexBuffer, indexBuffer.Length);
+            
+            render.Mesh.UnlockUpdates();
         }
         
         

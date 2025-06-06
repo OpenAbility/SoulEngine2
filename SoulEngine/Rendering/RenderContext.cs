@@ -11,12 +11,14 @@ using SoulEngine.Data;
 
 namespace SoulEngine.Rendering;
 
-public unsafe partial class RenderContext : EngineObject
+public unsafe partial class RenderContext : EngineObject, IDisposable
 {
     private IntPtr glContext;
     private readonly GLDebugProc DebugProc;
 
     private Window currentWindow;
+
+    public readonly bool SupportsLineDirectives;
     
     public RenderContext(Game game, Window contextOwner)
     {
@@ -67,6 +69,8 @@ public unsafe partial class RenderContext : EngineObject
 
         if (minorVersion < 3)
             throw new Exception(outOfDateError);
+
+        SupportsLineDirectives = SDL.GLExtensionSupported("GL_ARB_shading_language_include");
 
         if (minorVersion < 5 && !SDL.GLExtensionSupported("ARB_direct_state_access"))
         {
@@ -123,4 +127,12 @@ public unsafe partial class RenderContext : EngineObject
     public Window GetCurrentWindow() => currentWindow;
 
 
+    private bool disposed;
+    public void Dispose()
+    {
+        if(disposed)
+            return;
+        disposed = true;
+        SDL.GLDestroyContext(glContext);
+    }
 }

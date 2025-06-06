@@ -376,11 +376,15 @@ public unsafe class Window : EngineObject, IRenderSurface, IDisposable
         return 0;
     }
 
+    private bool disposed;
+
     public void Dispose()
     {
+        if(disposed)
+            return;
+        disposed = true;
 
         windowIds.Remove(SDL.GetWindowID(Handle));
-        SDL.GLDestroyContext(Handle);
         SDL.DestroyWindow(Handle);
 
     }

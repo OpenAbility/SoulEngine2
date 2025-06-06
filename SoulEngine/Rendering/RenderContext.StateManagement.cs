@@ -215,12 +215,6 @@ public partial class RenderContext
         shader.Bind();
     }
 
-    public void RenderMesh<T>(Mesh<T> mesh) where T : unmanaged, IVertex
-    {
-        EnsureRendering();
-        mesh.Draw();
-    }
-
     public void DepthRange(float from, float to)
     {
         GL.DepthRangef(from, to);

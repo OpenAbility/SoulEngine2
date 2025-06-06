@@ -120,8 +120,6 @@ public class ExecutionContext
     public ExecutionState CreateExecution(BinaryModule module, string function)
     {
         ExecutionState executionState = new ExecutionState();
-        executionState.IsFinished = false;
-        
         executionState.PushExecutionStack(module, function);
 
         return executionState;
@@ -197,8 +195,10 @@ public class ExecutionContext
                     executionState.PopExecutionStack();
 
                     if (executionState.ExecutionStackSize == 0)
-                        executionState.IsFinished = true;
-                    
+                    {
+                        executionState.TriggerFinish();
+                    }
+
                     break;
                 
                 case OpCode.INT:

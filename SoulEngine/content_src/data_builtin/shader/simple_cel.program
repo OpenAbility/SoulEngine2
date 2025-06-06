@@ -3,7 +3,7 @@
 <Shader>
     
     <Bindings backend="OPENGL">
-        <Binding name="um_joint_buffer">10</Binding>
+        <Binding name="ib_vertex_buffer">20</Binding>
     </Bindings>
     
     <Vertex backend="OPENGL" src="shader/shared/skeletal.vert"/>

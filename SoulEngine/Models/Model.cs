@@ -61,18 +61,28 @@ public class Model : Resource
             int totalVertices = reader.ReadInt32();
             int totalIndices = reader.ReadInt32();
 
-            Mesh<Vertex> mesh = new Mesh<Vertex>(game);
+            Mesh mesh = new Mesh(game);
 
-            MeshBuildData<Vertex> meshBuildData =
+            MeshBuildData meshBuildData =
                 game.ThreadSafety.EnsureMain(() => mesh.BeginUpdate(totalVertices, totalIndices));
 
             Span<byte> vertexSpan = new Span<byte>((byte*)meshBuildData.VertexData, meshBuildData.VertexCount * sizeof(Vertex));
+            Span<byte> skinningSpan = new Span<byte>((byte*)meshBuildData.SkinningData, meshBuildData.VertexCount * sizeof(VertexSkinning));
             Span<byte> indexSpan = new Span<byte>((byte*)meshBuildData.IndexData, meshBuildData.IndexCount * sizeof(uint));
+            
 
             int read;
             while ((read = reader.Read(vertexSpan)) != 0)
             {
                 vertexSpan = vertexSpan.Slice(read);
+            }
+
+            if (hasSkeleton)
+            {
+                while ((read = reader.Read(skinningSpan)) != 0)
+                {
+                    skinningSpan = skinningSpan.Slice(read);
+                }
             }
             
             while ((read = reader.Read(indexSpan)) != 0)
@@ -105,10 +115,10 @@ public class Model : Resource
     
     public struct MeshData
     {
-        public readonly Mesh<Vertex> ActualMesh;
+        public readonly Mesh ActualMesh;
         public readonly Material Material;
 
-        public MeshData(Mesh<Vertex> actualMesh, Material material)
+        public MeshData(Mesh actualMesh, Material material)
         {
             ActualMesh = actualMesh;
             Material = material;

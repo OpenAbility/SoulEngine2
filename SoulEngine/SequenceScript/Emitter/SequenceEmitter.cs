@@ -409,10 +409,27 @@ public class SequenceEmitter
         else
         {
             // +=, -= *= etc
+
+            var expressionType = EvaluateExpressionType(scope, editorExpression.Expression);
+            if (expressionType != variablePrototype.Type)
+            {
+                context.Error(editorExpression.Operator.Location, "SS3020", 
+                    $"Cannot modify variable of type {variablePrototype.Type} with expression of type {expressionType}!");
+                return;
+            }
             
-            
-            context.Error(editorExpression.Operator.Location, "SS3020", 
-                $"Variable editor to variable '{editorExpression.Variable.Value}' is not of valid operand!");
+            ProcessExpression(writer, scope, editorExpression.Expression, true);
+
+            if (editorExpression.Operator.TokenType == TokenType.Plus)
+                writer.Instruction(OpCode.ADD);
+            if (editorExpression.Operator.TokenType == TokenType.Minus)
+                writer.Instruction(OpCode.SUB);
+            if (editorExpression.Operator.TokenType == TokenType.Star)
+                writer.Instruction(OpCode.MULT);
+            if (editorExpression.Operator.TokenType == TokenType.Slash)
+                writer.Instruction(OpCode.DIV);
+
+
         }
 
         if (wantsValue)

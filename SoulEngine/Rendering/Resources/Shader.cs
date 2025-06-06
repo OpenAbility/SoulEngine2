@@ -203,11 +203,21 @@ public class Shader : Resource
                     fragmentSource = fragmentElement.GetAttribute("src_string");
             }
         }
+        
+        string prefix = "#version 450 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n";
 
-        vertexSource = "#version 430 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n#line 0\n" +  vertexSource;
-        fragmentSource = "#version 430 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n#line 0\n" + fragmentSource;
+        if (game.RenderContext.SupportsLineDirectives)
+        {
+            prefix += "#extension GL_ARB_shading_language_include : require\n#line 0 \"" + id + "\"\n";
+        }
+        else
+        {
+            prefix += "#line 0 0\n";
+        }
 
-
+        vertexSource = ShaderProcessor.ProcessShader(vertexSource ?? "", id + "##vertex", defines, game.RenderContext.SupportsLineDirectives);
+        fragmentSource =ShaderProcessor.ProcessShader(fragmentSource ?? "", id + "##fragment", defines, game.RenderContext.SupportsLineDirectives);
+        
         game.ThreadSafety.EnsureMain(() =>
         {
             handle = GL.CreateProgram();

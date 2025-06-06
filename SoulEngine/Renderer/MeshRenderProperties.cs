@@ -7,7 +7,7 @@ namespace SoulEngine.Renderer;
 
 public struct MeshRenderProperties()
 {
-    public IDrawableMesh Mesh;
+    public Mesh Mesh;
 
     public Material Material;
     public Matrix4 ModelMatrix = Matrix4.Identity;

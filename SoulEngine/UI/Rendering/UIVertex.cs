@@ -4,7 +4,7 @@ using SoulEngine.Rendering;
 
 namespace SoulEngine.UI.Rendering;
 
-public struct UIVertex : IVertex
+public struct UIVertex
 {
     public Vector2 Position;
     public Vector2 UV;

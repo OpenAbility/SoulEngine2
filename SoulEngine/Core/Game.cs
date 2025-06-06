@@ -630,6 +630,8 @@ public abstract class Game
         EventBus.EventNow(new GameEvent(GameEvent.Finalizing));
         
         ThreadSafety.RunTasks();
+        RenderContext.Dispose();
+        MainWindow.Dispose();
     }
 
     public string PersistentPath(string path)

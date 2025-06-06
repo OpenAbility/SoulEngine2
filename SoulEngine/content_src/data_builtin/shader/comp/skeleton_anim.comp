@@ -1,0 +1,55 @@
+layout(local_size_x = 64) in;
+
+struct VertexData {
+    vec3 position;
+    vec4 uv01;
+    vec3 normal;
+    vec4 colour;
+};
+
+struct WeightData {
+    ivec4 joint;
+    vec4 weights;
+};
+
+layout(std430, binding=10) restrict readonly buffer ib_joint_buffer
+{
+    mat4 data[];
+} ib_joints;
+
+layout(std430, binding=11) restrict readonly buffer ib_vertex_buffer {
+    VertexData vertices[];
+} ib_vertices;
+
+layout(std430, binding=12) restrict readonly buffer ib_weight_buffer {
+    WeightData weights[];
+} ib_weights;
+
+layout(std430, binding=20) restrict writeonly buffer ob_vertex_buffer {
+    VertexData vertices[];
+} ob_vertices;
+
+void main() {
+    uint index = gl_GlobalInvocationID.x;
+    
+    if (index > ib_vertices.vertices.length())
+        return;
+    
+    WeightData w = ib_weights.weights[index];
+    VertexData v = ib_vertices.vertices[index];
+    
+
+    mat4 joint_matrix =
+        ib_joints.data[w.joint.x] * w.weights.x +
+        ib_joints.data[w.joint.y] * w.weights.y +
+        ib_joints.data[w.joint.z] * w.weights.z +
+        ib_joints.data[w.joint.w] * w.weights.w;
+    
+    if(w.weights.x + w.weights.y + w.weights.z + w.weights.w != 0) {
+        v.position = (joint_matrix * vec4(v.position, 1.0f)).xyz;
+        v.normal = normalize(mat3(transpose(inverse(joint_matrix))) * v.normal);
+    }
+    
+    ob_vertices.vertices[index] = v;
+    
+}

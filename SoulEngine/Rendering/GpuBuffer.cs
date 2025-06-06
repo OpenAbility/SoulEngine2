@@ -24,6 +24,17 @@ public unsafe class GpuBuffer<T> : EngineObject, IDisposable where T : unmanaged
         Length = count;
     }
 
+    private GpuBuffer(int handle, int length)
+    {
+        Handle = handle;
+        Length = length;
+    }
+
+    public static GpuBuffer<T> WrapExisting(int handle, int length)
+    {
+        return new GpuBuffer<T>(handle, length);
+    }
+
     private bool disposed;
     public void Dispose()
     {

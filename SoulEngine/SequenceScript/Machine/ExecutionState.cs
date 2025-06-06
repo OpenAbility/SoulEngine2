@@ -2,9 +2,11 @@ namespace SoulEngine.SequenceScript.Machine;
 
 public class ExecutionState
 {
-    public bool IsFinished;
+    public bool IsFinished { get; private set; } = false;
 
     public bool PauseExecution;
+
+    public event Action<ExecutionState> OnFinished = state => {};
     
     private readonly List<StackLevel> executionStack = new List<StackLevel>();
     private readonly Stack<DynValue> stack = new Stack<DynValue>();
@@ -14,6 +16,12 @@ public class ExecutionState
     public ExecutionState()
     {
         
+    }
+
+    internal void TriggerFinish()
+    {
+        IsFinished = true;
+        OnFinished(this);
     }
 
     public void PushStack(DynValue dynValue)
