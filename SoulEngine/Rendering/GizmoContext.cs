@@ -36,8 +36,8 @@ public class GizmoContext : EngineObject
     public GizmoContext(Game game)
     {
         RenderContext = game.RenderContext;
-        defaultShader = game.ResourceManager.Load<Shader>("shader/simple_coloured.program");
-        billboardShader = game.ResourceManager.Load<Shader>("shader/billboarded_flat.program");
+        defaultShader = game.ResourceManager.Load<Shader>("shader/dd_simple_coloured.program");
+        billboardShader = game.ResourceManager.Load<Shader>("shader/dd_billboarded_flat.program");
         
         
         vertexArray = new Vertex().CreateVertexArray();

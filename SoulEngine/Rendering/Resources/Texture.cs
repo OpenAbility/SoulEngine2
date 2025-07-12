@@ -12,7 +12,7 @@ using StbImageSharp;
 
 namespace SoulEngine.Rendering;
 
-[Resource(typeof(Loader))]
+[Resource("e.tex", typeof(Loader))]
 [ExpectedExtensions(".dds", ".png", ".tga", ".jpg", ".bmp")]
 public class Texture : Resource
 {
@@ -61,11 +61,11 @@ public class Texture : Resource
     
     public class Loader : IResourceLoader<Texture>
     {
-        public Texture LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        public Texture LoadResource(ResourceData data)
         {
-            (int handle, Vector3i size) = Load(resourceManager, id, content);
+            (int handle, Vector3i size) = Load(data);
 
-            return new Texture(resourceManager.Game, handle, size);
+            return new Texture(data.ResourceManager.Game, handle, size);
         }
 
         private (int, Vector3i) LoadStandardFormat(ResourceManager resourceManager, string id, ContentContext context)
@@ -116,8 +116,12 @@ public class Texture : Resource
             return (handle, new Vector3i(loaded.Width, loaded.Height, 1));
         }
 
-        private (int, Vector3i) Load(ResourceManager resourceManager, string id, ContentContext content)
+        private (int, Vector3i) Load(ResourceData data)
         {
+            ResourceManager resourceManager = data.ResourceManager;
+            string id = data.ResourcePath;
+            ContentContext content = data.Content;
+            
             Game game = resourceManager.Game;
 
             int handle = -1;

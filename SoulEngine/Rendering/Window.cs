@@ -132,6 +132,9 @@ public unsafe class Window : EngineObject, IRenderSurface, IDisposable
         } else if (sdlEvent.Type == (uint)SDL.EventType.MouseButtonUp)
         {
             Game.InputBus.Event(new MouseEvent(0, FromSDLButton(sdlEvent.Button.Button), InputAction.Release));
+        } else if (sdlEvent.Type == (uint)SDL.EventType.GamepadAdded)
+        {
+            Console.WriteLine("Plugged in gamepad!");
         }
         
 

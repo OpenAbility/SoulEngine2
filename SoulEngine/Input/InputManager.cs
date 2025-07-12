@@ -1,5 +1,6 @@
 using System.Numerics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using SoulEngine.Core;
 using SoulEngine.Events;
 
@@ -9,6 +10,7 @@ public class InputManager : EngineObject
 {
 
     private readonly List<InputAction> actions = new List<InputAction>();
+    private readonly Dictionary<int, Gamepad> gamepads = new Dictionary<int, Gamepad>();
     private readonly EventBus<InputEvent> eventBus;
     private readonly Game game;
 
@@ -35,6 +37,21 @@ public class InputManager : EngineObject
         this.eventBus = eventBus;
     }
 
+    public Gamepad? GetGamepad(int index)
+    {
+        return gamepads.GetValueOrDefault(index);
+    }
+
+    public void RegisterGamepad(int index, Gamepad gamepad)
+    {
+        gamepads[index] = gamepad;
+    }
+
+    public void DeleteGamepad(int index)
+    {
+        gamepads.Remove(index);
+    }
+
     private void Listener(InputEvent inputEvent, bool unhandled)
     {
         if (inputEvent is CursorEvent cursorEvent)
@@ -43,26 +60,79 @@ public class InputManager : EngineObject
             previousMousePosition ??= RawMousePosition;
         }
     }
-
-    public InputAction Action(string name, Keys? keyBinding, MouseButton? mouseBinding, JoystickHats? joystickButton,
-        int controllerIndex)
-    {
-        InputAction action =
-            new InputAction(this, eventBus, name, keyBinding, mouseBinding, joystickButton, controllerIndex);
-        actions.Add(action);
-        return action;
-    }
-
-    public InputAction Action(string name, Keys keyBinding) => Action(name, keyBinding, null, null, 0);
-    public InputAction Action(string name, Keys keyBinding, JoystickHats joystickButton) => Action(name, keyBinding, null, joystickButton, 0);
-    public InputAction Action(string name, Keys keyBinding, JoystickHats joystickButton, int controllerIndex) => Action(name, keyBinding, null, joystickButton, controllerIndex);
-    
-    public InputAction Action(string name, MouseButton mouseButton) => Action(name, null, mouseButton, null, 0);
-    public InputAction Action(string name, MouseButton mouseButton, JoystickHats joystickButton) => Action(name, null, mouseButton, joystickButton, 0);
-    public InputAction Action(string name, MouseButton mouseButton, JoystickHats joystickButton, int controllerIndex) => Action(name, null, mouseButton, joystickButton, controllerIndex);
-
+    public ActionBuilder Action() => new ActionBuilder(this);
+    public ActionBuilder Action(string name) => new ActionBuilder(this).Name(name);    
     private void BeforeDispatch()
     {
         previousMousePosition = RawMousePosition;
+        
+        
+    }
+
+
+    public class ActionBuilder
+    {
+        private bool finished = false;
+        private readonly InputManager manager;
+        private string name = "";
+        private Keys? key;
+        private MouseButton? mouseButton;
+        private SDL.GamepadButton? gamepadButton;
+        private SDL.GamepadAxis? gamepadAxis;
+        private int controllerIndex = 0;
+        
+        internal ActionBuilder(InputManager inputManager)
+        {
+            this.manager = inputManager;
+        }
+
+        public ActionBuilder Name(string name)
+        {
+            this.name = name;
+            return this;
+        }
+        
+        public ActionBuilder Bind(Keys? key)
+        {
+            this.key = key;
+            return this;
+        }
+        
+        public ActionBuilder Bind(MouseButton? button)
+        {
+            this.mouseButton = button;
+            return this;
+        }
+        
+        public ActionBuilder Bind(SDL.GamepadButton? button)
+        {
+            this.gamepadButton = button;
+            return this;
+        }
+        
+        public ActionBuilder Bind(SDL.GamepadAxis? axis)
+        {
+            this.gamepadAxis = axis;
+            return this;
+        }
+        
+        public ActionBuilder Controller(int controller)
+        {
+            this.controllerIndex = controller;
+            return this;
+        }
+
+        public InputAction Finish()
+        {
+            if (finished)
+                throw new Exception("Builder is already done!");
+            finished = true;
+
+            InputAction inputAction = new InputAction(manager, manager.eventBus, name, key, mouseButton, gamepadButton, gamepadAxis, controllerIndex);
+            
+            manager.actions.Add(inputAction);
+
+            return inputAction;
+        }
     }
 }

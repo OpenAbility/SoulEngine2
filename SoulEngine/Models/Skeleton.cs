@@ -9,7 +9,7 @@ namespace SoulEngine.Models;
 // Basically, a skeleton just provides generic data, and the instance
 // tells us how shit is done.
 
-[Resource(typeof(SkeletonLoader))]
+[Resource("e.skele", typeof(SkeletonLoader))]
 [ExpectedExtensions(".skeleton")]
 public class Skeleton : Resource
 {
@@ -61,9 +61,9 @@ public class Skeleton : Resource
             return jointData;
         }
         
-        public Skeleton LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        public Skeleton LoadResource(ResourceData data)
         {
-            if (id == "skele/misc.skeleton")
+            if (data.ResourcePath == "skele/misc.skeleton")
             {
                 Skeleton misc = new Skeleton();
 
@@ -72,7 +72,7 @@ public class Skeleton : Resource
                 return misc;
             }
             
-            CompoundTag? rootTag = TagIO.ReadCompressed(content.Load(id)!, false) as CompoundTag;
+            CompoundTag? rootTag = TagIO.ReadCompressed(data.ResourceStream, false) as CompoundTag;
 
             if (rootTag == null)
                 throw new Exception("Root skeleton tag is not compound!");

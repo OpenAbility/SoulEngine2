@@ -15,10 +15,12 @@ public abstract class Resource : EngineObject
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 public sealed class ResourceAttribute : Attribute
 {
-    public readonly Type LoaderType;
+    public readonly Type? LoaderType;
+    public readonly string TypeID;
 
-    public ResourceAttribute(Type loaderType)
+    public ResourceAttribute(string typeID, Type? loaderType)
     {
+        TypeID = typeID;
         LoaderType = loaderType;
     }
 }

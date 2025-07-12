@@ -4,6 +4,7 @@ using Hexa.NET.ImGui;
 using SoulEngine.Core;
 using SoulEngine.Data.NBT;
 using SoulEngine.Entities;
+using SoulEngine.Mathematics;
 using SoulEngine.Props;
 using SoulEngine.Renderer;
 using SoulEngine.Rendering;
@@ -168,6 +169,15 @@ public abstract class Component : EngineObject
     public virtual void RenderGizmo(GizmoContext context)
     {
         
+    }
+
+    /// <summary>
+    /// Returns the bounding box used for rendering, does not need to be translated to world-space as the entity handles that
+    /// </summary>
+    /// <returns>The component AABB</returns>
+    public virtual AABB RenderingBoundingBox()
+    {
+        return new AABB();
     }
 
     protected T Register<T>(T property) where T : SerializedProperty

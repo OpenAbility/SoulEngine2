@@ -71,7 +71,7 @@ public class ResourceManager : EngineObject
 
         IResourceLoader<T> loader = GetLoader<T>();
         
-        Logger.Info("Loading '{}'", id);
+        //Logger.Info("Loading '{}'", id);
         
         if (synchronized)
         {
@@ -84,10 +84,10 @@ public class ResourceManager : EngineObject
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 
-                resource = loader.LoadResource(this, id, Game.Content);
+                resource = loader.LoadResource(new ResourceData(id, "_nil", Game.Content.Load(id)!, this, Game.Content));
                 resource.ResourceID = id;
                 
-                Logger.Info("(S) Loading '{}' took {} ms", id, stopwatch.ElapsedMilliseconds);
+                //Logger.Info("(S) Loading '{}' took {} ms", id, stopwatch.ElapsedMilliseconds);
             }
             catch (Exception e)
             {
@@ -108,13 +108,13 @@ public class ResourceManager : EngineObject
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             
-            T instance = loader.LoadResource(this, id, Game.Content);
+            T instance = loader.LoadResource(new ResourceData(id, "_nil", Game.Content.Load(id)!, this, Game.Content));;
             instance.ResourceID = id;
                     
             resourceCache[id] = new WeakReference<Resource>(instance);
 
             
-            Logger.Info("(A) Loading '{}' took {} ms", id, stopwatch.ElapsedMilliseconds);
+            //Logger.Info("(A) Loading '{}' took {} ms", id, stopwatch.ElapsedMilliseconds);
             return instance;
 
         });

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Hexa.NET.ImGui;
 using OpenAbility.Logging;
+using OpenTK.Graphics.OpenGL;
 using SoulEngine.Content;
 using SoulEngine.Core.Tools;
 using SoulEngine.Data;
@@ -50,15 +51,13 @@ public abstract class Game
 
     public ImGuiWindow? WorkspaceGameWindow => Workspace.Current?.GameWindow;
     public ImGuiWindow? WorkspaceSceneWindow => Workspace.Current?.SceneWindow;
-
-    internal Entity? currentEntity;
     
     public SceneCamera? WorkspaceSceneCamera => Workspace.Current?.SceneCamera;
     
 
     public bool Visible => (WorkspaceGameWindow?.Visible ?? false) && WorkspaceGameWindow.Active;
 
-    public float AspectRatio => WorkspaceGameWindow?.FramebufferSize.X ?? 0.0f / WorkspaceGameWindow?.FramebufferSize.X ?? 0.0f;
+    public float AspectRatio => (WorkspaceGameWindow?.FramebufferSize.X ?? 0.0f) / (WorkspaceGameWindow?.FramebufferSize.Y ?? 1.0f);
 
 #else
     public bool Visible => true;
@@ -82,7 +81,7 @@ public abstract class Game
     public readonly KeyActions Keys;
     
 
-    private SceneRenderer? sceneRenderer;
+    private SceneRenderer2 sceneRenderer;
     
     public Scene? Scene { get; private set; }
 
@@ -180,6 +179,25 @@ public abstract class Game
 
         uiContext = new UIContext(this);
         
+        sceneRenderer = new SceneRenderer2(this);
+        
+#if DEVELOPMENT
+
+        RegisterTools();
+
+        Workspace.Load(this);
+#endif
+
+    }
+    
+#if DEVELOPMENT
+    protected virtual void CompileContent(ContentCompileContext compiler)
+    {
+        
+    }
+
+    protected virtual void RegisterTools()
+    {
         EditorTool.Register("se.debugger", (game, workspace) => new DebuggerTool(game, workspace), "Tools", "Debugger");
         EditorTool.Register("se.edit.director", (game, workspace) => new DirectorTool(game, workspace), "Tools", "Game", "Director");
         EditorTool.Register("se.edit.inspector", (game, workspace) => new Inspector(game, workspace), "Tools", "Game", "Inspector");
@@ -187,19 +205,10 @@ public abstract class Game
         EditorTool.Register("se.viewer.input", (game, workspace) => new InputViewer(game, workspace), "Tools", "Input Viewer");
         EditorTool.Register("se.edit.engine_var", (game, workspace) => new EngineVarEditor(game, workspace), "Tools", "Engine Vars");
         
+        EditorTool.Register("se.edit.event_sequence", (game, workspace) => new EventSequenceEditor(game, workspace), "Tools", "Event Sequence Editor");
+        
         EditorTool.Register("se.viewer.game", (game, workspace) => new GameViewTool(game, workspace), "Tools", "Game Window");
         EditorTool.Register("se.viewer.scene", (game, workspace) => new SceneWindowTool(game, workspace), "Tools", "Scene Window");
-        
-        
-#if DEVELOPMENT
-        Workspace.Load(this);
-#endif
-    }
-    
-#if DEVELOPMENT
-    protected virtual void CompileContent(ContentCompileContext compiler)
-    {
-        
     }
 
     public void RefreshContent()
@@ -223,6 +232,8 @@ public abstract class Game
         EarlyLoad();
         
         LoadScene();
+        
+        GC.Collect();
 
         MainLoop();
     }
@@ -353,6 +364,11 @@ public abstract class Game
         Workspace.Save(this);
 #endif
 
+        ProfilerSegment finishSegment = Profiler.Instance.Segment("frame.gpu_idle");
+        GL.Finish();
+        finishSegment.Dispose();
+ 
+        
         frameSegment.Dispose();
         
     }
@@ -435,7 +451,10 @@ public abstract class Game
             {
                 Logger.Info("Loading from {}" , result.Path);
 
-                currentEntity = null;
+                foreach (var workspace in Workspace.Workspaces)
+                {
+                    workspace.CurrentEntity = null;
+                }
 
                 if (result.Path.EndsWith(".scene"))
                 {
@@ -532,95 +551,71 @@ public abstract class Game
 #if DEVELOPMENT
         if (WorkspaceGameWindow?.Visible ?? false)
         {
-            PipelineData pipelineData = new PipelineData();
-            pipelineData.Game = this;
-            pipelineData.RenderContext = RenderContext;
-            pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, WorkspaceGameWindow) ??
-                                          new CameraSettings();
-            pipelineData.DeltaTime = DeltaTime;
-            pipelineData.TargetSurface = WorkspaceGameWindow;
-            pipelineData.UIContext = uiContext;
-            pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_post", true);
+            SceneRenderInformation renderInformation = new SceneRenderInformation
+            {
+                EntityCollection = Scene!,
+                TargetSurface = WorkspaceGameWindow,
+                DeltaTime = DeltaTime,
+                UIContext = uiContext,
+                RenderPipeline = RenderPipeline,
+                RenderContext = RenderContext,
+                
+                CameraSettings = CameraSettings.Game,
+                
+                EnableCulling = EngineVarContext.Global.GetBool("e_cull"),
+                PerformCullingPass = true,
 
-            SceneRendererData data = new SceneRendererData();
-            data.RenderPipeline = RenderPipeline;
-            data.FramebufferSize = WorkspaceGameWindow.FramebufferSize;
-            data.DeltaTime = DeltaTime;
-            data.CameraSettings = CameraSettings.Game;
-            data.UIContext = uiContext;
-            data.CullPass = EngineVarContext.Global.GetBool("e_frustum_cull");
-            
-            sceneRenderer?.Render(data, ref pipelineData);
-            sceneRenderer?.RenderGizmo(ref pipelineData);
-            RenderPipeline.DrawFrame(pipelineData);
+                PostProcessing = EngineVarContext.Global.GetBool("e_post"),
+                
+                RenderUI = Scene!.Director!.RenderUI
+            };
+
+            sceneRenderer.PerformGameRender(renderInformation);
         }
 
         if (WorkspaceSceneWindow?.Visible ?? false)
         {
-            CameraSettings sceneWindowSettings = new CameraSettings();
-            sceneWindowSettings.CameraMode = WorkspaceSceneCamera.CameraMode;
-            sceneWindowSettings.ProjectionMatrix = WorkspaceSceneCamera.GetProjection(
-                (float)WorkspaceSceneWindow.FramebufferSize.X / WorkspaceSceneWindow.FramebufferSize.Y);
-            sceneWindowSettings.ViewMatrix = WorkspaceSceneCamera.GetView();
-            sceneWindowSettings.ShowGizmos = MenuContext.IsFlagSet("View", "Gizmos");
-            sceneWindowSettings.SelectedEntity = currentEntity;
-            sceneWindowSettings.ShowUI = false;
+            SceneRenderInformation renderInformation = new SceneRenderInformation
+            {
+                EntityCollection = Scene!,
+                TargetSurface = WorkspaceSceneWindow,
+                DeltaTime = DeltaTime,
+                UIContext = null,
+                RenderPipeline = RenderPipeline,
+                RenderContext = RenderContext,
+                
+                CameraSettings =  WorkspaceSceneCamera!.CreateCameraSettings(WorkspaceSceneWindow, MenuContext.IsFlagSet("View", "Gizmos"), Workspace.Current?.CurrentEntity),
+                
+                EnableCulling = EngineVarContext.Global.GetBool("e_cull"),
+                PerformCullingPass = WorkspaceSceneCamera.CameraMode == CameraMode.FlyCamera,
 
-            sceneWindowSettings.CameraPosition = WorkspaceSceneCamera.Position;
-            sceneWindowSettings.CameraDirection = WorkspaceSceneCamera.Forward;
-            sceneWindowSettings.CameraRight = WorkspaceSceneCamera.Right;
-            sceneWindowSettings.CameraUp = WorkspaceSceneCamera.Up;
-            sceneWindowSettings.FieldOfView = WorkspaceSceneCamera.FOV;
-            sceneWindowSettings.NearPlane = WorkspaceSceneCamera.Near;
-            sceneWindowSettings.FarPlane = WorkspaceSceneCamera.Far;
+                PostProcessing = EngineVarContext.Global.GetBool("e_post") &&  
+                                 EngineVarContext.Global.GetBool("e_scene_post"),
+            };
 
-
-            PipelineData pipelineData = new PipelineData();
-            pipelineData.Game = this;
-            pipelineData.RenderContext = RenderContext;
-            pipelineData.CameraSettings =
-                sceneRenderer?.MakePipelineCamera(sceneWindowSettings, WorkspaceSceneWindow) ??
-                new CameraSettings();
-            pipelineData.DeltaTime = DeltaTime;
-            pipelineData.TargetSurface = WorkspaceSceneWindow;
-            pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_scene_post") &&
-                                          EngineVarContext.Global.GetBool("e_post", true);
-
-            SceneRendererData data = new SceneRendererData();
-            data.RenderPipeline = RenderPipeline;
-            data.FramebufferSize = WorkspaceSceneWindow.FramebufferSize;
-            data.DeltaTime = DeltaTime;
-            data.CameraSettings = sceneWindowSettings;
-            data.UIContext = uiContext;
-            data.CullPass = false;
-
-            sceneRenderer?.Render(data, ref pipelineData);
-            sceneRenderer?.RenderGizmo(ref pipelineData);
-            RenderPipeline.DrawFrame(pipelineData);
+            sceneRenderer.PerformGameRender(renderInformation);
         }
 #else
-        PipelineData pipelineData = new PipelineData();
-        pipelineData.Game = this;
-        pipelineData.RenderContext = RenderContext;
-        pipelineData.CameraSettings = sceneRenderer?.MakePipelineCamera(CameraSettings.Game, window) ??
-                                      new CameraSettings();
-        pipelineData.DeltaTime = DeltaTime;
-        pipelineData.TargetSurface = window;
-        pipelineData.UIContext = uiContext;
+        SceneRenderInformation renderInformation = new SceneRenderInformation
+        {
+            EntityCollection = Scene!,
+            TargetSurface = window,
+            DeltaTime = DeltaTime,
+            UIContext = uiContext,
+            RenderPipeline = RenderPipeline,
+            RenderContext = RenderContext,
+                
+            CameraSettings = CameraSettings.Game,
+                
+            EnableCulling = EngineVarContext.Global.GetBool("e_cull"),
+            PerformCullingPass = true,
 
-        SceneRendererData data = new SceneRendererData();
-        data.RenderPipeline = RenderPipeline;
-        data.FramebufferSize = window.FramebufferSize;
-        data.DeltaTime = DeltaTime;
-        data.CameraSettings = pipelineData.CameraSettings;
-        data.UIContext = uiContext;
-        
-        sceneRenderer?.Render(data, ref pipelineData);
-        sceneRenderer?.RenderGizmo(ref pipelineData);
-        
-        RenderContext.RebuildState();
-        RenderPipeline.DrawFrame(pipelineData);
-        RenderContext.RebuildState();
+            PostProcessing = EngineVarContext.Global.GetBool("e_post"),
+                
+            RenderUI = Scene!.Director!.RenderUI
+        };
+
+        sceneRenderer.PerformGameRender(renderInformation);
 #endif
     }
     
@@ -646,10 +641,9 @@ public abstract class Game
 
     public void SetScene(Scene scene)
     {
-        this.Scene = scene;
-        this.sceneRenderer = new SceneRenderer(scene);
-        
-        this.Scene.Director?.OnSceneMadeCurrent();
+        GC.Collect();
+        Scene = scene;
+        Scene.Director?.OnSceneMadeCurrent();
     }
 
     protected abstract IRenderPipeline CreateDefaultRenderPipeline();

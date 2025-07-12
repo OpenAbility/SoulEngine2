@@ -7,7 +7,7 @@ using SoulEngine.Resources;
 
 namespace SoulEngine.UI;
 
-[Resource(typeof(SpriteLoader))]
+[Resource("e.spr", typeof(SpriteLoader))]
 [ExpectedExtensions(".spr")]
 public class Sprite : Resource
 {
@@ -28,9 +28,9 @@ public class Sprite : Resource
 
 public class SpriteLoader : IResourceLoader<Sprite>
 {
-    public Sprite LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+    public Sprite LoadResource(ResourceData data)
     {
-        CompoundTag tag = (CompoundTag)TagIO.ReadCompressed(content.Load(id)!);
+        CompoundTag tag = (CompoundTag)TagIO.ReadCompressed(data.ResourceStream);
 
         string mode = tag.GetString("mode") ?? "single";
         Texture? texture = null;
@@ -39,7 +39,7 @@ public class SpriteLoader : IResourceLoader<Sprite>
 
         if (mode == "single")
         {
-            texture = resourceManager.Load<Texture>(tag.GetString("texture")!);
+            texture = data.ResourceManager.Load<Texture>(tag.GetString("texture")!);
             rectangle = new Rectangle(0, 0, texture.Width, texture.Height);
 
             if (tag.ContainsKey("rect"))

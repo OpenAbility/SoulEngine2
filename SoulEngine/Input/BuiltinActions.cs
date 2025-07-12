@@ -32,25 +32,25 @@ internal class BuiltinActions
     
     public BuiltinActions(InputManager inputManager)
     {
-        CameraForward = inputManager.Action("builtin.camera.forward", Keys.W);
-        CameraBackward = inputManager.Action("builtin.camera.backward", Keys.S);
-        CameraLeft = inputManager.Action("builtin.camera.left", Keys.A);
-        CameraRight = inputManager.Action("builtin.camera.right", Keys.D);
-        CameraUp = inputManager.Action("builtin.camera.up", Keys.Space);
-        CameraDown = inputManager.Action("builtin.camera.down", Keys.LeftControl);
-        CameraToggle = inputManager.Action("builtin.camera.toggle", MouseButton.Right);
-        CameraSprint = inputManager.Action("builtin.camera.sprint", Keys.LeftShift);
+        CameraForward = inputManager.Action().Name("builtin.camera.forward").Bind(Keys.W).Finish();
+        CameraBackward = inputManager.Action().Name("builtin.camera.backward").Bind(Keys.S).Finish();
+        CameraLeft = inputManager.Action().Name("builtin.camera.left").Bind(Keys.A).Finish();
+        CameraRight = inputManager.Action().Name("builtin.camera.right").Bind(Keys.D).Finish();
+        CameraUp = inputManager.Action().Name("builtin.camera.up").Bind(Keys.Space).Finish();
+        CameraDown = inputManager.Action().Name("builtin.camera.down").Bind(Keys.LeftControl).Finish();
+        CameraToggle = inputManager.Action().Name("builtin.camera.toggle").Bind(MouseButton.Right).Finish();
+        CameraSprint = inputManager.Action().Name("builtin.camera.sprint").Bind(Keys.LeftShift).Finish();
         
-        SceneCameraForward = inputManager.Action("builtin.camera.forward", Keys.W).IgnoreWindow();
-        SceneCameraBackward = inputManager.Action("builtin.camera.backward", Keys.S).IgnoreWindow();
-        SceneCameraLeft = inputManager.Action("builtin.camera.left", Keys.A).IgnoreWindow();
-        SceneCameraRight = inputManager.Action("builtin.camera.right", Keys.D).IgnoreWindow();
-        SceneCameraUp = inputManager.Action("builtin.camera.up", Keys.Space).IgnoreWindow();
-        SceneCameraDown = inputManager.Action("builtin.camera.down", Keys.LeftControl).IgnoreWindow();
-        SceneCameraToggle = inputManager.Action("builtin.camera.toggle", MouseButton.Right).IgnoreWindow();
-        SceneCameraSprint = inputManager.Action("builtin.camera.sprint", Keys.LeftShift).IgnoreWindow();
+        SceneCameraForward = inputManager.Action().Name("builtin.camera.forward").Bind(Keys.W).Finish().IgnoreWindow();
+        SceneCameraBackward = inputManager.Action().Name("builtin.camera.backward").Bind(Keys.S).Finish().IgnoreWindow();
+        SceneCameraLeft = inputManager.Action().Name("builtin.camera.left").Bind(Keys.A).Finish().IgnoreWindow();
+        SceneCameraRight = inputManager.Action().Name("builtin.camera.right").Bind(Keys.D).Finish().IgnoreWindow();
+        SceneCameraUp = inputManager.Action().Name("builtin.camera.up").Bind(Keys.Space).Finish().IgnoreWindow();
+        SceneCameraDown = inputManager.Action().Name("builtin.camera.down").Bind(Keys.LeftControl).Finish().IgnoreWindow();
+        SceneCameraToggle = inputManager.Action().Name("builtin.camera.toggle").Bind(MouseButton.Right).Finish().IgnoreWindow();
+        SceneCameraSprint = inputManager.Action().Name("builtin.camera.sprint").Bind(Keys.LeftShift).Finish().IgnoreWindow();
 
-        LeftAlt = inputManager.Action("builtin.key.left_alt", Keys.LeftAlt).IgnoreWindow();
-        Enter = inputManager.Action("builtin.key.enter", Keys.Enter).IgnoreWindow();
+        LeftAlt = inputManager.Action().Name("builtin.key.left_alt").Bind(Keys.LeftAlt).Finish().IgnoreWindow();
+        Enter = inputManager.Action().Name("builtin.key.enter").Bind(Keys.Enter).Finish().IgnoreWindow();
     }
 }

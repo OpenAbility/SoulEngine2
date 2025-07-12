@@ -11,7 +11,7 @@ using SoulEngine.Resources;
 namespace SoulEngine.Rendering;
 
 
-[Resource(typeof(Loader))]
+[Resource("e.shader", typeof(Loader))]
 [ExpectedExtensions(".program")]
 public class Shader : Resource
 {
@@ -66,6 +66,12 @@ public class Shader : Resource
     {
         int loc = UniformLocation(name);
         GL.ProgramUniform1i(handle, loc, value);
+    }
+    
+    public void Uniform1i(string name, int[] value)
+    {
+        int loc = UniformLocation(name);
+        GL.ProgramUniform1i(handle, loc, value.Length, ref value[0]);
     }
     
     public void Uniform1f(string name, float value)
@@ -215,8 +221,8 @@ public class Shader : Resource
             prefix += "#line 0 0\n";
         }
 
-        vertexSource = ShaderProcessor.ProcessShader(vertexSource ?? "", id + "##vertex", defines, game.RenderContext.SupportsLineDirectives);
-        fragmentSource =ShaderProcessor.ProcessShader(fragmentSource ?? "", id + "##fragment", defines, game.RenderContext.SupportsLineDirectives);
+        vertexSource = ShaderProcessor.ProcessShader(vertexSource ?? "", id + "/vertex", defines, game.RenderContext.SupportsLineDirectives);
+        fragmentSource =ShaderProcessor.ProcessShader(fragmentSource ?? "", id + "/fragment", defines, game.RenderContext.SupportsLineDirectives);
         
         game.ThreadSafety.EnsureMain(() =>
         {
@@ -274,10 +280,11 @@ public class Shader : Resource
     
     public class Loader : IResourceLoader<Shader>
     {
-        public Shader LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        public Shader LoadResource(ResourceData data)
         {
             Shader shader = new Shader();
-            shader.Load(resourceManager, id, content);
+            // TODO: Redo shader loading
+            shader.Load(data.ResourceManager, data.ResourcePath, data.Content);
             return shader;
         }
     }

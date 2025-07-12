@@ -3,7 +3,7 @@ using SoulEngine.Resources;
 
 namespace SoulEngine.UI.Text;
 
-[Resource(typeof(Loader))]
+[Resource("e.fnt", typeof(Loader))]
 [ExpectedExtensions(".fnt")]
 public partial class Font : Resource
 {

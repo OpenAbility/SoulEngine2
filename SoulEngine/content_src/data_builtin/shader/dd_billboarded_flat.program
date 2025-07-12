@@ -6,6 +6,6 @@
         <Binding name="ib_vertex_buffer">20</Binding>
     </Bindings>
     
-    <Vertex backend="OPENGL" src="shader/shared/base.vert"/>
-    <Fragment backend="OPENGL" src="shader/shared/simple_shaded.frag"/>  
+    <Vertex backend="OPENGL" src="shader/shared/dd_billboarded.vert"/>
+    <Fragment backend="OPENGL" src="shader/shared/simple_flat.frag"/>  
 </Shader> 

@@ -36,4 +36,9 @@ public static class Mathf
         q.Normalize();
         return q;
     }
+
+    public static Vector3 Swizzle(Vector3 x, Vector3 y, Vector3 z)
+    {
+        return new Vector3(x.X, y.Y, z.Z);
+    }
 }

@@ -33,19 +33,21 @@ public class CameraComponent : Component, IComparable<CameraComponent>
     {
         return Matrix4.CreatePerspectiveFieldOfView(FieldOfView * MathF.PI / 180f, aspect, NearPlane, FarPlane);
     }
+    
+    public Frustum CurrentFrustum => Frustum.CreateFromCamera(Entity.Position, Entity.Forward, Vector3.UnitY,
+        Game.AspectRatio, FieldOfView, NearPlane, FarPlane);
 
     public override void RenderGizmo(GizmoContext context)
     {
         base.RenderGizmo(context);
-
-
+        
         Matrix4 oldModel = context.ModelMatrix;
 
         context.ModelMatrix = Matrix4.Identity;
         context.Begin(PrimitiveType.Lines);
 
-        Vector3[] frustumPoints = Frustum.CreatePointsFromCamera(Entity.Position, Entity.Forward, Entity.Right,
-            Game.AspectRatio, FieldOfView, NearPlane, FarPlane);
+        Vector3[] frustumPoints = Frustum.CreateFromCamera(Entity.Position, Entity.Forward, Vector3.UnitY,
+            Game.AspectRatio, FieldOfView, NearPlane, FarPlane).GetCorners();
         
         context.Vertex(frustumPoints[0]);
         context.Vertex(frustumPoints[1]);

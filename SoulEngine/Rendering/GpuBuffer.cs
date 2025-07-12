@@ -19,7 +19,7 @@ public unsafe class GpuBuffer<T> : EngineObject, IDisposable where T : unmanaged
     
     public GpuBuffer(int count, BufferStorageMask storageMask)
     {
-        GL.CreateBuffer(out Handle);
+        Handle = GL.CreateBuffer();
         GL.NamedBufferStorage(Handle, count * sizeof(T), null, storageMask);
         Length = count;
     }
@@ -71,6 +71,11 @@ public unsafe class GpuBuffer<T> : EngineObject, IDisposable where T : unmanaged
         mapped = true;
 
         return new BufferMapping<T>(this, new Span<T>(ptr, (int)size));
+    }
+
+    public void Upload(IntPtr offset, Span<T> data)
+    {
+        GL.NamedBufferSubData(Handle, offset, data.Length * sizeof(T), data);
     }
 
     ~GpuBuffer()

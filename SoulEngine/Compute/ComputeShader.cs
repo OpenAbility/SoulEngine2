@@ -8,7 +8,7 @@ using SoulEngine.Resources;
 
 namespace SoulEngine.Compute;
 
-[Resource(typeof(ComputeShaderLoader))]
+[Resource("e.comp", typeof(ComputeShaderLoader))]
 [ExpectedExtensions(".comp")]
 public class ComputeShader : Resource
 {
@@ -125,17 +125,17 @@ public class ComputeShaderLoader : IResourceLoader<ComputeShader>
 {
     private static readonly Logger Logger = Logger.Get<ComputeShaderLoader>();
     
-    public ComputeShader LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+    public ComputeShader LoadResource(ResourceData data)
     {
-        Game game = resourceManager.Game;
+        Game game = data.ResourceManager.Game;
 
         int handle = -1;
         
         game.ThreadSafety.EnsureMain(() =>
         {
 
-            string source = content.LoadString(id);
-            source = ShaderProcessor.ProcessShader(source, id, null, game.RenderContext.SupportsLineDirectives);
+            string source = data.ReadResourceString();
+            source = ShaderProcessor.ProcessShader(source, data.ResourcePath, null, game.RenderContext.SupportsLineDirectives);
             
             handle = GL.CreateShaderProgram(ShaderType.ComputeShader, source);
             

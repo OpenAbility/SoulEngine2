@@ -13,7 +13,7 @@ public struct PipelineData()
     public float DeltaTime;
     public CameraSettings CameraSettings;
 
-    public CameraSettings ShadowCameraSettings;
+    public ShadowCameraSettings ShadowCameraSettings;
 
     public bool EnableShadows = true;
     public bool RedrawShadows = true;

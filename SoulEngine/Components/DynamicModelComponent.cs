@@ -5,6 +5,7 @@ using OpenTK.Mathematics;
 using SoulEngine.Animation;
 using SoulEngine.Core;
 using SoulEngine.Entities;
+using SoulEngine.Mathematics;
 using SoulEngine.Models;
 using SoulEngine.Props;
 using SoulEngine.Renderer;
@@ -25,6 +26,13 @@ public class DynamicModelComponent : Component
         get => field;
         set
         {
+            if(field == value)
+                return;
+            
+            if(deformationCache != null)
+                deformationCache.Dispose();
+            deformationCache = null;
+            
             field = value;
             FlushContextObjects();
         }
@@ -32,6 +40,8 @@ public class DynamicModelComponent : Component
     public AnimationPlayer? AnimationPlayer { get; private set; }
 
     public SkeletonInstance? SkeletonInstance;
+
+    private DeformationCache? deformationCache;
     
     public DynamicModelComponent(Entity entity) : base(entity)
     {
@@ -49,15 +59,14 @@ public class DynamicModelComponent : Component
                 AnimationPlayer = new AnimationPlayer(SkeletonInstance);
             }
         }
+        
+        
     }
     
     public override void Update(float deltaTime)
     {
         AnimationPlayer?.Apply();
     }
-
-    private static GpuBuffer<Matrix4>? skeletonBuffer;
-    
 
     public override void Render(IRenderPipeline renderPipeline, float deltaTime)
     {
@@ -69,6 +78,9 @@ public class DynamicModelComponent : Component
         
         if(SkeletonInstance == null)
             return;
+        
+        if(deformationCache == null)
+            deformationCache = Model.GenerateDeformationCache();
 
         Matrix4[] skeletonBuffer = ArrayPool<Matrix4>.Shared.Rent(SkeletonInstance.Skeleton.JointCount);
 
@@ -76,7 +88,7 @@ public class DynamicModelComponent : Component
         {
             SkeletonJointData jointData = SkeletonInstance.Skeleton.GetJoint(i);
 
-            if (Model.skeletonToMeshJoints.TryGetValue(jointData.SkeletonID, out var bufferIndex))
+            if (Model.SkeletonToMeshJoints.TryGetValue(jointData.SkeletonID, out var bufferIndex))
             {
                 skeletonBuffer[bufferIndex] = jointData.InverseBind * SkeletonInstance.GetJointGlobalMatrix(jointData);
             }
@@ -88,13 +100,26 @@ public class DynamicModelComponent : Component
         renderProperties.SkeletonBuffer = skeletonBuffer;
         renderProperties.SkeletonBufferPool = ArrayPool<Matrix4>.Shared;
         renderProperties.SkeletonBufferSize = SkeletonInstance.Skeleton.JointCount;
-
+        renderProperties.PerformSkeletonDeformation = true;
+   
         foreach (var mesh in Model.Meshes)
         {
             renderProperties.Mesh = mesh.ActualMesh;
             renderProperties.Material = mesh.Material;
+            
+            renderProperties.DeformationCache = deformationCache!.GetBuffer(mesh.Index);
+            
             renderPipeline.SubmitMeshRender(DefaultRenderLayers.OpaqueLayer, renderProperties);
         }
+    }
+    
+    public override AABB RenderingBoundingBox()
+    {
+        // TODO: Joint AABB
+        if (Model == null)
+            return new AABB();
+
+        return Model.BoundingBox;
     }
 
     public override void RenderGizmo(GizmoContext context)
@@ -112,11 +137,21 @@ public class DynamicModelComponent : Component
         
         if(SkeletonInstance == null)
             return;
+
+        Colour colour = Colour.White;
+
+        if (!Scene.Camera?.CurrentFrustum.InFrustum(Entity.Position) ?? true)
+            colour = Colour.Red;
+        
+                
+        context.ModelMatrix = Matrix4.Identity;
+        Model.BoundingBox.Translated(Entity.GlobalMatrix).Draw(context, colour);
         
         for (int i = 0; i < SkeletonInstance.Skeleton.JointCount; i++)
         {
-            Matrix4 matrix4 = SkeletonInstance.GetJointGlobalMatrix(SkeletonInstance.Skeleton.GetJoint(i)) *
-                              Entity.GlobalMatrix;
+            SkeletonJointData joint = SkeletonInstance.Skeleton.GetJoint(i);
+            
+            Matrix4 matrix4 = SkeletonInstance.GetJointGlobalMatrix(joint) * Entity.GlobalMatrix;
 
             context.ModelMatrix = matrix4;
             context.BillboardedSprite(Scene.Game.ResourceManager.Load<Texture>("icons/bone.png"), 0.2f);

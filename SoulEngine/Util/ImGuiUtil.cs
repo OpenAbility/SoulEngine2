@@ -40,4 +40,16 @@ public static class ImGuiUtil
         ImGui.SetCursorPos(afterCursor);
         return marked;
     }
+
+    public static void TooltipIcon(string tooltip)
+    {
+        ImGui.TextDisabled("?");
+        if (ImGui.BeginItemTooltip())
+        {
+            ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35.0f);
+            ImGui.TextUnformatted(tooltip);
+            ImGui.PopTextWrapPos();
+            ImGui.EndTooltip();
+        }
+    }
 }

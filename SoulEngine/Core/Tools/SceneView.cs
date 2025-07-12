@@ -27,8 +27,8 @@ public class SceneView : EditorTool
                 foreach (var prop in new List<Entity>(Game.Scene.Entities))
                 {
                     
-                    if (ImGuiUtil.ImageSelectable(prop.Icon, prop.Name + "##" + prop.GetHashCode(), Game.currentEntity == prop))
-                        Game.currentEntity = prop;
+                    if (ImGuiUtil.ImageSelectable(prop.Icon, prop.Name + "##" + prop.GetHashCode(), Workspace.CurrentEntity == prop))
+                        Workspace.CurrentEntity = prop;
 
                     if (ImGui.IsItemHovered())
                         hoveredButton = true;

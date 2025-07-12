@@ -15,22 +15,10 @@ public partial class Font
     {
         private static readonly Logger Logger = Logger.Get("FontLoader");
         
-        public Font LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        public Font LoadResource(ResourceData data)
         {
-            Stream? stream = content.Load(id);
-            if (stream == null)
-            {
-                string fallback = EngineVarContext.Global.GetString("e_font_fallback", "ui/font/DEFAULT.fnt");
-                Logger.Error("Font '{}' not found! Using fallback '{}'", id, fallback);
-                id = fallback;
-                stream = content.Load(id);
-            }
-
-            if (stream == null)
-                throw new Exception("Font not found and fallback font could not be loaded!");
-            
             XmlDocument document = new XmlDocument();
-            document.Load(stream);
+            document.Load(data.ResourceStream);
 
             XmlElement rootElement = document.DocumentElement!;
 
@@ -53,9 +41,8 @@ public partial class Font
             
             foreach (XmlElement page in pagesElement)
             {
-                string pagePath = Path.Join(Path.GetDirectoryName(id), page.GetAttribute("file"));
-                Texture texture =
-                    resourceManager.Load<Texture>(pagePath);
+                string pagePath = Path.Join(Path.GetDirectoryName(data.ResourcePath), page.GetAttribute("file"));
+                Texture texture = data.ResourceManager.Load<Texture>(pagePath);
                 
                 pages.Add(texture);
                 

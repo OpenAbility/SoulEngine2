@@ -68,18 +68,16 @@ public struct Vertex
         GL.EnableVertexArrayAttrib(vao, 4);
         
         GL.VertexArrayAttribFormat(vao, 0, 3, VertexAttribType.Float, false, 0);
-        GL.VertexArrayAttribFormat(vao, 1, 2, VertexAttribType.Float, false, 3 * sizeof(float));
-        GL.VertexArrayAttribFormat(vao, 2, 2, VertexAttribType.Float, false, 5 * sizeof(float));
-        GL.VertexArrayAttribFormat(vao, 3, 3, VertexAttribType.Float, false, 7 * sizeof(float));
-        GL.VertexArrayAttribFormat(vao, 4, 4, VertexAttribType.Float, false, 11 * sizeof(float));
+        GL.VertexArrayAttribFormat(vao, 1, 2, VertexAttribType.Float, false, 4 * sizeof(float));
+        GL.VertexArrayAttribFormat(vao, 2, 2, VertexAttribType.Float, false, 6 * sizeof(float));
+        GL.VertexArrayAttribFormat(vao, 3, 3, VertexAttribType.Float, false, 8 * sizeof(float));
+        GL.VertexArrayAttribFormat(vao, 4, 4, VertexAttribType.Float, false, 12 * sizeof(float));
 
         GL.VertexArrayAttribBinding(vao, 0, 0);
         GL.VertexArrayAttribBinding(vao, 1, 0);
         GL.VertexArrayAttribBinding(vao, 2, 0);
         GL.VertexArrayAttribBinding(vao, 3, 0);
         GL.VertexArrayAttribBinding(vao, 4, 0);
-        GL.VertexArrayAttribBinding(vao, 5, 0);
-        GL.VertexArrayAttribBinding(vao, 6, 0);
 
         return vao;
     }

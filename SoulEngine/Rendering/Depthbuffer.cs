@@ -31,6 +31,12 @@ public class Depthbuffer : EngineObject, IRenderSurface
         
         GL.TextureStorage2D(DepthBuffer, 1, SizedInternalFormat.DepthComponent32f, size.X, size.Y);
         
+        GL.TextureParameteri(DepthBuffer, TextureParameterName.TextureWrapR, (int)TextureWrapMode.ClampToBorder);
+        GL.TextureParameteri(DepthBuffer, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToBorder);
+        GL.TextureParameteri(DepthBuffer, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToBorder);
+        
+        GL.TextureParameterf(DepthBuffer, TextureParameterName.TextureBorderColor, [1.0f, 1.0f, 1.0f, 1.0f]);
+        
         GL.NamedFramebufferTexture(Handle, FramebufferAttachment.DepthAttachment, DepthBuffer, 0);
 
         GL.NamedFramebufferDrawBuffer(Handle, ColorBuffer.None);

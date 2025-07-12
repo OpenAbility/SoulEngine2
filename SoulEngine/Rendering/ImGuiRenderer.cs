@@ -1,5 +1,6 @@
 // We only need ImGui in dev builds
 
+using System.Drawing;
 using System.Resources;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGuizmo;
@@ -13,6 +14,7 @@ using SoulEngine.Events;
 using SoulEngine.Mathematics;
 using ResourceManager = SoulEngine.Resources.ResourceManager;
 using Vector2 = System.Numerics.Vector2;
+using Vector4 = System.Numerics.Vector4;
 
 namespace SoulEngine.Rendering;
 
@@ -181,6 +183,8 @@ public unsafe class ImGuiRenderer : EngineObject
         if (drawData.CmdListsCount == 0)
             return;
 
+        surface.BindFramebuffer();
+        
         shader.Bind();
         GL.BindVertexArray(vao);
 
@@ -227,8 +231,9 @@ public unsafe class ImGuiRenderer : EngineObject
 
                 GL.BindTextureUnit(0, (int)drawCommand.TextureId.Handle);
 
-                var clip = drawCommand.ClipRect;
-                GL.Scissor((int)clip.X, surfaceSize.Y - (int)clip.W, (int)(clip.Z), (int)(clip.W));
+                Vector4 clip = drawCommand.ClipRect;
+                Vector4i clipI = new Vector4i((int)clip.X, (int)clip.Y, (int)clip.Z, (int)clip.W);
+                GL.Scissor(clipI.X, surfaceSize.Y - clipI.Y - clipI.W, clipI.Z, clipI.W);
 
                 GL.DrawElementsBaseVertex(PrimitiveType.Triangles, (int)drawCommand.ElemCount,
                     DrawElementsType.UnsignedShort, (IntPtr)(drawCommand.IdxOffset * sizeof(ushort)),

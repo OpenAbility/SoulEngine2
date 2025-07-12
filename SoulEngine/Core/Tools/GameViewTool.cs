@@ -24,4 +24,9 @@ public class GameViewTool : EditorTool
         
         Window.Draw(false, null, null, ref Enabled);
     }
+
+    public void DrawGame()
+    {
+        
+    }
 }

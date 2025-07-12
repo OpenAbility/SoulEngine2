@@ -1,5 +1,7 @@
 using OpenTK.Mathematics;
+using SoulEngine.Entities;
 using SoulEngine.Mathematics;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 
 namespace SoulEngine.Core.Tools;
@@ -91,7 +93,27 @@ public class SceneCamera : EngineObject
 
         
         Position += movementVector * deltaTime;
-        
+    }
 
+    public CameraSettings CreateCameraSettings(IRenderSurface targetSurface, bool gizmos, Entity? selectedEntity)
+    {
+        CameraSettings settings = new CameraSettings
+        {
+            CameraMode = CameraMode,
+            ProjectionMatrix = GetProjection((float)targetSurface.FramebufferSize.X / targetSurface.FramebufferSize.Y),
+            ViewMatrix = GetView(),
+            ShowGizmos = gizmos,
+            SelectedEntity = selectedEntity,
+            ShowUI = false,
+            CameraPosition = Position,
+            CameraDirection = Forward,
+            CameraRight = Right,
+            CameraUp = Up,
+            FieldOfView = FOV,
+            NearPlane = Near,
+            FarPlane = Far
+        };
+
+        return settings;
     }
 }

@@ -58,9 +58,9 @@ public class ThreadSafety
         if (!OnMain)
             throw new Exception("Not on main thread!");
 
-        while (tasks.Count > 0)
+        while (tasks?.Count > 0)
         {
-            tasks.Dequeue().Invoke();
+            tasks?.Dequeue()?.Invoke();
         }
     }
 }

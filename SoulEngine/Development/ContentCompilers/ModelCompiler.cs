@@ -2,6 +2,7 @@ using System.Text;
 using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using SoulEngine.Development.GLTF;
+using SoulEngine.Mathematics;
 using SoulEngine.Rendering;
 using SoulEngine.Util;
 using Mesh = SoulEngine.Development.GLTF.Mesh;
@@ -15,12 +16,19 @@ public class ModelCompiler : GLBContentCompiler
     {
 
         ModelDef modelDef = JsonConvert.DeserializeObject<ModelDef>(File.ReadAllText(contentData.InputFile.FullName));
+
+        modelDef.MaterialPrefix ??= "mat/";
+        modelDef.Materials ??= new Dictionary<string, string>();
+        
         string glbPath = ResolvePath(contentData.InputFile.FullName, modelDef.Glb);
 
         GLTFLoader loader = new GLTFLoader(File.OpenRead(glbPath), false);
 
         using BinaryWriter writer =
             new BinaryWriter(File.OpenWrite(contentData.OutputFile.FullName), Encoding.UTF8, false);
+
+        Dictionary<int, AABB> jointBoundingBoxes = new Dictionary<int, AABB>();
+        AABB modelBoundingBox = AABB.InvertedInfinity;
 
         writer.Write('M');
         writer.Write('O');
@@ -57,6 +65,8 @@ public class ModelCompiler : GLBContentCompiler
                 {
                     writer.Write(loader.File.Nodes[skin.Joints[i]].Name!);
                     writer.Write(i);
+                    
+                    jointBoundingBoxes[i] = AABB.InvertedInfinity;
                 }
 
             }
@@ -95,13 +105,17 @@ public class ModelCompiler : GLBContentCompiler
                     continue;
 
                 // Ugly chaining. I genuinely don't know.
-                if (primitive.Material.HasValue &&
-                    loader.File.Materials[primitive.Material.Value].Name != null &&
-                    modelDef.Materials.TryGetValue(loader.File.Materials[primitive.Material.Value].Name!,
-                        out string? materialPath))
+
+                string materialName = "default";
+                if (primitive.Material.HasValue)
+                {
+                    materialName = loader.File.Materials[primitive.Material.Value].Name ?? "default";
+                }
+                
+                if (modelDef.Materials.TryGetValue(materialName, out string? materialPath))
                     writer.Write(materialPath);
                 else
-                    writer.Write("default.mat");
+                    writer.Write(modelDef.MaterialPrefix + materialName + ".mat");
 
                 Accessor? vertexAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "POSITION");
                 if (vertexAccessor == null)
@@ -131,7 +145,6 @@ public class ModelCompiler : GLBContentCompiler
 
                 for (int i = 0; i < totalVertices; i++)
                 {
-
                     Vertex vertex = new Vertex();
                     vertex.Colour = Colour.White;
 
@@ -142,6 +155,8 @@ public class ModelCompiler : GLBContentCompiler
                         loader.GetAccessor(vertexAccessor.Value, i * 3 + 1).CastStruct<float, byte>(),
                         loader.GetAccessor(vertexAccessor.Value, i * 3 + 2).CastStruct<float, byte>()
                     );
+
+                    modelBoundingBox.PushPoint(vertex.Position);
 
                     if (normalAccessor.HasValue)
                     {
@@ -203,15 +218,32 @@ public class ModelCompiler : GLBContentCompiler
                     for (int i = 0; i < totalVertices; i++)
                     {
                         VertexSkinning vertex = new VertexSkinning();
+                        
+                        
 
                         if (jointsAccessor.HasValue)
                         {
+                            Vector3 vertexPosition = new Vector3(
+                                loader.GetAccessor(vertexAccessor.Value, i * 3 + 0).CastStruct<float, byte>(),
+                                loader.GetAccessor(vertexAccessor.Value, i * 3 + 1).CastStruct<float, byte>(),
+                                loader.GetAccessor(vertexAccessor.Value, i * 3 + 2).CastStruct<float, byte>()
+                            );
+                            
+                            // TODO: More than 255 joints?
                             vertex.Indices = new JointIndices(
                                 loader.GetAccessor(jointsAccessor.Value, i * 4 + 0).CastStruct<byte, byte>(),
                                 loader.GetAccessor(jointsAccessor.Value, i * 4 + 1).CastStruct<byte, byte>(),
                                 loader.GetAccessor(jointsAccessor.Value, i * 4 + 2).CastStruct<byte, byte>(),
                                 loader.GetAccessor(jointsAccessor.Value, i * 4 + 3).CastStruct<byte, byte>()
                             );
+
+                            for (int j = 0; j < 4; j++)
+                            {
+                                uint index = vertex.Indices[j];
+
+                                jointBoundingBoxes[(int)index] =
+                                    jointBoundingBoxes[(int)index].PushPoint(vertexPosition);
+                            }
                         }
 
                         if (weightsAccessor.HasValue)
@@ -258,6 +290,58 @@ public class ModelCompiler : GLBContentCompiler
             }
         }
 
+        if (modelBoundingBox.Invalid)
+            modelBoundingBox = new AABB();
+        
+        writer.Write(modelBoundingBox.Min.X);
+        writer.Write(modelBoundingBox.Min.Y);
+        writer.Write(modelBoundingBox.Min.Z);
+        
+        writer.Write(modelBoundingBox.Max.X);
+        writer.Write(modelBoundingBox.Max.Y);
+        writer.Write(modelBoundingBox.Max.Z);
+
+        if (hasSkeleton)
+        {
+            writer.Write(jointBoundingBoxes.Count);
+            foreach (var joint in jointBoundingBoxes)
+            {
+                writer.Write(joint.Key);
+
+                AABB aabb = joint.Value;
+                if (aabb.Invalid) aabb = new AABB();
+                
+                writer.Write(aabb.Min.X);
+                writer.Write(aabb.Min.Y);
+                writer.Write(aabb.Min.Z);
+                writer.Write(aabb.Max.X);
+                writer.Write(aabb.Max.Y);
+                writer.Write(aabb.Max.Z);
+            }
+        }
+
+        modelDef.Animations ??= [];
+        
+        writer.Write(modelDef.Animations.Length);
+        for (int i = 0; i < modelDef.Animations.Length; i++)
+        {
+            GLTF.Animation? animation = Array.Find(loader.File.Animations, anim => anim.Name == modelDef.Animations[i]);
+            if (animation == null)
+                throw new Exception("Could not find animation " + modelDef.Animations[i]);
+
+            writer.Write(animation.Value.Name!);
+            AnimationCompiler.WriteAnimations(writer, false, animation.Value, loader);
+        }
+        
+        modelDef.AnimationsAssoc ??= new Dictionary<string, string>();
+        
+        writer.Write(modelDef.AnimationsAssoc.Count);
+        foreach (var assoc in modelDef.AnimationsAssoc)
+        {
+            writer.Write(assoc.Key);
+            writer.Write(assoc.Value);
+        }
+
     }
 
     public override string GetCompiledPath(string path)
@@ -267,9 +351,15 @@ public class ModelCompiler : GLBContentCompiler
 
     private struct ModelDef()
     {
-        public string Glb = "NULL";
-        public Dictionary<string, string> Materials = new();
-        public int? Skin;
-        public string Skeleton = "skele/misc.skeleton";
+        [JsonProperty("glb", Required = Required.Always)] public string Glb = "NULL";
+        [JsonProperty("materials", Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)] public Dictionary<string, string> Materials = new();
+        [JsonProperty("skin", Required = Required.Default)] public int? Skin;
+        [JsonProperty("skeleton", Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)] public string Skeleton = "skele/misc.skeleton";
+        [JsonProperty("mat_pfx", Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)] public string? MaterialPrefix = "mat/";
+        [JsonProperty("animations", Required = Required.DisallowNull,
+            DefaultValueHandling = DefaultValueHandling.Populate)]
+        public string[] Animations = [];
+        
+        [JsonProperty("animations_assoc", Required = Required.DisallowNull, DefaultValueHandling = DefaultValueHandling.Populate)] public Dictionary<string, string> AnimationsAssoc = new();
     }
 }

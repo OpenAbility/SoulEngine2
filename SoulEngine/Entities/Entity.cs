@@ -104,6 +104,16 @@ public class Entity : EngineObject, ITransformable
         
         PropertyReflection.RegisterProperties(scene, this, p => Register(p));
     }
+
+    public void Rotate(Vector3 euler)
+    {
+        RotationQuat *= Quaternion.FromEulerAngles(euler);
+    }
+
+    public void Rotate(Quaternion quaternion)
+    {
+        RotationQuat *= quaternion;
+    }
     
     private T Register<T>(T property) where T : SerializedProperty
     {
@@ -260,9 +270,33 @@ public class Entity : EngineObject, ITransformable
             component.Reset();
         }
     }
+    
+    /// <summary>
+    /// Returns the bounding box used for rendering, does not need to be translated to world-space as the entity handles that
+    /// </summary>
+    /// <returns>The component AABB</returns>
+    public AABB RenderingBoundingBox()
+    {
+        AABB aabb = AABB.InvertedInfinity;
+        
+        foreach (var component in components)
+        {
+            AABB componentBox = component.RenderingBoundingBox();
+            aabb.PushPoint(componentBox.Min);
+            aabb.PushPoint(componentBox.Max);
+        }
+
+        if (aabb.Invalid)
+            aabb = new AABB();
+
+        aabb = aabb.Translated(GlobalMatrix);
+
+        return aabb;
+    }
 
     public void RenderGizmo(GizmoContext context)
     {
+        
         if(Icon != null)
             context.BillboardedSprite(Icon);
         context.Begin(PrimitiveType.Lines);
@@ -277,6 +311,7 @@ public class Entity : EngineObject, ITransformable
         context.Vertex(-Vector3.UnitZ, Colour.Blue);
 
         context.End();
+        
         
         foreach (var component in components.ToArray())
         {

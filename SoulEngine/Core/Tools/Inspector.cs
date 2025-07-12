@@ -13,15 +13,15 @@ public class Inspector : EditorTool
         if (ImGui.Begin("Inspector##" + ID, ref Enabled))
         {
 #if DEVELOPMENT
-            if (Game.currentEntity != null && Game.Scene != null)
+            if (Workspace.CurrentEntity != null && Game.Scene != null)
             {
-                Game.currentEntity.Edit();
+                Workspace.CurrentEntity.Edit();
                 
                 ImGui.Separator();
                 if (ImGui.Button("Delete"))
                 {
-                    Game.Scene.Entities.Remove(Game.currentEntity);
-                    Game.currentEntity = null;
+                    Game.Scene.Entities.Remove(Workspace.CurrentEntity);
+                    Workspace.CurrentEntity = null;
                 }
             }
             else

@@ -10,20 +10,69 @@ public class AnimationCompiler : GLBContentCompiler
 {
     public override unsafe void Recompile(ContentData contentData)
     {
-        AnimDef modelDef = JsonConvert.DeserializeObject<AnimDef>(File.ReadAllText(contentData.InputFile.FullName));
-        string glbPath = ResolvePath(contentData.InputFile.FullName, modelDef.Glb);
+        AnimDef animDef = JsonConvert.DeserializeObject<AnimDef>(File.ReadAllText(contentData.InputFile.FullName));
+        string glbPath = ResolvePath(contentData.InputFile.FullName, animDef.Glb);
 
         GLTFLoader loader = new GLTFLoader(File.OpenRead(glbPath), false);
 
-        GLTF.Animation animation = SelectAnimation(modelDef.Animation, loader.File);
+        GLTF.Animation animation = SelectAnimation(animDef.Animation, loader.File);
 
-        modelDef.AnimationName ??= modelDef.Animation;
+        animDef.AnimationName ??= animDef.Animation;
 
-        if (modelDef.AnimationName == null)
+        if (animDef.AnimationName == null)
             throw new Exception("Animation needs a name!");
 
         using BinaryWriter writer = new BinaryWriter(File.OpenWrite(contentData.OutputFile.FullName), Encoding.UTF8, false);
         
+        WriteAnimations(writer, animDef.Streamed, animation, loader);
+        
+        writer.Flush();
+        writer.Close();
+    }
+
+    private GLTF.Animation SelectAnimation(string? name, GLTFFile loader)
+    {
+        if (loader.Animations.Length == 0)
+            throw new Exception("GLB has no animations!");
+
+        if (name == null)
+            return loader.Animations[0];
+
+        for (int i = 0; i < loader.Animations.Length; i++)
+        {
+            if (loader.Animations[i].Name == name)
+                return loader.Animations[i];
+        }
+        
+        throw new Exception("GLB has no animations with the name '" + name + "'");
+    }
+
+    public override string GetCompiledPath(string path)
+    {
+        return Path.ChangeExtension(path, "anim");
+    }
+    
+    private struct AnimDef()
+    {
+        [JsonProperty("glb", Required = Required.Always)] public string Glb;
+        [JsonProperty("animation", Required = Required.AllowNull)] public string? Animation;
+        [JsonProperty("name", Required = Required.Default)] public string? AnimationName;
+        [JsonProperty("streamed", Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)] public bool Streamed = false;
+    }
+    
+    private struct KeyframeData
+    {
+        public float Timestamp;
+        public int Channel;
+        public float[] FromData;
+        public float[] ToData;
+        public float Duration;
+    }
+
+
+
+    public static unsafe void WriteAnimations(BinaryWriter writer, bool streamed, GLTF.Animation animation, GLTFLoader loader)
+    {
         // Just a small header
         writer.Write(AnimationClip.Magic);
         
@@ -31,7 +80,7 @@ public class AnimationCompiler : GLBContentCompiler
         writer.Write(1);
         
         // Should this animation be streamed from disk or not?
-        writer.Write(modelDef.Streamed);
+        writer.Write(streamed);
         
         // Each animation file contains a stream of keyframes.
         // Each keyframe contains data for X amount of channels
@@ -228,49 +277,6 @@ public class AnimationCompiler : GLBContentCompiler
 
         if (writtenFrames < totalKeyFrames)
             throw new Exception("Wrote fewer keyframes than expected! Something is wrong!");
-
-        writer.Write("END OF ANIMATION");
         
-        writer.Flush();
-        writer.Close();
-    }
-
-    private GLTF.Animation SelectAnimation(string? name, GLTFFile loader)
-    {
-        if (loader.Animations.Length == 0)
-            throw new Exception("GLB has no animations!");
-
-        if (name == null)
-            return loader.Animations[0];
-
-        for (int i = 0; i < loader.Animations.Length; i++)
-        {
-            if (loader.Animations[i].Name == name)
-                return loader.Animations[i];
-        }
-        
-        throw new Exception("GLB has no animations with the name '" + name + "'");
-    }
-
-    public override string GetCompiledPath(string path)
-    {
-        return Path.ChangeExtension(path, "anim");
-    }
-    
-    private struct AnimDef()
-    {
-        [JsonProperty("glb", Required = Required.Always)] public string Glb;
-        [JsonProperty("animation", Required = Required.AllowNull)] public string? Animation;
-        [JsonProperty("name", Required = Required.Default)] public string? AnimationName;
-        [JsonProperty("streamed", Required = Required.Default)] public bool Streamed;
-    }
-    
-    private struct KeyframeData
-    {
-        public float Timestamp;
-        public int Channel;
-        public float[] FromData;
-        public float[] ToData;
-        public float Duration;
     }
 }

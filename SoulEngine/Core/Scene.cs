@@ -7,9 +7,9 @@ using SoulEngine.Resources;
 
 namespace SoulEngine.Core;
 
-[Resource(typeof(Loader))]
+[Resource("e.scn", typeof(Loader))]
 [ExpectedExtensions(".scene")]
-public class Scene : Resource
+public class Scene : Resource, IEntityCollection
 {
 
     public bool Running = true;
@@ -17,7 +17,14 @@ public class Scene : Resource
 
     public Director? Director;
 
-    public List<Entity> Entities = new List<Entity>();
+    public new List<Entity> Entities = new List<Entity>();
+    
+    
+    public IEnumerable<Entity> EntityEnumerable => Entities;
+    
+    public CameraComponent? Camera => GetComponents<CameraComponent>().OrderDescending().FirstOrDefault();
+    public ShadowCameraComponent? ShadowCamera => GetComponents<ShadowCameraComponent>().FirstOrDefault();
+    
 
     public Scene(Game game)
     {
@@ -85,14 +92,13 @@ public class Scene : Resource
             return scene;   
         }
         
-        public Scene LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        public Scene LoadResource(ResourceData data)
         {
-            return Load(resourceManager.Game, (CompoundTag)TagIO.ReadCompressed(content.Load(id)!, false));
+            return Load(data.ResourceManager.Game, (CompoundTag)TagIO.ReadCompressed(data.ResourceStream, false));
         }
     }
 
-    public CameraComponent? Camera => GetComponents<CameraComponent>().OrderDescending().FirstOrDefault();
-    public ShadowCameraComponent? ShadowCamera => GetComponents<ShadowCameraComponent>().FirstOrDefault();
+
 
     public Entity AddEntity(string name)
     {
@@ -119,19 +125,21 @@ public class Scene : Resource
         return tag;
     }
 
-    public Entity? GetEntity(string name)
-    {
-        return Entities.Find(e => e.Name == name);
-    }
-    
+
     public void DeleteEntity(string name)
     {
         Entities.RemoveAll(e => e.Name == name);
     }
     
 
+    public Entity? GetEntity(string name)
+    {
+        return Entities.Find(e => e.Name == name);
+    }
+    
     public IEnumerable<T> GetComponents<T>() where T : Component
     {
-        return Entities.SelectMany(e => e.GetComponents<T>());
+        return EntityEnumerable.SelectMany(e => e.GetComponents<T>());
     }
+
 }

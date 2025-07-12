@@ -1,9 +1,7 @@
 using OpenTK.Mathematics;
-using SoulEngine.Core;
 using SoulEngine.Entities;
-using SoulEngine.Props;
 
-namespace SoulEngine.Rendering;
+namespace SoulEngine.Renderer;
 
 public struct CameraSettings
 {

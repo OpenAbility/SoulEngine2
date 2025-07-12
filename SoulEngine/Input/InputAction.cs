@@ -1,4 +1,5 @@
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SDL3;
 using SoulEngine.Core;
 using SoulEngine.Events;
 
@@ -9,14 +10,15 @@ public class InputAction : EngineObject
     private readonly EventListener<InputEvent> listener;
     private readonly InputManager manager;
     
-    public InputAction(InputManager manager, EventBus<InputEvent> eventBus, string name, Keys? keyBinding, MouseButton? mouseBinding, JoystickHats? joystickButton, int controllerIndex)
+    public InputAction(InputManager manager, EventBus<InputEvent> eventBus, string name, Keys? keyBinding, MouseButton? mouseBinding, SDL.GamepadButton? gamepadButton, SDL.GamepadAxis? gamepadAxis, int controllerIndex)
     {
         this.manager = manager;
         
         Name = name;
         KeyBinding = keyBinding;
         MouseBinding = mouseBinding;
-        JoystickButton = joystickButton;
+        GamepadButton = gamepadButton;
+        GamepadAxis = gamepadAxis;
         ControllerIndex = controllerIndex;
 
         eventBus.BeginListen(Listener);
@@ -25,6 +27,7 @@ public class InputAction : EngineObject
         {
             Pressed = false;
             Released = false;
+            PollJoystick();
         };
     }
 
@@ -53,13 +56,40 @@ public class InputAction : EngineObject
             else if (mouseEvent.Action == OpenTK.Windowing.GraphicsLibraryFramework.InputAction.Release)
                 Release();
         }
-            
-        // TODO: Controller inputs
+    }
+
+    private void PollJoystick()
+    {
+        // TODO: Joystick input
+
+        Gamepad? pad = manager.GetGamepad(ControllerIndex);
+        if(pad == null)
+            return;
+
+        if (GamepadButton != null)
+        {
+            if (pad.Button(GamepadButton.Value))
+            {
+                Press();
+            }
+            else
+            {
+                Release();
+            }
+        }
+
+        if (GamepadAxis != null)
+        {
+            value = pad.Axis(GamepadAxis.Value);
+        }
+        
+
     }
 
     public Keys? KeyBinding;
     public MouseButton? MouseBinding;
-    public JoystickHats? JoystickButton;
+    public SDL.GamepadButton? GamepadButton;
+    public SDL.GamepadAxis? GamepadAxis;
     public int ControllerIndex;
     public string Name;
     public bool IgnoresWindow;
@@ -67,6 +97,9 @@ public class InputAction : EngineObject
     private bool down;
     private bool pressed;
     private bool released;
+    private float value;
+
+    public float Value => down ? 1 : value;
     
     public bool Down
     {

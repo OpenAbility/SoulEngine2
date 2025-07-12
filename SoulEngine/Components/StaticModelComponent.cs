@@ -1,5 +1,7 @@
+using OpenTK.Mathematics;
 using SoulEngine.Core;
 using SoulEngine.Entities;
+using SoulEngine.Mathematics;
 using SoulEngine.Models;
 using SoulEngine.Props;
 using SoulEngine.Renderer;
@@ -37,4 +39,30 @@ public class StaticModelComponent : Component
             renderPipeline.SubmitMeshRender(DefaultRenderLayers.OpaqueLayer, renderProperties);
         }
     }
+
+    public override AABB RenderingBoundingBox()
+    {
+        if (Model == null)
+            return new AABB();
+
+        return Model.BoundingBox;
+    }
+
+    public override void RenderGizmo(GizmoContext context)
+    {
+        base.RenderGizmo(context);
+        
+        if(!Visible)
+            return;
+        
+        if(Model == null)
+            return;
+        
+        if(Model == null)
+            return;
+
+        context.ModelMatrix = Matrix4.Identity;
+        Model.BoundingBox.Translated(Entity.GlobalMatrix).Draw(context, Colour.White);
+    }
+    
 }

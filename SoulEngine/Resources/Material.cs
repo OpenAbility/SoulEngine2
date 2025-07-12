@@ -3,11 +3,12 @@ using Newtonsoft.Json.Linq;
 using OpenTK.Mathematics;
 using SoulEngine.Content;
 using SoulEngine.Data;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 
 namespace SoulEngine.Resources;
 
-[Resource(typeof(Loader))]
+[Resource("e.mat", typeof(Loader))]
 [ExpectedExtensions(".mat")]
 public class Material : Resource
 {
@@ -19,17 +20,46 @@ public class Material : Resource
 
     private static Texture? mipTexture;
     private ResourceManager ResourceManager;
+
+    private const int TextureBindingPoint = 3;
+
+    public void BindShader() => Shader.Bind();
     
-    
-    public void Bind(CameraSettings cameraSettings, Matrix4 model)
+    public void BindCamera(CameraSettings cameraSettings, Matrix4 modelMatrix)
     {
-        Shader.Bind();
         Shader.Matrix("um_projection", cameraSettings.ProjectionMatrix, false);
         Shader.Matrix("um_view", cameraSettings.ViewMatrix, false);
-        Shader.Matrix("um_model", model, false);
+        Shader.Matrix("um_model", modelMatrix, false);
         Shader.Uniform3f("um_camera_direction", cameraSettings.CameraDirection);
+    }
 
-        uint textureBindingPoint = 0;
+    public void BindShadowPassCamera(ShadowCameraSettings shadowCameraSettings, Matrix4 modelMatrix)
+    {
+        Shader.Matrix("um_projection", shadowCameraSettings.ProjectionMatrix, false);
+        Shader.Matrix("um_view", shadowCameraSettings.ViewMatrix, false);
+        Shader.Matrix("um_model", modelMatrix, false);
+        Shader.Uniform3f("um_camera_direction", shadowCameraSettings.Direction);
+    }
+
+    public void BindShadows(ShadowCameraSettings shadowCameraSettings, Depthbuffer[] shadowBuffers)
+    {
+        Shader.Matrix("um_shadow_projection", shadowCameraSettings.ProjectionMatrix, false);
+        Shader.Matrix("um_shadow_view", shadowCameraSettings.ViewMatrix, false);
+        
+        Shader.Uniform3f("um_shadow_direction", shadowCameraSettings.Direction);
+
+        for (uint i = 0; i < shadowBuffers.Length; i++)
+        {
+            shadowBuffers[i].BindDepth(i);
+        }
+        
+        Shader.Uniform1i("ut_shadow_buffers[0]", [0, 1, 2]);
+
+    }
+
+    public void BindUniforms()
+    {
+        uint textureBindingPoint = TextureBindingPoint;
         
         foreach (var value in values)
         {
@@ -50,26 +80,24 @@ public class Material : Resource
                 Shader.Uniform4f(value.Key, vec4);
             }
         }
-        
     }
 
-    private void Load(ResourceManager resourceManager, string id, ContentContext content)
+    private void Load(ResourceData data)
     {
-        ResourceManager = resourceManager;
+        ResourceManager = data.ResourceManager;
         
-        Path = id;
-        MaterialDefinition materialDefinition = LoadDef(resourceManager, id, content);
+        Path = data.ResourcePath;
+        MaterialDefinition materialDefinition = JsonConvert.DeserializeObject<MaterialDefinition>(data.ReadResourceString());
 
         if (materialDefinition.Shader == null)
             throw new Exception("No shader bound to material!");
 
-        Shader = resourceManager.Load<Shader>(materialDefinition.Shader);
+        Shader = data.ResourceManager.Load<Shader>(materialDefinition.Shader);
 
         foreach (var parameter in Shader.Parameters)
         {
             if (materialDefinition.Values.TryGetValue(parameter.Name, out var jsonValue))
             {
-
                 if (parameter.Type == ShaderParameterType.FloatVec2)
                     values[parameter.Name] = new Vector2(((JArray)jsonValue)[0].Value<float>(),
                         ((JArray)jsonValue)[1].Value<float>());
@@ -91,42 +119,16 @@ public class Material : Resource
                     values[parameter.Name] = jsonValue.Value<double>();
                 
                 if (parameter.IsSampler)
-                    values[parameter.Name] = resourceManager.Load<Texture>(jsonValue.Value<string>()!);
+                    values[parameter.Name] = data.ResourceManager.Load<Texture>(jsonValue.Value<string>()!);
 
             } else if (parameter.IsSampler)
             {
-                values[parameter.Name] = resourceManager.Load<Texture>("__TEXTURE_AUTOGEN/white");
+                values[parameter.Name] = data.ResourceManager.Load<Texture>("__TEXTURE_AUTOGEN/white");
             }
         }
     }
-
-    private MaterialDefinition LoadDef(ResourceManager resourceManager, string id, ContentContext content)
-    {
-        string json = content.LoadString(id);
-        MaterialDefinition materialDefinition =
-            JsonConvert.DeserializeObject<MaterialDefinition>(json);
-
-        if (materialDefinition.Parent != null)
-        {
-            MaterialDefinition parent = LoadDef(resourceManager, materialDefinition.Parent, content);
-
-            if (materialDefinition.Shader != null)
-                parent.Shader = materialDefinition.Shader;
-
-            foreach (var value in materialDefinition.Values)
-            {
-                parent.Values[value.Key] = value.Value;
-            }
-
-            materialDefinition = parent;
-        }
-
-        return materialDefinition;
-
-    }
     
-    
-    private struct MaterialDefinition
+    internal struct MaterialDefinition
     {
         [JsonProperty("parent")] public string? Parent;
         [JsonProperty("shader")] public string? Shader;
@@ -135,10 +137,10 @@ public class Material : Resource
     
     public class Loader : IResourceLoader<Material>
     {
-        public Material LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        public Material LoadResource(ResourceData data)
         {
             Material material = new Material();
-            material.Load(resourceManager, id, content);
+            material.Load(data);
             return material;
         }
     }

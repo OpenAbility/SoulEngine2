@@ -60,7 +60,7 @@ public class MenuContext : EngineObject
 
 		if (!menus.TryGetValue(path[0], out MenuObject? menu))
 		{
-			Logger.Debug("Creating new root menu: {}", path[0]);
+			//Logger.Debug("Creating new root menu: {}", path[0]);
 			menu = new MenuObject
 			{
 				ID = path[0],
@@ -75,7 +75,7 @@ public class MenuContext : EngineObject
 			
 			if (!menu.Children.TryGetValue(path[i], out MenuObject? child))
 			{
-				Logger.Debug("Creating new item: {}", path[i]);
+				//Logger.Debug("Creating new item: {}", path[i]);
 				child = new MenuObject
 				{
 					ID = path[i],

@@ -7,7 +7,7 @@ using SoulEngine.Util;
 
 namespace SoulEngine.Animation;
 
-[Resource(typeof(Loader))]
+[Resource("e.anim", typeof(Loader))]
 [ExpectedExtensions(".anim")]
 public unsafe class AnimationClip : Resource
 {
@@ -22,14 +22,17 @@ public unsafe class AnimationClip : Resource
     private readonly long frameStartOffset;
  
     private readonly AnimationChannelInfo[] channels;
-    
-    public AnimationClip(Stream source)
-    {
-        if(source == Stream.Null)
-            return;
-        
-        reader = new BinaryReader(source, Encoding.UTF8, false);
 
+    private readonly AnimationKeyframe[] keyframes;
+    
+    public AnimationClip(Stream source) : this(new BinaryReader(source, Encoding.UTF8, true))
+    {
+    }
+    
+    public AnimationClip(BinaryReader reader)
+    {
+        this.reader = reader;
+        
         uint magic = reader.ReadUInt32();
         if (magic != Magic)
             throw new Exception("Animation clip file corrupt!");
@@ -56,16 +59,32 @@ public unsafe class AnimationClip : Resource
         TotalKeyframes = reader.ReadUInt64();
 
         frameStartOffset = reader.BaseStream.Position;
+
+        if (!Streamed)
+        {
+            keyframes = new AnimationKeyframe[TotalKeyframes];
+            fixed (AnimationKeyframe* pointer = keyframes)
+            {
+                for (ulong i = 0; i < TotalKeyframes; i++)
+                {
+                    var targetSpan = new Span<byte>(&pointer[i], sizeof(AnimationKeyframe));
+                    int read = 0;
+                    while ((read = reader.Read(targetSpan)) != 0)
+                        targetSpan = targetSpan.Slice(read);
+                }
+            }
+
+        }
     }
 
     private readonly byte[] readBuffer = new byte[sizeof(AnimationKeyframe)];
 
-    public AnimationKeyframe GetKeyframe(ulong index)
+    private AnimationKeyframe StreamKeyframe(ulong index)
     {
         if (index >= TotalKeyframes)
             throw new IndexOutOfRangeException();
 
-        if (frameStartOffset + (long)index * sizeof(AnimationKeyframe) + sizeof(AnimationKeyframe) >= reader.BaseStream.Length)
+        if (frameStartOffset + (long)index * sizeof(AnimationKeyframe) + sizeof(AnimationKeyframe) > reader.BaseStream.Length)
             throw new EndOfStreamException();
         
         reader.BaseStream.Position = frameStartOffset + (long)index * sizeof(AnimationKeyframe);
@@ -74,6 +93,16 @@ public unsafe class AnimationClip : Resource
             throw new EndOfStreamException();
         
         return ((Span<byte>)readBuffer).CastStruct<AnimationKeyframe, byte>();
+    }
+
+    public AnimationKeyframe GetKeyframe(ulong index)
+    {
+        if (Streamed)
+            return StreamKeyframe(index);
+        
+        if (index >= TotalKeyframes)
+            throw new IndexOutOfRangeException();
+        return keyframes[index];
     }
 
     public AnimationChannelInfo GetChannel(int index)
@@ -89,12 +118,9 @@ public unsafe class AnimationClip : Resource
     
     public class Loader : IResourceLoader<AnimationClip>
     {
-        public AnimationClip LoadResource(ResourceManager resourceManager, string id, ContentContext content)
+        public AnimationClip LoadResource(ResourceData data)
         {
-            if (!content.Exists(id))
-                return new AnimationClip(Stream.Null);
-            
-            return new AnimationClip(content.Load(id)!);
+            return new AnimationClip(data.ResourceStream);
         }
     }
 }
