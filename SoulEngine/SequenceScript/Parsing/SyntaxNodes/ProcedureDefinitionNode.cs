@@ -7,10 +7,10 @@ public class ProcedureDefinitionNode : SyntaxNode
     public Token ReturnType;
     public Token Identifier;
 
-    public ParameterDefinitionNode[] Parameters;
+    public ParameterDefinitionNode[] Parameters = null!;
     public bool Extern;
 
-    public BodyNode Body;
+    public BodyNode Body = null!;
 }
 
 public class ParameterDefinitionNode : SyntaxNode

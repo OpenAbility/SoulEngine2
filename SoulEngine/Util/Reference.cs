@@ -2,5 +2,5 @@ namespace SoulEngine.Util;
 
 public class Reference<T>
 {
-    public T Value;
+    public T Value = default!;
 }

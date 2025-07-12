@@ -115,7 +115,7 @@ public class Workspace
     {
         Stream? stream = game.Content.Load("editor/default_workspaces.workspace.nbt");
         
-        CompoundTag compound = (CompoundTag)TagIO.ReadCompressed(stream, false);
+        CompoundTag compound = (CompoundTag)TagIO.ReadCompressed(stream!, false);
         
         foreach (var workspace in compound.Values)
         {

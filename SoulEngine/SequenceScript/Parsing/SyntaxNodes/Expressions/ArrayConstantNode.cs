@@ -5,7 +5,7 @@ namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes.Expressions;
 
 public class ArrayConstantNode : ExpressionNode
 {
-    public ExpressionNode[] Values;
+    public ExpressionNode[] Values = null!;
     public CodeLocation Location;
     
     public override CodeLocation GetLocation()

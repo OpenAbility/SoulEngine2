@@ -17,7 +17,7 @@ public class SceneWindowTool : EditorTool
     public ImGuiWindow Window;
     public SceneCamera SceneCamera;
 
-    public override void OnLoad(CompoundTag tag)
+    public override void OnLoad(CompoundTag? tag)
     {
         Window = new ImGuiWindow(Game, "Scene##" + ID);
     }
@@ -38,7 +38,7 @@ public class SceneWindowTool : EditorTool
         {
             if (Game.Scene != null && Workspace.CurrentEntity != null)
             {
-                Workspace.CurrentEntity.RenderMoveGizmo(Game.WorkspaceSceneCamera.GetView(), SceneCamera.GetProjection((float)Game.WorkspaceSceneWindow.FramebufferSize.X / Game.WorkspaceSceneWindow.FramebufferSize.Y));
+                Workspace.CurrentEntity.RenderMoveGizmo(Game.WorkspaceSceneCamera!.GetView(), SceneCamera.GetProjection((float)Game.WorkspaceSceneWindow!.FramebufferSize.X / Game.WorkspaceSceneWindow.FramebufferSize.Y));
             }
             
             SceneCamera.Update(Game.DeltaTime, ImGui.IsWindowFocused());

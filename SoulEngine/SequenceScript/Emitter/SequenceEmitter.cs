@@ -146,7 +146,7 @@ public class SequenceEmitter
         if(compilingFile.ResolvePath != "__STDLIB")
             moduleResolutionIndices[compilingFile.ResolvePath] = moduleResolutionIndices.Count;
 
-        foreach (var function in compilingFile.functions)
+        foreach (var function in compilingFile.Functions)
         {
             
             if(function.Key.StartsWith("_"))
@@ -162,7 +162,7 @@ public class SequenceEmitter
             prototypes[function.Key] = prototype;
         }
         
-        foreach (var global in compilingFile.globals)
+        foreach (var global in compilingFile.Globals)
         {
             
             if(global.Key.StartsWith("_"))
@@ -716,7 +716,7 @@ public class SequenceEmitter
 
         if (evaluated != expected)
         {
-            context.Error(expressionNode.GetLocation(), "SS3030", 
+            context.Error(expressionNode?.GetLocation() ?? new CodeLocation(), "SS3030", 
                 $"Expression type mismatch! Expected {expected?.ToString() ?? "void"}, got {evaluated.ToString() ?? "void"}");
             return false;
         }

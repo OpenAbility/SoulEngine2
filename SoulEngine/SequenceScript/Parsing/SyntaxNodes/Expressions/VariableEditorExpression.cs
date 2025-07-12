@@ -7,6 +7,6 @@ public class VariableEditorExpression : ExpressionNode
 {
     public Token Variable;
     public Token Operator;
-    public ExpressionNode Expression;
+    public ExpressionNode Expression = null!;
     public override CodeLocation GetLocation() => Variable.Location;
 }

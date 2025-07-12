@@ -7,7 +7,7 @@ public class BinaryModule
     private readonly Dictionary<string, Instruction[]> procedures = new Dictionary<string, Instruction[]>();
     private readonly Dictionary<string, string> meta = new Dictionary<string, string>();
     
-    private Instruction[] lastProcedure;
+    private Instruction[] lastProcedure = null!;
     private int lastProcedureName;
     
     public BinaryModule(ExecutionContext executionContext)

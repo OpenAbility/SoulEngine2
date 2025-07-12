@@ -39,8 +39,7 @@ public class NetworkBinaryWriter : BinaryWriter
         BinaryPrimitives.WriteInt16BigEndian(buffer, value);
         OutStream.Write(buffer);
     }
-
-    [CLSCompliant(false)]
+    
     public override void Write(ushort value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(ushort)];
@@ -54,8 +53,6 @@ public class NetworkBinaryWriter : BinaryWriter
         BinaryPrimitives.WriteInt32BigEndian(buffer, value);
         OutStream.Write(buffer);
     }
-
-    [CLSCompliant(false)]
     public override void Write(uint value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(uint)];
@@ -69,8 +66,7 @@ public class NetworkBinaryWriter : BinaryWriter
         BinaryPrimitives.WriteInt64BigEndian(buffer, value);
         OutStream.Write(buffer);
     }
-
-    [CLSCompliant(false)]
+    
     public override void Write(ulong value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];

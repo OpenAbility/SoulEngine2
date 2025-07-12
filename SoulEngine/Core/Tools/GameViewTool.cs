@@ -5,7 +5,7 @@ namespace SoulEngine.Core.Tools;
 
 public class GameViewTool : EditorTool
 {
-    public ImGuiWindow Window;
+    public ImGuiWindow Window = null!;
 
     
     public GameViewTool(Game game, Workspace workspace) : base(game, workspace)
@@ -13,7 +13,7 @@ public class GameViewTool : EditorTool
         
     }
 
-    public override void OnLoad(CompoundTag tag)
+    public override void OnLoad(CompoundTag? tag)
     {
         Window = new ImGuiWindow(Game, "Game##" + ID);
     }

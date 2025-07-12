@@ -8,7 +8,7 @@ public class BloomEffect : PostEffect
 {
     private readonly BlurPass blurPass = new BlurPass(2);
 
-    private Framebuffer framebuffer;
+    private Framebuffer framebuffer = null!;
     private readonly Shader mix;
 
     public BloomEffect() : base(2)

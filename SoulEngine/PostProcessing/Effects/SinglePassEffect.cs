@@ -7,13 +7,13 @@ namespace SoulEngine.PostProcessing.Effects;
 
 public abstract class SinglePassEffect : PostEffect
 {
-    private readonly Shader shader;
+    private readonly Shader effectShader;
 
-    private Framebuffer target;
+    private Framebuffer target = null!;
     
     public SinglePassEffect(int priority, string shaderPath) : base(0)
     {
-        shader = ResourceManager.Global.Load<Shader>(shaderPath);
+        effectShader = ResourceManager.Global.Load<Shader>(shaderPath);
     }
 
     protected virtual void BindUniforms(Shader shader)
@@ -31,14 +31,14 @@ public abstract class SinglePassEffect : PostEffect
         
         target.BindFramebuffer();
 
-        BindUniforms(shader);
+        BindUniforms(effectShader);
         
-        shader.Bind();
+        effectShader.Bind();
         surface.Framebuffer.BindColour(0);
-        shader.Uniform1i("ut_colour0", 0);
+        effectShader.Uniform1i("ut_colour0", 0);
         
         surface.Framebuffer.BindDepth(1);
-        shader.Uniform1i("ut_depth", 1);
+        effectShader.Uniform1i("ut_depth", 1);
         
         DrawQuad();
         

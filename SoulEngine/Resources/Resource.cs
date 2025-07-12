@@ -9,7 +9,7 @@ namespace SoulEngine.Resources;
 /// </summary>
 public abstract class Resource : EngineObject
 {
-    public string ResourceID { get; internal set; }
+    public string ResourceID { get; internal set; } = null!;
 }
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]

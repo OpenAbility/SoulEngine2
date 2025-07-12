@@ -28,7 +28,7 @@ public abstract class GLBContentCompiler : ContentCompiler
 
         JObject modelDef = JsonConvert.DeserializeObject<JObject>(File.ReadAllText(contentData.InputFile.FullName))!;
 
-        string glbPath = ResolvePath(contentData.InputFile.FullName, modelDef["glb"].Value<string>());
+        string glbPath = ResolvePath(contentData.InputFile.FullName, modelDef["glb"]!.Value<string>()!);
         contentData.Registry.SetString(glbKey, glbPath);
         
         return File.GetLastWriteTime(glbPath) >= contentData.LastOutputWrite;

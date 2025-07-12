@@ -11,9 +11,9 @@ public class InterruptContext
     
     public readonly ExecutionState ExecutionState;
 
-    public string InterruptID;
-    
-    public string InvalidInterruptID;
+    public string InterruptID = "";
+
+    public string InvalidInterruptID = "";
     public OpCode InvalidOpCodeID;
     
     public InterruptContext(ExecutionState executionState)

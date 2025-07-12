@@ -1,4 +1,3 @@
-using System.Reflection;
 using Hexa.NET.ImGui;
 using SoulEngine.Content;
 using SoulEngine.Core;
@@ -6,7 +5,7 @@ using SoulEngine.Data.NBT;
 using SoulEngine.Resources;
 using SoulEngine.Util;
 
-namespace SoulEngine.Props;
+namespace SoulEngine;
 
 public class AutomaticResourceProperty<T> : SerializedProperty where T : Resource
 {
@@ -25,7 +24,7 @@ public class AutomaticResourceProperty<T> : SerializedProperty where T : Resourc
         this.target = target;
 
         browser = new ContentBrowser<T>(Game.Current);
-        browser.Callback = (value) =>
+        browser.Callback += (value) =>
         {
             wrapper.SetValue(target, value);
             editedID = value?.ResourceID;

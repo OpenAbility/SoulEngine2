@@ -5,6 +5,6 @@ namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes;
 
 public class WhileStatement : SyntaxNode
 {
-    public ExpressionNode Comparison;
-    public BodyNode Body;
+    public ExpressionNode Comparison = null!;
+    public BodyNode Body = null!;
 }

@@ -24,7 +24,7 @@ public class GizmoContext : EngineObject
     private Vertex[] vertices;
     private int currentVertex = 0;
 
-    private Shader shader;
+    private Shader shader = null!;
     private readonly int vertexArray;
     private readonly int vertexBuffer;
     

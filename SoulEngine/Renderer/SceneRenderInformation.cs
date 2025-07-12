@@ -6,12 +6,12 @@ namespace SoulEngine.Renderer;
 
 public struct SceneRenderInformation()
 {
-    public IEntityCollection EntityCollection;
-    public IRenderSurface TargetSurface;
+    public IEntityCollection EntityCollection = null!;
+    public IRenderSurface TargetSurface = null!;
     public float DeltaTime;
     public UIContext? UIContext;
-    public IRenderPipeline RenderPipeline;
-    public RenderContext RenderContext;
+    public IRenderPipeline RenderPipeline = null!;
+    public RenderContext RenderContext = null!;
 
     public CameraSettings CameraSettings;
 

@@ -44,15 +44,10 @@ public class NetworkBinaryReader : BinaryReader
     }
 
     public override short ReadInt16() => BinaryPrimitives.ReadInt16BigEndian(InternalRead(stackalloc byte[sizeof(short)]));
-
-    [CLSCompliant(false)]
     public override ushort ReadUInt16() => BinaryPrimitives.ReadUInt16BigEndian(InternalRead(stackalloc byte[sizeof(ushort)]));
-
     public override int ReadInt32() => BinaryPrimitives.ReadInt32BigEndian(InternalRead(stackalloc byte[sizeof(int)]));
-    [CLSCompliant(false)]
     public override uint ReadUInt32() => BinaryPrimitives.ReadUInt32BigEndian(InternalRead(stackalloc byte[sizeof(uint)]));
     public override long ReadInt64() => BinaryPrimitives.ReadInt64BigEndian(InternalRead(stackalloc byte[sizeof(long)]));
-    [CLSCompliant(false)]
     public override ulong ReadUInt64() => BinaryPrimitives.ReadUInt64BigEndian(InternalRead(stackalloc byte[sizeof(ulong)]));
     public override unsafe Half ReadHalf() => BinaryPrimitives.ReadHalfBigEndian(InternalRead(stackalloc byte[sizeof(Half)]));
     public override unsafe float ReadSingle() => BinaryPrimitives.ReadSingleBigEndian(InternalRead(stackalloc byte[sizeof(float)]));

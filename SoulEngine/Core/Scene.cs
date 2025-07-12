@@ -17,7 +17,7 @@ public class Scene : Resource, IEntityCollection
 
     public Director? Director;
 
-    public new List<Entity> Entities = new List<Entity>();
+    public List<Entity> Entities = new List<Entity>();
     
     
     public IEnumerable<Entity> EntityEnumerable => Entities;

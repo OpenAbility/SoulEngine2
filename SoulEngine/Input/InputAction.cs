@@ -7,7 +7,6 @@ namespace SoulEngine.Input;
 
 public class InputAction : EngineObject
 {
-    private readonly EventListener<InputEvent> listener;
     private readonly InputManager manager;
     
     public InputAction(InputManager manager, EventBus<InputEvent> eventBus, string name, Keys? keyBinding, MouseButton? mouseBinding, SDL.GamepadButton? gamepadButton, SDL.GamepadAxis? gamepadAxis, int controllerIndex)

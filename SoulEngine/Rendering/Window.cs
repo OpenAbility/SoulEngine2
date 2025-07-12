@@ -342,21 +342,16 @@ public unsafe class Window : EngineObject, IRenderSurface, IDisposable
         get => SDL.GetWindowRelativeMouseMode(Handle);
         set => SDL.SetWindowRelativeMouseMode(Handle, value);
     }
-
-    private Vector2i pos;
-    private Vector2i size;
-    private bool fullscreen;
+    
 
     public bool Fullscreen
     {
-        get
-        {
-            return fullscreen;
-        }
+        get;
 
         set
         {
             SDL.SetWindowFullscreen(Handle, value);
+            field = true;
         }
     }
 

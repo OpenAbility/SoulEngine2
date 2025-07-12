@@ -488,6 +488,7 @@ public struct EnableCaps
             EnableCap.PrimitiveRestart => this.PrimitiveRestart,
             EnableCap.DebugOutput => this.DebugOutput,
             EnableCap.ShadingRateImagePerPrimitiveNv => this.ShadingRateImagePerPrimitiveNv,
+            _ => throw new NotSupportedException(),
         };
     }
 

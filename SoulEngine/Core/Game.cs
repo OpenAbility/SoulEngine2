@@ -29,7 +29,7 @@ namespace SoulEngine.Core;
 
 public abstract class Game
 {
-    public static Game Current { get; private set; }
+    public static Game Current { get; private set; } = null!;
     
     public readonly Logger Logger;
 
@@ -93,8 +93,8 @@ public abstract class Game
     public float DeltaTime { get; private set; }
 
     private float lastFrameDelta = -1;
-    
-    public IRenderPipeline RenderPipeline { get; private set; }
+
+    public IRenderPipeline RenderPipeline { get; private set; } = null!;
 
     internal readonly BuiltinActions BuiltinActions;
 
@@ -327,8 +327,7 @@ public abstract class Game
         renderSegment.Dispose();
 
         // ImGui
-        if (Development)
-        {
+#if DEVELOPMENT
             RenderPass imguiPass = new RenderPass();
             imguiPass.Name = "imgui";
             imguiPass.Surface = MainWindow;
@@ -340,11 +339,9 @@ public abstract class Game
 
             RenderContext.RebuildState();
             RenderContext.EndRendering();
-        }
-        else
-        {
+#else
             ImGuiRenderer.EndFrame(MainWindow, true);
-        }
+#endif
        
         // End-of-frame stuff
         ProfilerSegment swapSegment = Profiler.Instance.Segment("frame.swap");

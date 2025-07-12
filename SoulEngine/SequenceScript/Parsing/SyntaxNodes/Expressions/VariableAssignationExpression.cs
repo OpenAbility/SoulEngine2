@@ -6,6 +6,6 @@ namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes.Expressions;
 public class VariableAssignationExpression : ExpressionNode
 {
     public Token Variable;
-    public ExpressionNode Value;
+    public ExpressionNode Value = null!;
     public override CodeLocation GetLocation() => Variable.Location;
 }
