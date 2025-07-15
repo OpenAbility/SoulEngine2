@@ -117,6 +117,22 @@ public abstract class Component : EngineObject
         
     }
 
+    /// <summary>
+    /// Invoked whenever the entity enters a (new) scene - the new scene can be queried using <see cref="Entity.Scene"/>.
+    /// </summary>
+    public virtual void EnterScene()
+    {
+        
+    }
+    
+    /// <summary>
+    /// Invoked whenever the entity leaves a scene - the old scene can be queried using <see cref="Entity.Scene"/>.
+    /// </summary>
+    public virtual void LeaveScene()
+    {
+        
+    }
+    
     public void Reset()
     {
         foreach (var p in properties.Values)

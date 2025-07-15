@@ -79,9 +79,9 @@ public abstract class Game
 
     public readonly InputManager InputManager;
     public readonly KeyActions Keys;
-    
 
-    private SceneRenderer2 sceneRenderer;
+
+    public SceneRenderer2 SceneRenderer;
     
     public Scene? Scene { get; private set; }
 
@@ -98,7 +98,7 @@ public abstract class Game
 
     internal readonly BuiltinActions BuiltinActions;
 
-    private readonly UIContext uiContext;
+    public readonly UIContext UIContext;
 
     public readonly List<Action> UpdateHooks = new List<Action>();
 
@@ -177,9 +177,9 @@ public abstract class Game
         
         Localizator = new Localizator(this);
 
-        uiContext = new UIContext(this);
+        UIContext = new UIContext(this);
         
-        sceneRenderer = new SceneRenderer2(this);
+        SceneRenderer = new SceneRenderer2(this);
         
 #if DEVELOPMENT
 
@@ -456,12 +456,12 @@ public abstract class Game
                 if (result.Path.EndsWith(".scene"))
                 {
                     using FileStream stream = File.OpenRead(result.Path);
-                    SetScene(Scene.Loader.Load(this, (CompoundTag)TagIO.ReadCompressed(stream)));
+                    SetScene(new SceneInfo(this, (CompoundTag)TagIO.ReadCompressed(stream)).Instantiate());
                 }
                 else
                 {
                                 
-                    SetScene(Scene.Loader.Load(this, (CompoundTag)TagIO.ReadSNBT(File.ReadAllText(result.Path))));
+                    SetScene(new SceneInfo(this, (CompoundTag)TagIO.ReadSNBT(File.ReadAllText(result.Path))).Instantiate());
                 }
             }
         }
@@ -553,7 +553,7 @@ public abstract class Game
                 EntityCollection = Scene!,
                 TargetSurface = WorkspaceGameWindow,
                 DeltaTime = DeltaTime,
-                UIContext = uiContext,
+                UIContext = UIContext,
                 RenderPipeline = RenderPipeline,
                 RenderContext = RenderContext,
                 
@@ -567,7 +567,7 @@ public abstract class Game
                 RenderUI = Scene!.Director!.RenderUI
             };
 
-            sceneRenderer.PerformGameRender(renderInformation);
+            SceneRenderer.PerformGameRender(renderInformation);
         }
 
         if (WorkspaceSceneWindow?.Visible ?? false)
@@ -590,7 +590,7 @@ public abstract class Game
                                  EngineVarContext.Global.GetBool("e_scene_post"),
             };
 
-            sceneRenderer.PerformGameRender(renderInformation);
+            SceneRenderer.PerformGameRender(renderInformation);
         }
 #else
         SceneRenderInformation renderInformation = new SceneRenderInformation

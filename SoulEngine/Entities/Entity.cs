@@ -18,6 +18,7 @@ public class Entity : EngineObject, ITransformable
 {
     
     private readonly List<Component> components = new List<Component>();
+    private readonly HashSet<string> tags = new HashSet<string>();
 
     [SerializedProperty("position")] public Vector3 Position { get; set; } = Vector3.Zero;
     
@@ -65,7 +66,7 @@ public class Entity : EngineObject, ITransformable
     /// <summary>
     /// The scene that this prop is in
     /// </summary>
-    public readonly Scene Scene;
+    public Scene Scene { get; internal set; }
 
     private Texture? icon;
 
@@ -226,6 +227,23 @@ public class Entity : EngineObject, ITransformable
         }
     }
 
+    public void EnterScene()
+    {
+        foreach (var component in components.ToArray())
+        {
+            component.EnterScene();
+        }
+    }
+    
+    public void LeaveScene()
+    {
+        foreach (var component in components.ToArray())
+        {
+            component.LeaveScene();
+        }
+    }
+
+    
     public override void Edit()
     {
         string n = Name;
@@ -341,5 +359,22 @@ public class Entity : EngineObject, ITransformable
             Scale = newModel.ExtractScale();
             RotationQuat = newModel.ExtractRotation();
         }
+    }
+    
+    // Tags
+
+    public void Mark(string tag)
+    {
+        tags.Add(tag);
+    }
+
+    public void Unmark(string tag)
+    {
+        tags.Remove(tag);
+    }
+
+    public bool Marked(string tag)
+    {
+        return tags.Contains(tag);
     }
 }

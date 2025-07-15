@@ -24,11 +24,11 @@ public class SceneView : EditorTool
             {
                 bool hoveredButton = false;
                 
-                foreach (var prop in new List<Entity>(Game.Scene.Entities))
+                foreach (var entity in new List<Entity>(Game.Scene.Entities))
                 {
                     
-                    if (ImGuiUtil.ImageSelectable(prop.Icon, prop.Name + "##" + prop.GetHashCode(), Workspace.CurrentEntity == prop))
-                        Workspace.CurrentEntity = prop;
+                    if (ImGuiUtil.ImageSelectable(entity.Icon, entity.Name + "##" + entity.GetHashCode(), Workspace.CurrentEntity == entity))
+                        Workspace.CurrentEntity = entity;
 
                     if (ImGui.IsItemHovered())
                         hoveredButton = true;

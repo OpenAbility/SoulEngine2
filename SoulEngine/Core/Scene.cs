@@ -7,9 +7,7 @@ using SoulEngine.Resources;
 
 namespace SoulEngine.Core;
 
-[Resource("e.scn", typeof(Loader))]
-[ExpectedExtensions(".scene")]
-public class Scene : Resource, IEntityCollection
+public class Scene : IEntityCollection
 {
 
     public bool Running = true;
@@ -54,57 +52,23 @@ public class Scene : Resource, IEntityCollection
         }
     }
     
-    
-    public class Loader : IResourceLoader<Scene>
-    {
-
-        public static Scene Load(Game game, CompoundTag sceneTag)
-        {
-            Scene scene = new Scene(game);
-            
-            CompoundTag? entitiesTag = sceneTag.GetTag<CompoundTag>("entities");
-
-            if (entitiesTag != null)
-            {
-                foreach (string name in entitiesTag.Keys)
-                {
-                    Entity entity = new Entity(scene, name);
-                    scene.Entities.Add(entity);
-                }
-                
-                foreach (var entity in scene.Entities)
-                {
-                    CompoundTag entityTag = (CompoundTag)entitiesTag[entity.Name];
-                    entity.Load(entityTag);
-                }
-            }
-            
-            CompoundTag? directorTag = sceneTag.GetTag<CompoundTag>("director");
-            if(directorTag != null) {
-                string directorType = directorTag.GetString("$_type")!;
-
-                Director director = DirectorLoader.Create(scene, directorType);
-                scene.Director = director;
-                
-                director.Load(directorTag);
-            }
-
-            return scene;   
-        }
-        
-        public Scene LoadResource(ResourceData data)
-        {
-            return Load(data.ResourceManager.Game, (CompoundTag)TagIO.ReadCompressed(data.ResourceStream, false));
-        }
-    }
-
-
-
     public Entity AddEntity(string name)
     {
-        Entity entity = new Entity(this, name);
-        Entities.Add(entity);
+        Entity entity = new Entity(null!, name);
+        AddEntity(entity);
         return entity;
+    }
+
+    public void AddEntity(Entity entity)
+    {
+        if(entity.Scene == this)
+            return;
+        if(entity.Scene != null!)
+            entity.Scene.DeleteEntity(entity);
+        
+        entity.Scene = this;
+        Entities.Add(entity);
+        entity.EnterScene();
     }
 
     public CompoundTag Write()
@@ -128,9 +92,16 @@ public class Scene : Resource, IEntityCollection
 
     public void DeleteEntity(string name)
     {
-        Entities.RemoveAll(e => e.Name == name);
+        Entity? e = GetEntity(name);
+        if(e != null)
+            DeleteEntity(e);
     }
-    
+
+    public void DeleteEntity(Entity entity)
+    {
+        entity.LeaveScene();
+        Entities.Remove(entity);
+    }
 
     public Entity? GetEntity(string name)
     {

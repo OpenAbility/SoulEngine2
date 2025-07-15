@@ -16,12 +16,14 @@ public static class EntityTemplateFactory
         {
             Entity entity = scene.AddEntity(name);
             entity.Attach(new DynamicModelComponent(entity));
+            return entity;
         });
         
         Register("static_model", (_, name, scene) =>
         {
             Entity entity = scene.AddEntity(name);
             entity.Attach(new StaticModelComponent(entity));
+            return entity;
         });
     }
     
@@ -32,13 +34,15 @@ public static class EntityTemplateFactory
 
     public static IEnumerable<string> TemplateNames => Initializers.Keys;
 
-    public static void Initialize(string templateName, string name, Scene scene)
+    public static Entity? Initialize(string templateName, string name, Scene scene)
     {
         if (Initializers.TryGetValue(templateName, out var initializer))
         {
-            initializer(templateName, name, scene);
+            return initializer(templateName, name, scene);
         }
+
+        return null;
     }
 }
 
-public delegate void EntityFactoryInitializer(string type, string name, Scene scene);
+public delegate Entity EntityFactoryInitializer(string type, string name, Scene scene);
