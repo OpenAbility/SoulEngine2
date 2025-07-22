@@ -27,7 +27,7 @@ public struct Colour
 		return new Colour(R, G, B, alpha);
 	}
 
-	public static Colour operator *(Colour a, float b)
+	public static  Colour operator *(Colour a, float b)
 	{
 		return new Colour(a.R * b, a.G * b, a.B * b, a.A * b);
 	}
@@ -35,22 +35,22 @@ public struct Colour
 	public static Colour Lerp(Colour a, Colour b, float d)
 	{
 		return new Colour(
-			Mathf.Lerp(a.R, b.R, d),
-			Mathf.Lerp(a.G, b.G, d),
-			Mathf.Lerp(a.B, b.B, d),
-			Mathf.Lerp(a.A, b.A, d));
+			Mathx.Lerp(a.R, b.R, d),
+			Mathx.Lerp(a.G, b.G, d),
+			Mathx.Lerp(a.B, b.B, d),
+			Mathx.Lerp(a.A, b.A, d));
 	}
 
 	public static Colour LerpUnclamped(Colour a, Colour b, float d)
 	{
 		return new Colour(
-			Mathf.LerpUnclamped(a.R, b.R, d),
-			Mathf.LerpUnclamped(a.G, b.G, d),
-			Mathf.LerpUnclamped(a.B, b.B, d),
-			Mathf.LerpUnclamped(a.A, b.A, d));
+			Mathx.LerpUnclamped(a.R, b.R, d),
+			Mathx.LerpUnclamped(a.G, b.G, d),
+			Mathx.LerpUnclamped(a.B, b.B, d),
+			Mathx.LerpUnclamped(a.A, b.A, d));
 	}
 
-	public static Colour FromRgba32(byte r, byte g, byte b, byte a)
+	public static  Colour FromRgba32(byte r, byte g, byte b, byte a)
 	{
 		return new Colour(r / (float)Byte.MaxValue, g / (float)Byte.MaxValue, b / (float)Byte.MaxValue,
 			a / (float)Byte.MaxValue);
@@ -102,7 +102,7 @@ public struct Colour
 		return FromRgba32(data[0 + offset], data[1 + offset], data[2], data[3 + offset]);
 	}
 
-	public void ToRgba32(ref byte[] target, int offset = 0)
+	public readonly void ToRgba32(ref byte[] target, int offset = 0)
 	{
 		target[offset] = (byte)(R * Byte.MaxValue);
 		target[offset + 1] = (byte)(G * Byte.MaxValue);
@@ -110,7 +110,7 @@ public struct Colour
 		target[offset + 3] = (byte)(A * Byte.MaxValue);
 	}
 
-	public unsafe uint ToUint32()
+	public readonly unsafe uint ToUint32()
 	{
 		uint targetInt = 0;
 		byte* target = (byte*)&targetInt;
@@ -121,7 +121,7 @@ public struct Colour
 		return targetInt;
 	}
 
-	public byte[] ToRgba32()
+	public readonly byte[] ToRgba32()
 	{
 		return new byte[4]
 		{
@@ -144,7 +144,7 @@ public struct Colour
 
 	}
 
-	public Colour Brighten(float amount)
+	public readonly Colour Brighten(float amount)
 	{
 		return new Colour(R + amount, G + amount, B + amount, A);
 	}

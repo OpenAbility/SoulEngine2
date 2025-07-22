@@ -1,4 +1,3 @@
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using SDL3;
 using SoulEngine.Core;
 using SoulEngine.Events;
@@ -9,7 +8,7 @@ public class InputAction : EngineObject
 {
     private readonly InputManager manager;
     
-    public InputAction(InputManager manager, EventBus<InputEvent> eventBus, string name, Keys? keyBinding, MouseButton? mouseBinding, SDL.GamepadButton? gamepadButton, SDL.GamepadAxis? gamepadAxis, int controllerIndex)
+    public InputAction(InputManager manager, EventBus<InputEvent> eventBus, string name, KeyCode? keyBinding, MouseButton? mouseBinding, SDL.GamepadButton? gamepadButton, SDL.GamepadAxis? gamepadAxis, int controllerIndex)
     {
         this.manager = manager;
         
@@ -43,16 +42,16 @@ public class InputAction : EngineObject
             
         if (inputEvent is KeyEvent keyEvent && keyEvent.Key == KeyBinding)
         {
-            if (keyEvent.Action == OpenTK.Windowing.GraphicsLibraryFramework.InputAction.Press)
+            if (keyEvent.Action == ButtonAction.Press)
                 Press();
-            else if (keyEvent.Action == OpenTK.Windowing.GraphicsLibraryFramework.InputAction.Release)
+            else if (keyEvent.Action == ButtonAction.Release)
                 Release();
         }
         else if (inputEvent is MouseEvent mouseEvent && mouseEvent.Button == MouseBinding)
         {
-            if (mouseEvent.Action == OpenTK.Windowing.GraphicsLibraryFramework.InputAction.Press)
+            if (mouseEvent.Action == ButtonAction.Press)
                 Press();
-            else if (mouseEvent.Action == OpenTK.Windowing.GraphicsLibraryFramework.InputAction.Release)
+            else if (mouseEvent.Action == ButtonAction.Release)
                 Release();
         }
     }
@@ -85,7 +84,7 @@ public class InputAction : EngineObject
 
     }
 
-    public Keys? KeyBinding;
+    public KeyCode? KeyBinding;
     public MouseButton? MouseBinding;
     public SDL.GamepadButton? GamepadButton;
     public SDL.GamepadAxis? GamepadAxis;

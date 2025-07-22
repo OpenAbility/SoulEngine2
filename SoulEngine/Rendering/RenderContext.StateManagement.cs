@@ -142,11 +142,11 @@ public partial class RenderContext
             
             if (pass.ColorSettings[i].StoreOp == AttachmentStoreOp.Store)
             {
-                GL.ColorMask(true, true, true, true);
+                GL.ColorMaski((uint)i, true, true, true, true);
             }
-            else if (pass.ColorSettings[i].StoreOp == AttachmentStoreOp.DontCare)
+            else if (pass.ColorSettings[i].StoreOp == AttachmentStoreOp.DontStore)
             {
-                GL.ColorMask(false, false, false, false);
+                GL.ColorMaski((uint)i, false, false, false, false);
             }
         }
 

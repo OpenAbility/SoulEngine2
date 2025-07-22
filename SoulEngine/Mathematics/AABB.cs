@@ -159,41 +159,41 @@ public struct AABB : IEquatable<AABB>
     {
         gizmoContext.Begin(PrimitiveType.Lines);
         
-        gizmoContext.Vertex(Mathf.Swizzle(min, min, min), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(min, min, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, min, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, min, max), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(min, min, max), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(max, min, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, min, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, min, max), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(max, min, max), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(max, min, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, min, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, min, min), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(max, min, min), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(min, min, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, min, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, min, min), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(min, max, min), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(min, max, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, max, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, max, max), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(min, max, max), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(max, max, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, max, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, max, max), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(max, max, max), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(max, max, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, max, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, max, min), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(max, max, min), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(min, max, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, max, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, max, min), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(min, min, min), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(min, max, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, min, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, max, min), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(min, min, max), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(min, max, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, min, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(min, max, max), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(max, min, max), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(max, max, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, min, max), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, max, max), colour);
         
-        gizmoContext.Vertex(Mathf.Swizzle(max, min, min), colour);
-        gizmoContext.Vertex(Mathf.Swizzle(max, max, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, min, min), colour);
+        gizmoContext.Vertex(Mathx.Swizzle(max, max, min), colour);
         
         gizmoContext.End();
     }

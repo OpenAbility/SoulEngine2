@@ -13,6 +13,7 @@ public class Framebuffer : EngineObject, IRenderSurface
     public readonly int Handle;
 
     public readonly int ColourBuffer;
+    public readonly int NormalBuffer;
     public readonly int DepthBuffer;
     
     public Vector2i FramebufferSize { get; private set; }
@@ -31,19 +32,32 @@ public class Framebuffer : EngineObject, IRenderSurface
 
         ColourBuffer = GL.CreateTexture(TextureTarget.Texture2d);
         DepthBuffer = GL.CreateTexture(TextureTarget.Texture2d);
+        NormalBuffer = GL.CreateTexture(TextureTarget.Texture2d);
         
-        GL.TextureStorage2D(ColourBuffer, 1, SizedInternalFormat.Rgb32f, size.X, size.Y);
-        GL.TextureStorage2D(DepthBuffer, 1, SizedInternalFormat.DepthComponent32f, size.X, size.Y);
+        GL.TextureStorage2D(ColourBuffer, 1, SizedInternalFormat.Rgb16f, size.X, size.Y);
+        GL.TextureStorage2D(NormalBuffer, 1, SizedInternalFormat.Rgb8, size.X, size.Y);
+        GL.TextureStorage2D(DepthBuffer, 1, SizedInternalFormat.Depth24Stencil8, size.X, size.Y);
 
         GL.TextureParameteri(ColourBuffer, TextureParameterName.TextureWrapR, (int)TextureWrapMode.ClampToEdge);
         GL.TextureParameteri(ColourBuffer, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
         GL.TextureParameteri(ColourBuffer, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
         
+        GL.TextureParameteri(NormalBuffer, TextureParameterName.TextureWrapR, (int)TextureWrapMode.ClampToEdge);
+        GL.TextureParameteri(NormalBuffer, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+        GL.TextureParameteri(NormalBuffer, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+        
         GL.NamedFramebufferTexture(Handle, FramebufferAttachment.ColorAttachment0, ColourBuffer, 0);
+        GL.NamedFramebufferTexture(Handle, FramebufferAttachment.ColorAttachment1, NormalBuffer, 0);
         GL.NamedFramebufferTexture(Handle, FramebufferAttachment.DepthAttachment, DepthBuffer, 0);
         //GL.NamedFramebufferRenderbuffer(Handle, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthBuffer);
 
-        GL.NamedFramebufferDrawBuffer(Handle, ColorBuffer.ColorAttachment0);
+        ColorBuffer[] drawBuffers = [
+            ColorBuffer.ColorAttachment0,
+            ColorBuffer.ColorAttachment1
+        ];
+        
+        GL.NamedFramebufferDrawBuffers(Handle, drawBuffers.Length, drawBuffers);
+
         GL.NamedFramebufferReadBuffer(Handle, ColorBuffer.ColorAttachment0);
         
         var status = GL.CheckNamedFramebufferStatus(Handle, FramebufferTarget.Framebuffer);

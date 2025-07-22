@@ -25,10 +25,11 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         ResourceManager.Global.Load<ComputeShader>("shader/comp/skeleton_anim.comp");
 
     private readonly int vertexArray;
-    private readonly List<MeshRenderProperties> renders = new List<MeshRenderProperties>();
-    private readonly List<DrawListData> drawLists = new List<DrawListData>();
     private readonly Dictionary<IRenderSurface, PostProcessor> postProcessors =
         new Dictionary<IRenderSurface, PostProcessor>();
+
+    private readonly Dictionary<RenderLayer, RenderLayerData> renderLayers =
+        new Dictionary<RenderLayer, RenderLayerData>();
     
     private GpuBuffer<Matrix4> skeletonBuffer;
     
@@ -37,7 +38,6 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 
     public const BufferStorageMask SkeletonBufferParameters =
         BufferStorageMask.MapWriteBit | BufferStorageMask.DynamicStorageBit;
-    public const BufferStorageMask SkinnedMeshBufferParameters = BufferStorageMask.DynamicStorageBit;
 
     public DefaultRenderPipeline()
     {
@@ -53,6 +53,18 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         }
 
         lastShadowBufferSize = shadowResolution;
+        
+        RegisterRenderLayer(DefaultRenderLayers.OpaqueLayer);
+    }
+
+    public void RegisterRenderLayer(RenderLayer renderLayer)
+    {
+        renderLayers.Add(renderLayer, new RenderLayerData(renderLayer));
+    }
+
+    public void DeregisterRenderLayer(RenderLayer renderLayer)
+    {
+        renderLayers.Remove(renderLayer);
     }
     
     public void SubmitMeshRender(RenderLayer renderLayer, MeshRenderProperties renderProperties)
@@ -61,7 +73,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
             renderProperties.Material = defaultMaterial;
         
         
-        renders.Add(renderProperties);
+        renderLayers[renderLayer].MeshRenders.Add(renderProperties);
     }
 
     public void SubmitDrawList(RenderLayer renderLayer, DrawListData drawListData)
@@ -69,8 +81,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         if(drawListData.Material == null!)
             drawListData.Material = defaultMaterial;
         
-        
-        drawLists.Add(drawListData);
+        renderLayers[renderLayer].DrawLists.Add(drawListData);
     }
 
     public IEnumerable<RenderLayer> GetLayers()
@@ -116,76 +127,116 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         {
             ShadowsPass(pipelineData);
         }
-        
-        RenderPass pass = new RenderPass
-        {
-            Name = "Main Pass",
-            Surface = pipelineData.PostProcessing ? postProcessableSurface! : pipelineData.TargetSurface,
-        };
-        pass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
-        pass.DepthStencilSettings.StoreOp = AttachmentStoreOp.Store;
-        pass.DepthStencilSettings.ClearValue.Depth = 1;
 
-        pass.ColorSettings =
-        [
-            new FramebufferAttachmentSettings()
+        #region G PASS
+        
+        {
+            RenderPass gPass = new RenderPass
             {
-                LoadOp = AttachmentLoadOp.Clear,
-                ClearValue = new FramebufferClearValue()
+                Name = "G-Buffer Pass",
+                Surface = pipelineData.PostProcessing ? postProcessableSurface! : pipelineData.TargetSurface,
+            };
+            gPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
+            gPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.Store;
+            gPass.DepthStencilSettings.ClearValue.Depth = 1;
+
+            gPass.ColorSettings =
+            [
+                new FramebufferAttachmentSettings()
                 {
-                    Colour = Colour.Blank
+                    LoadOp = AttachmentLoadOp.Clear,
+                    ClearValue = new FramebufferClearValue()
+                    {
+                        Colour = Colour.SkyBlue
+                    },
+                    StoreOp = AttachmentStoreOp.DontStore
                 },
-                StoreOp =  AttachmentStoreOp.Store
-            }
-        ];
-        
-        
-        renderContext.BeginRendering(pass);
-        
-        renderContext.Enable(EnableCap.DepthTest);
-        renderContext.Enable(EnableCap.CullFace);
-        renderContext.DepthFunction(DepthFunction.Less);
-        //renderContext.Enable(EnableCap.FramebufferSrgb);
-        renderContext.DepthRange(-1, 1);
+                new FramebufferAttachmentSettings()
+                {
+                    LoadOp = AttachmentLoadOp.DontCare,
+                    StoreOp = AttachmentStoreOp.Store
+                }
+            ];
 
-        foreach (var render in renders)
-        {
 
-            render.Mesh.LockUpdates();
-            
-            GpuBuffer<Vertex>? vertexBuffer = render.Mesh.GetVertexBuffer();
-            GpuBuffer<uint>? indexBuffer = render.Mesh.GetIndexBuffer();
+            renderContext.BeginRendering(gPass);
 
-            if (render.PerformSkeletonDeformation)
-                vertexBuffer = render.DeformationCache;
-            
-            if (vertexBuffer == null || indexBuffer == null)
+            renderContext.Enable(EnableCap.DepthTest);
+            renderContext.Enable(EnableCap.CullFace);
+            renderContext.DepthFunction(DepthFunction.Less);
+            renderContext.DepthRange(-1, 1);
+
+            foreach (var layer in renderLayers.Values)
             {
-                render.Mesh.UnlockUpdates();
-                continue;
+                if(!layer.RenderLayer.DualPass)
+                    continue;
+                RenderLayerDraw draw = new RenderLayerDraw();
+                draw.PipelineData = pipelineData;
+                draw.RenderMode = RenderMode.DeferredPass;
+                draw.Layer = layer;
+                
+                DrawRenderLayer(draw);
             }
 
-
-            render.Material.BindShader();
-            render.Material.BindCamera(pipelineData.CameraSettings, render.ModelMatrix);
-            render.Material.BindUniforms();
-            render.Material.BindShadows(pipelineData.ShadowCameraSettings, shadowBuffers);
-            
-            render.Material.Shader.Uniform1i("ub_skeleton", 0);
-            render.Material.Shader.Uniform1i("ui_shadow_index", 1);
-            render.Material.Shader.BindBuffer("ib_vertex_buffer", vertexBuffer, 0, vertexBuffer.Length);
-            
-            render.Material.Shader.Uniform1i("ub_shadows", pipelineData.EnableShadows ? 1 : 0);
-
-            Mesh.Draw(vertexBuffer, indexBuffer, indexBuffer.Length, vertexArray);
-            
-            render.Mesh.UnlockUpdates();
+            renderContext.EndRendering();
         }
-        
-        
-        renderContext.EndRendering();
-        
-        
+                
+
+        #endregion
+
+        #region FINAL PASS
+
+        {
+            RenderPass finalPass = new RenderPass
+            {
+                Name = "Final Render Pass",
+                Surface = pipelineData.PostProcessing ? postProcessableSurface! : pipelineData.TargetSurface,
+            };
+            finalPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Load;
+            finalPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.DontStore;
+
+            finalPass.ColorSettings =
+            [
+                new FramebufferAttachmentSettings()
+                {
+                    LoadOp = AttachmentLoadOp.Load,
+                    ClearValue = new FramebufferClearValue()
+                    {
+                        Colour = Colour.Blank
+                    },
+                    StoreOp = AttachmentStoreOp.Store
+                },
+                new FramebufferAttachmentSettings()
+                {
+                    LoadOp = AttachmentLoadOp.Load,
+                    StoreOp = AttachmentStoreOp.DontStore
+                }
+            ];
+
+
+            renderContext.BeginRendering(finalPass);
+
+            renderContext.Enable(EnableCap.DepthTest);
+            renderContext.Enable(EnableCap.CullFace);
+            renderContext.DepthFunction(DepthFunction.Equal);
+            renderContext.DepthRange(-1, 1);
+
+            foreach (var layer in renderLayers.Values)
+            {
+                RenderLayerDraw draw = new RenderLayerDraw();
+                draw.PipelineData = pipelineData;
+                draw.RenderMode = RenderMode.FinalPass;
+                draw.Layer = layer;
+                
+                DrawRenderLayer(draw);
+            }
+            
+            renderContext.EndRendering();
+        }
+
+        #endregion
+
+
         if(pipelineData.PostProcessing)
             postProcessor!.FinishedDrawing(renderContext, postProcessableSurface!);
 
@@ -198,7 +249,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
                 Surface = pipelineData.TargetSurface,
             };
             gizmoPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.DontCare;
-            gizmoPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.DontCare;
+            gizmoPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.DontStore;
             gizmoPass.DepthStencilSettings.ClearValue.Depth = 1;
 
             gizmoPass.ColorSettings =
@@ -231,7 +282,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
             Surface = pipelineData.TargetSurface,
         };
         uiPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
-        uiPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.DontCare;
+        uiPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.DontStore;
         uiPass.DepthStencilSettings.ClearValue.Depth = 1;
 
         uiPass.ColorSettings =
@@ -263,8 +314,11 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         renderContext.EndRendering();
 
 
-        renders.Clear();
-        drawLists.Clear();
+        foreach (var layer in renderLayers.Values)
+        {
+            layer.MeshRenders.Clear();
+            layer.DrawLists.Clear();
+        }
         
         if(EngineVarContext.Global.GetBool("e_gl_wait", true))
             GL.Finish();
@@ -272,9 +326,14 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 
     private void SkinningPass()
     {
-        foreach (var render in renders)
+        foreach (var layer in renderLayers.Values)
         {
-            CalculateSkinning(render);
+            if(!layer.RenderLayer.Skeletal)
+                continue;
+            foreach (var render in layer.MeshRenders)
+            {
+                CalculateSkinning(render);
+            }
         }
     }
 
@@ -354,14 +413,37 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         
         GL.CullFace(TriangleFace.Front);
 
-        foreach (var render in renders)
+        foreach (var layer in renderLayers.Values)
+        {
+            if(!layer.RenderLayer.ShadowCasting)
+                continue;
+            
+            RenderLayerDraw draw = new RenderLayerDraw
+            {
+                RenderMode = RenderMode.ShadowRendering,
+                PipelineData = pipelineData,
+                ShadowIndex = bufferID,
+                Layer = layer
+            };
+
+            DrawRenderLayer(draw);
+        }
+        
+        GL.CullFace(TriangleFace.Back);
+        
+        renderContext.EndRendering();
+    }
+
+    private void DrawRenderLayer(RenderLayerDraw draw)
+    {
+        foreach (var render in draw.Layer.MeshRenders)
         {
 
             render.Mesh.LockUpdates();
-            
+
             GpuBuffer<Vertex>? vertexBuffer = render.Mesh.GetVertexBuffer();
             GpuBuffer<uint>? indexBuffer = render.Mesh.GetIndexBuffer();
-            
+
             if (render.PerformSkeletonDeformation)
                 vertexBuffer = render.DeformationCache;
 
@@ -370,22 +452,68 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
                 render.Mesh.UnlockUpdates();
                 continue;
             }
-            
+
+
             render.Material.BindShader();
-            render.Material.BindShadowPassCamera(pipelineData.ShadowCameraSettings, render.ModelMatrix);
-            render.Material.BindUniforms();
-            render.Material.Shader.Uniform1i("ub_skeleton", 0);
-            render.Material.Shader.Uniform1i("ui_shadow_index", 1 << bufferID);
+
+            if (draw.RenderMode == RenderMode.ShadowRendering)
+            {
+                render.Material.BindShadowPassCamera(draw.PipelineData.ShadowCameraSettings, render.ModelMatrix);
+                render.Material.Shader.Uniform1i("ui_shadow_index", 1 << draw.ShadowIndex);
+            } else if (draw.RenderMode == RenderMode.FinalPass)
+            {
+                bool shadows = draw.PipelineData.EnableShadows && draw.Layer.RenderLayer.ShadowReceiver;
+                
+                render.Material.BindCamera(draw.PipelineData.CameraSettings, render.ModelMatrix);
+                render.Material.BindShadows(draw.PipelineData.ShadowCameraSettings, shadowBuffers);
+                render.Material.Shader.Uniform1i("ub_shadows", shadows ? 1 : 0);
+                render.Material.Shader.Uniform1i("ui_shadow_index", 1);
+                render.Material.Shader.Uniform1i("ub_shaded", 1);
+                
+            } else if (draw.RenderMode == RenderMode.DeferredPass)
+            {
+                render.Material.BindCamera(draw.PipelineData.CameraSettings, render.ModelMatrix);
+                render.Material.Shader.Uniform1i("ui_shadow_index", 1);
+                render.Material.Shader.Uniform1i("ub_shaded", 0);
+            }
             
-            render.Material.Shader.BindBuffer("ib_vertex_buffer", vertexBuffer!, 0, vertexBuffer!.Length);
+            render.Material.BindUniforms();
+            
+            render.Material.Shader.BindBuffer("ib_vertex_buffer", vertexBuffer, 0, vertexBuffer.Length);
             
             Mesh.Draw(vertexBuffer, indexBuffer, indexBuffer.Length, vertexArray);
-            
+
             render.Mesh.UnlockUpdates();
         }
-        
-        GL.CullFace(TriangleFace.Back);
-        
-        renderContext.EndRendering();
+    }
+
+
+    private class RenderLayerData
+    {
+        public readonly List<MeshRenderProperties> MeshRenders = new List<MeshRenderProperties>();
+        public readonly List<DrawListData> DrawLists = new List<DrawListData>();
+
+        public readonly RenderLayer RenderLayer;
+
+        public RenderLayerData(RenderLayer renderLayer)
+        {
+            RenderLayer = renderLayer;
+        }
+    }
+    
+    private struct RenderLayerDraw
+    {
+        public PipelineData PipelineData;
+        public RenderLayerData Layer;
+        public RenderMode RenderMode;
+
+        public int ShadowIndex;
+    }
+    
+    private enum RenderMode
+    {
+        ShadowRendering,
+        DeferredPass,
+        FinalPass
     }
 }

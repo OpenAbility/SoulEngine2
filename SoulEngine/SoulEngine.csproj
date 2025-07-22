@@ -51,8 +51,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="OpenTK.Graphics" Version="5.0.0-pre.13" />
-    <PackageReference Include="OpenTK.Windowing.GraphicsLibraryFramework" Version="5.0.0-pre.13" />
+    <PackageReference Include="OpenTK.Graphics" Version="5.0.0-pre.14" />
     <PackageReference Include="SDL3-CS" Version="3.2.10" />
   </ItemGroup>
   

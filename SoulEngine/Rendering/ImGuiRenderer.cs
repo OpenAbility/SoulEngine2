@@ -1,16 +1,14 @@
 // We only need ImGui in dev builds
 
-using System.Drawing;
-using System.Resources;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGuizmo;
 using Hexa.NET.ImPlot;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using SoulEngine.Core;
 using SoulEngine.Data;
 using SoulEngine.Events;
+using SoulEngine.Input;
 using SoulEngine.Mathematics;
 using ResourceManager = SoulEngine.Resources.ResourceManager;
 using Vector2 = System.Numerics.Vector2;
@@ -24,7 +22,7 @@ public unsafe class ImGuiRenderer : EngineObject
     public readonly ImGuiContextPtr Context;
     public readonly IntPtr GizmoContext;
     private readonly ImPlotContextPtr PlotContext;
-    public readonly ImGuiIOPtr IO;
+    public ImGuiIOPtr IO { get; private set; }
 
     private int fontTexture = -1;
     private int vao;
@@ -33,6 +31,10 @@ public unsafe class ImGuiRenderer : EngineObject
 
     private int vboSize = -1;
     private int eboSize = -1;
+
+    // Pairs of 2, (Shift, Control, Alt, Super) Left, Right
+    private bool[] specialKeys = new bool[8];
+    
 
     private Shader shader;
 
@@ -64,8 +66,8 @@ public unsafe class ImGuiRenderer : EngineObject
         vbo = GL.CreateBuffer();
         ebo = GL.CreateBuffer();
         
-        GL.NamedBufferData(vbo, 2000, null, VertexBufferObjectUsage.StreamDraw);
-        GL.NamedBufferData(ebo, 2000, null, VertexBufferObjectUsage.StreamDraw);
+        GL.NamedBufferData(vbo, 2000, null, BufferUsage.StreamDraw);
+        GL.NamedBufferData(ebo, 2000, null, BufferUsage.StreamDraw);
 
         vboSize = 2000;
         eboSize = 2000;
@@ -120,10 +122,17 @@ public unsafe class ImGuiRenderer : EngineObject
 
     public void BeginFrame(Window window, float deltaTime)
     {
+        IO = ImGui.GetIO();
+        
         Vector2i fbSize = window.WindowSize;
 
         IO.DisplaySize = new Vector2(fbSize.X, fbSize.Y);
         IO.DeltaTime = deltaTime;
+
+        IO.KeyShift = specialKeys[0] || specialKeys[1];
+        IO.KeyCtrl = specialKeys[2] || specialKeys[3];
+        IO.KeyAlt = specialKeys[4] || specialKeys[5];
+        IO.KeySuper = specialKeys[6] || specialKeys[7];
 
         ImGui.NewFrame();
         ImGuizmo.BeginFrame();
@@ -146,20 +155,24 @@ public unsafe class ImGuiRenderer : EngineObject
             IO.MousePos = cursorEvent.Position;
             if (IO.WantCaptureMouse)
                 cursorEvent.Handle();
-        } else if (inputEvent is MouseEvent mouseEvent && mouseEvent.Action != InputAction.Repeat)
+        } else if (inputEvent is MouseEvent mouseEvent && mouseEvent.Action != ButtonAction.Repeat)
         {
-            IO.AddMouseButtonEvent((int)mouseEvent.Button, mouseEvent.Action == InputAction.Press);
+            IO.AddMouseButtonEvent((int)mouseEvent.Button, mouseEvent.Action == ButtonAction.Press);
             if (IO.WantCaptureMouse)
                 mouseEvent.Handle();
-        } else if (inputEvent is KeyEvent keyEvent && keyEvent.Action != InputAction.Repeat)
+        } else if (inputEvent is KeyEvent keyEvent && keyEvent.Action != ButtonAction.Repeat)
         {
 
-            IO.KeyAlt = (keyEvent.Modifier & KeyModifiers.Alt) != 0;
-            IO.KeyCtrl = (keyEvent.Modifier & KeyModifiers.Control) != 0;
-            IO.KeyShift = (keyEvent.Modifier & KeyModifiers.Shift) != 0;
-            IO.KeySuper = (keyEvent.Modifier & KeyModifiers.Super) != 0;
+            if (keyEvent.Key == KeyCode.LeftShift) specialKeys[0] = keyEvent.Action == ButtonAction.Press;
+            else if (keyEvent.Key == KeyCode.RightShift) specialKeys[1] = keyEvent.Action == ButtonAction.Press;
+            else if (keyEvent.Key == KeyCode.LeftControl) specialKeys[2] = keyEvent.Action == ButtonAction.Press;
+            else if (keyEvent.Key == KeyCode.RightControl) specialKeys[3] = keyEvent.Action == ButtonAction.Press;
+            else if (keyEvent.Key == KeyCode.LeftAlt) specialKeys[4] = keyEvent.Action == ButtonAction.Press;
+            else if (keyEvent.Key == KeyCode.RightAlt) specialKeys[5] = keyEvent.Action == ButtonAction.Press;
+            else if (keyEvent.Key == KeyCode.LeftSuper) specialKeys[6] = keyEvent.Action == ButtonAction.Press;
+            else if (keyEvent.Key == KeyCode.RightSuper) specialKeys[7] = keyEvent.Action == ButtonAction.Press;
             
-            IO.AddKeyEvent(TranslateKey(keyEvent.Key), keyEvent.Action == InputAction.Press);
+            IO.AddKeyEvent(TranslateKey(keyEvent.Key), keyEvent.Action == ButtonAction.Press);
             if (IO.WantCaptureKeyboard)
                 keyEvent.Handle();
         } else if (inputEvent is TypeEvent typeEvent)
@@ -206,14 +219,14 @@ public unsafe class ImGuiRenderer : EngineObject
             if (vtxSize > vboSize)
             {
                 vboSize = (int)(vtxSize * 1.5f);
-                GL.NamedBufferData(vbo, vboSize, null, VertexBufferObjectUsage.StreamDraw);
+                GL.NamedBufferData(vbo, vboSize, null, BufferUsage.StreamDraw);
             }
 
             int idxSize = drawList.IdxBuffer.Size * sizeof(ushort);
             if (idxSize > eboSize)
             {
                 eboSize = (int)(idxSize * 1.5f);
-                GL.NamedBufferData(ebo, eboSize, null, VertexBufferObjectUsage.StreamDraw);
+                GL.NamedBufferData(ebo, eboSize, null, BufferUsage.StreamDraw);
             }
 
             GL.NamedBufferSubData(vbo, 0, drawList.VtxBuffer.Size * sizeof(ImDrawVert), drawList.VtxBuffer.Data);
@@ -248,69 +261,69 @@ public unsafe class ImGuiRenderer : EngineObject
 
     }
 
-    private static ImGuiKey TranslateKey(Keys key)
+    private static ImGuiKey TranslateKey(KeyCode key)
     {
-        if (key >= Keys.D0 && key <= Keys.D9)
-            return key - Keys.D0 + ImGuiKey.Key0;
+        if (key >= KeyCode.D0 && key <= KeyCode.D9)
+            return key - KeyCode.D0 + ImGuiKey.Key0;
 
-        if (key >= Keys.A && key <= Keys.Z)
-            return key - Keys.A + ImGuiKey.A;
+        if (key >= KeyCode.A && key <= KeyCode.Z)
+            return key - KeyCode.A + ImGuiKey.A;
 
-        if (key >= Keys.KeyPad0 && key <= Keys.KeyPad9)
-            return key - Keys.KeyPad0 + ImGuiKey.Keypad0;
+        if (key >= KeyCode.KeyPad0 && key <= KeyCode.KeyPad9)
+            return key - KeyCode.KeyPad0 + ImGuiKey.Keypad0;
 
-        if (key >= Keys.F1 && key <= Keys.F24)
-            return key - Keys.F1 + ImGuiKey.F24;
+        if (key >= KeyCode.F1 && key <= KeyCode.F24)
+            return key - KeyCode.F1 + ImGuiKey.F24;
 
         switch (key)
         {
-            case Keys.Tab: return ImGuiKey.Tab;
-            case Keys.Left: return ImGuiKey.LeftArrow;
-            case Keys.Right: return ImGuiKey.RightArrow;
-            case Keys.Up: return ImGuiKey.UpArrow;
-            case Keys.Down: return ImGuiKey.DownArrow;
-            case Keys.PageUp: return ImGuiKey.PageUp;
-            case Keys.PageDown: return ImGuiKey.PageDown;
-            case Keys.Home: return ImGuiKey.Home;
-            case Keys.End: return ImGuiKey.End;
-            case Keys.Insert: return ImGuiKey.Insert;
-            case Keys.Delete: return ImGuiKey.Delete;
-            case Keys.Backspace: return ImGuiKey.Backspace;
-            case Keys.Space: return ImGuiKey.Space;
-            case Keys.Enter: return ImGuiKey.Enter;
-            case Keys.Escape: return ImGuiKey.Escape;
-            case Keys.Apostrophe: return ImGuiKey.Apostrophe;
-            case Keys.Comma: return ImGuiKey.Comma;
-            case Keys.Minus: return ImGuiKey.Minus;
-            case Keys.Period: return ImGuiKey.Period;
-            case Keys.Slash: return ImGuiKey.Slash;
-            case Keys.Semicolon: return ImGuiKey.Semicolon;
-            case Keys.Equal: return ImGuiKey.Equal;
-            case Keys.LeftBracket: return ImGuiKey.LeftBracket;
-            case Keys.Backslash: return ImGuiKey.Backslash;
-            case Keys.RightBracket: return ImGuiKey.RightBracket;
-            case Keys.GraveAccent: return ImGuiKey.GraveAccent;
-            case Keys.CapsLock: return ImGuiKey.CapsLock;
-            case Keys.ScrollLock: return ImGuiKey.ScrollLock;
-            case Keys.NumLock: return ImGuiKey.NumLock;
-            case Keys.PrintScreen: return ImGuiKey.PrintScreen;
-            case Keys.Pause: return ImGuiKey.Pause;
-            case Keys.KeyPadDecimal: return ImGuiKey.KeypadDecimal;
-            case Keys.KeyPadDivide: return ImGuiKey.KeypadDivide;
-            case Keys.KeyPadMultiply: return ImGuiKey.KeypadMultiply;
-            case Keys.KeyPadSubtract: return ImGuiKey.KeypadSubtract;
-            case Keys.KeyPadAdd: return ImGuiKey.KeypadAdd;
-            case Keys.KeyPadEnter: return ImGuiKey.KeypadEnter;
-            case Keys.KeyPadEqual: return ImGuiKey.KeypadEqual;
-            case Keys.LeftShift: return ImGuiKey.LeftShift;
-            case Keys.LeftControl: return ImGuiKey.LeftCtrl;
-            case Keys.LeftAlt: return ImGuiKey.LeftAlt;
-            case Keys.LeftSuper: return ImGuiKey.LeftSuper;
-            case Keys.RightShift: return ImGuiKey.RightShift;
-            case Keys.RightControl: return ImGuiKey.RightCtrl;
-            case Keys.RightAlt: return ImGuiKey.RightAlt;
-            case Keys.RightSuper: return ImGuiKey.RightSuper;
-            case Keys.Menu: return ImGuiKey.Menu;
+            case KeyCode.Tab: return ImGuiKey.Tab;
+            case KeyCode.Left: return ImGuiKey.LeftArrow;
+            case KeyCode.Right: return ImGuiKey.RightArrow;
+            case KeyCode.Up: return ImGuiKey.UpArrow;
+            case KeyCode.Down: return ImGuiKey.DownArrow;
+            case KeyCode.PageUp: return ImGuiKey.PageUp;
+            case KeyCode.PageDown: return ImGuiKey.PageDown;
+            case KeyCode.Home: return ImGuiKey.Home;
+            case KeyCode.End: return ImGuiKey.End;
+            case KeyCode.Insert: return ImGuiKey.Insert;
+            case KeyCode.Delete: return ImGuiKey.Delete;
+            case KeyCode.Backspace: return ImGuiKey.Backspace;
+            case KeyCode.Space: return ImGuiKey.Space;
+            case KeyCode.Enter: return ImGuiKey.Enter;
+            case KeyCode.Escape: return ImGuiKey.Escape;
+            case KeyCode.Apostrophe: return ImGuiKey.Apostrophe;
+            case KeyCode.Comma: return ImGuiKey.Comma;
+            case KeyCode.Minus: return ImGuiKey.Minus;
+            case KeyCode.Period: return ImGuiKey.Period;
+            case KeyCode.Slash: return ImGuiKey.Slash;
+            case KeyCode.Semicolon: return ImGuiKey.Semicolon;
+            case KeyCode.Equal: return ImGuiKey.Equal;
+            case KeyCode.LeftBracket: return ImGuiKey.LeftBracket;
+            case KeyCode.Backslash: return ImGuiKey.Backslash;
+            case KeyCode.RightBracket: return ImGuiKey.RightBracket;
+            case KeyCode.GraveAccent: return ImGuiKey.GraveAccent;
+            case KeyCode.CapsLock: return ImGuiKey.CapsLock;
+            case KeyCode.ScrollLock: return ImGuiKey.ScrollLock;
+            case KeyCode.NumLock: return ImGuiKey.NumLock;
+            case KeyCode.PrintScreen: return ImGuiKey.PrintScreen;
+            case KeyCode.Pause: return ImGuiKey.Pause;
+            case KeyCode.KeyPadDecimal: return ImGuiKey.KeypadDecimal;
+            case KeyCode.KeyPadDivide: return ImGuiKey.KeypadDivide;
+            case KeyCode.KeyPadMultiply: return ImGuiKey.KeypadMultiply;
+            case KeyCode.KeyPadSubtract: return ImGuiKey.KeypadSubtract;
+            case KeyCode.KeyPadAdd: return ImGuiKey.KeypadAdd;
+            case KeyCode.KeyPadEnter: return ImGuiKey.KeypadEnter;
+            case KeyCode.KeyPadEqual: return ImGuiKey.KeypadEqual;
+            case KeyCode.LeftShift: return ImGuiKey.LeftShift;
+            case KeyCode.LeftControl: return ImGuiKey.LeftCtrl;
+            case KeyCode.LeftAlt: return ImGuiKey.LeftAlt;
+            case KeyCode.LeftSuper: return ImGuiKey.LeftSuper;
+            case KeyCode.RightShift: return ImGuiKey.RightShift;
+            case KeyCode.RightControl: return ImGuiKey.RightCtrl;
+            case KeyCode.RightAlt: return ImGuiKey.RightAlt;
+            case KeyCode.RightSuper: return ImGuiKey.RightSuper;
+            case KeyCode.Menu: return ImGuiKey.Menu;
             default: return ImGuiKey.None;
         }
     }

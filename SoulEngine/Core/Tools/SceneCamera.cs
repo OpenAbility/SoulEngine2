@@ -19,7 +19,7 @@ public class SceneCamera : EngineObject
     public float Near = 0.1f;
     public float Far = 1000f;
     
-    public Quaternion Rotation => Quaternion.FromEulerAngles(0, Yaw * Mathf.Deg2Rad,0) * Quaternion.FromEulerAngles(Pitch * Mathf.Deg2Rad, 0, 0);
+    public Quaternion Rotation => Quaternion.FromEulerAngles(0, Yaw * Mathx.Deg2Rad,0) * Quaternion.FromEulerAngles(Pitch * Mathx.Deg2Rad, 0, 0);
 
     public Vector3 Forward => Rotation * -Vector3.UnitZ;
     public Vector3 Right => Rotation * Vector3.UnitX;

@@ -1,5 +1,4 @@
 using System.Numerics;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using SDL3;
 using SoulEngine.Core;
 using SoulEngine.Events;
@@ -75,7 +74,7 @@ public class InputManager : EngineObject
         private bool finished = false;
         private readonly InputManager manager;
         private string name = "";
-        private Keys? key;
+        private KeyCode? key;
         private MouseButton? mouseButton;
         private SDL.GamepadButton? gamepadButton;
         private SDL.GamepadAxis? gamepadAxis;
@@ -92,7 +91,7 @@ public class InputManager : EngineObject
             return this;
         }
         
-        public ActionBuilder Bind(Keys? key)
+        public ActionBuilder Bind(KeyCode? key)
         {
             this.key = key;
             return this;

@@ -37,5 +37,5 @@ public enum AttachmentLoadOp
 public enum AttachmentStoreOp
 {
     Store,
-    DontCare
+    DontStore
 }

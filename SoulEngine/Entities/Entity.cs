@@ -27,8 +27,8 @@ public class Entity : EngineObject, ITransformable
 
     public Vector3 RotationEuler
     {
-        get => RotationQuat.ToEulerAngles() * Mathf.Rag2Deg;
-        set => RotationQuat = Quaternion.FromEulerAngles(value * Mathf.Deg2Rad);
+        get => RotationQuat.ToEulerAngles() * Mathx.Rag2Deg;
+        set => RotationQuat = Quaternion.FromEulerAngles(value * Mathx.Deg2Rad);
     }
 
     [SerializedProperty("scale")] public Vector3 Scale { get; set; } = Vector3.One;
@@ -201,14 +201,12 @@ public class Entity : EngineObject, ITransformable
             components.Add(component);
             
             tags.Add((component, componentTag));
-            
-            
         }
 
-        Parallel.ForEach(tags, ctag =>
+        foreach (var ctag in tags)
         {
             ctag.component.Load(ctag.tag);
-        });
+        }
     }
 
     public void Render(IRenderPipeline renderPipeline, float deltaTime)

@@ -5,7 +5,8 @@ in vec4 v_colour;
 
 in vec4 v_shadow_positon;
 
-out vec4 f_colour;
+layout(location=0) out vec4 f_colour;
+layout(location=1) out vec3 f_normal;
 
 uniform sampler2D ut_albedoTexture;
 uniform vec4 uc_albedoColour = vec4(1);
@@ -14,29 +15,7 @@ uniform sampler2D ut_shadow_buffers[3];
 uniform vec3 um_shadow_direction;
 uniform bool ub_shadows;
 
-/*
-void main() {
-    vec3 coords_ndc = v_shadow_positon.xyz / v_shadow_positon.w;
-    vec3 coords_uv = coords_ndc * 0.5f + 0.5f;
-
-    float maxExtent = max(abs(coords_ndc.x), abs(coords_ndc.y));
-
-    int buffer_index = int(floor(log2(maxExtent))) + 1;
-    if(maxExtent < 1.0f)
-    buffer_index = 0;
-
-    //if(buffer_index >= 3)
-    //    return 0.0f;
-
-    //buffer_index = 0;
-
-    if(buffer_index == 1)
-        coords_uv /= 1.5f;
-    
-    f_colour = vec4(coords_uv.xy, 0.0f, 1.0f);
-}
-*/
-
+uniform bool ub_shaded;
 
 float sampleShadows() {
     
@@ -90,25 +69,42 @@ float sampleShadows() {
     
 }
 
-
-void main() {
+void shade() {
     vec3 sunDir = normalize(vec3(0, 1, 0));
-    
+
     vec3 lighting = vec3(0.5f);
-    
+
     vec3 normal = v_normal;
     if(!gl_FrontFacing)
-        normal *= -1;
-    
+    normal *= -1;
+
     float shadows = sampleShadows();
-    
+
     float illum = clamp(dot(v_normal, sunDir) - shadows, 0, 1);
-    
+
     lighting += illum;
-    
+
     f_colour = texture(ut_albedoTexture, v_uv) * v_colour * uc_albedoColour * vec4(lighting, 1);
 
     if(f_colour.a <= 0.0f)
-        discard;
+    discard;
+}
+
+void gbuffer() {
+
+    vec3 normal = v_normal;
+    if(!gl_FrontFacing)
+        normal *= -1;
+
+    f_normal = normal;
+}
+
+
+void main() {
+    
+    if(ub_shaded)
+        shade();
+    else
+        gbuffer();
     
 }

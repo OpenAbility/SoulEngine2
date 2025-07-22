@@ -12,10 +12,10 @@ namespace SoulEngine.Components;
 public class CameraComponent : Component, IComparable<CameraComponent>
 {
     [SerializedProperty("fov")] public float FieldOfView { get;
-        set => field = Mathf.Clamp(value, 0.1f, 179.9f);
+        set => field = Mathx.Clamp(value, 0.1f, 179.9f);
     } = 60;
-    [SerializedProperty("near")] public float NearPlane { get; set => field = Mathf.Clamp(value, float.Epsilon, FarPlane - 0.01f); } = 0.1f;
-    [SerializedProperty("far")] public float FarPlane { get; set => field = Mathf.Clamp(value, NearPlane + 0.01f, 10_000_000f); }= 1000f;
+    [SerializedProperty("near")] public float NearPlane { get; set => field = Mathx.Clamp(value, float.Epsilon, FarPlane - 0.01f); } = 0.1f;
+    [SerializedProperty("far")] public float FarPlane { get; set => field = Mathx.Clamp(value, NearPlane + 0.01f, 10_000_000f); }= 1000f;
 
     [SerializedProperty("priority")] public int Priority;
     

@@ -110,7 +110,7 @@ public class GizmoContext : EngineObject
     public unsafe void End()
     {
         GL.NamedBufferData(vertexBuffer, currentVertex * sizeof(Vertex), vertices,
-            VertexBufferObjectUsage.StreamDraw);
+            BufferUsage.StreamDraw);
         
         GL.VertexArrayVertexBuffer(vertexArray, 0, vertexBuffer, 0, sizeof(Vertex));
         

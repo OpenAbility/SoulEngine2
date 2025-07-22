@@ -71,7 +71,7 @@ public class DrawList
     public unsafe void Draw()
     {
         GL.NamedBufferData(VertexBuffer, vertexIndex * sizeof(UIVertex), vertexBuffer,
-            VertexBufferObjectUsage.StreamDraw);
+            BufferUsage.StreamDraw);
         
         GL.VertexArrayVertexBuffer(VertexArray, 0, VertexBuffer, 0, sizeof(UIVertex));
         

@@ -20,7 +20,7 @@ public struct Frustum
     {
         Frustum frustum = new Frustum();
 
-        fov *= Mathf.Deg2Rad;
+        fov *= Mathx.Deg2Rad;
 
         Vector3 right = Vector3.Cross(front, up).Normalized();
         up = Vector3.Cross(front, right).Normalized();
@@ -44,7 +44,7 @@ public struct Frustum
 
     public static Vector3[] CreatePointsFromCamera(Vector3 position, Vector3 front, Vector3 up, float aspect, float fov, float near, float far)
     {
-        fov *= Mathf.Deg2Rad;
+        fov *= Mathx.Deg2Rad;
         
         Vector3 right = Vector3.Cross(front, up).Normalized();
         up = Vector3.Cross(front, right).Normalized();
@@ -86,12 +86,12 @@ public struct Frustum
 
     public bool InFrustum(AABB aabb)
     {
-        return InFrustum(Mathf.Swizzle(aabb.Min, aabb.Min, aabb.Max)) ||
-               InFrustum(Mathf.Swizzle(aabb.Min, aabb.Max, aabb.Min)) ||
-               InFrustum(Mathf.Swizzle(aabb.Min, aabb.Max, aabb.Max)) ||
-               InFrustum(Mathf.Swizzle(aabb.Max, aabb.Min, aabb.Min)) ||
-               InFrustum(Mathf.Swizzle(aabb.Max, aabb.Min, aabb.Max)) ||
-               InFrustum(Mathf.Swizzle(aabb.Max, aabb.Max, aabb.Min)) ||
+        return InFrustum(Mathx.Swizzle(aabb.Min, aabb.Min, aabb.Max)) ||
+               InFrustum(Mathx.Swizzle(aabb.Min, aabb.Max, aabb.Min)) ||
+               InFrustum(Mathx.Swizzle(aabb.Min, aabb.Max, aabb.Max)) ||
+               InFrustum(Mathx.Swizzle(aabb.Max, aabb.Min, aabb.Min)) ||
+               InFrustum(Mathx.Swizzle(aabb.Max, aabb.Min, aabb.Max)) ||
+               InFrustum(Mathx.Swizzle(aabb.Max, aabb.Max, aabb.Min)) ||
                InFrustum(aabb.Min) || InFrustum(aabb.Max);
     }
     

@@ -1,5 +1,5 @@
 using System.Numerics;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using SoulEngine.Input;
 
 namespace SoulEngine.Events;
 
@@ -24,9 +24,9 @@ public class MouseEvent : InputEvent
 
     public readonly KeyModifiers Modifier;
     public readonly MouseButton Button;
-    public readonly InputAction Action;
+    public readonly ButtonAction Action;
 
-    public MouseEvent(KeyModifiers modifier, MouseButton button, InputAction action)
+    public MouseEvent(KeyModifiers modifier, MouseButton button, ButtonAction action)
     {
         Modifier = modifier;
         Button = button;
@@ -38,10 +38,10 @@ public class KeyEvent : InputEvent
 {
 
     public readonly KeyModifiers Modifier;
-    public readonly Keys Key;
-    public readonly InputAction Action;
+    public readonly KeyCode Key;
+    public readonly ButtonAction Action;
 
-    public KeyEvent(KeyModifiers modifier, Keys key, InputAction action)
+    public KeyEvent(KeyModifiers modifier, KeyCode key, ButtonAction action)
     {
         Modifier = modifier;
         Key = key;

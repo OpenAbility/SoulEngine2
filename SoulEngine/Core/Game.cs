@@ -13,6 +13,7 @@ using SoulEngine.PostProcessing;
 using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
+using SoulEngine.Sequences;
 using SoulEngine.UI;
 using SoulEngine.Util;
 using ImGuiWindow = SoulEngine.Rendering.ImGuiWindow;
@@ -598,7 +599,7 @@ public abstract class Game
             EntityCollection = Scene!,
             TargetSurface = window,
             DeltaTime = DeltaTime,
-            UIContext = uiContext,
+            UIContext = UIContext,
             RenderPipeline = RenderPipeline,
             RenderContext = RenderContext,
                 
@@ -612,7 +613,7 @@ public abstract class Game
             RenderUI = Scene!.Director!.RenderUI
         };
 
-        sceneRenderer.PerformGameRender(renderInformation);
+        SceneRenderer.PerformGameRender(renderInformation);
 #endif
     }
     

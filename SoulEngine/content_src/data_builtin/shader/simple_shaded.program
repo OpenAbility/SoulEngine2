@@ -7,5 +7,5 @@
     </Bindings>
     
     <Vertex backend="OPENGL" src="shader/shared/base.vert"/>
-    <Fragment backend="OPENGL" src="shader/shared/simple_shaded.frag"/>  
+    <Fragment backend="OPENGL" src="shader/shared/2pass/shaded.frag"/>  
 </Shader> 

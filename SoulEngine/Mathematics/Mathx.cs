@@ -2,7 +2,7 @@ using OpenTK.Mathematics;
 
 namespace SoulEngine.Mathematics;
 
-public static class Mathf
+public static class Mathx
 {
     public static float Deg2Rad = MathF.PI / 180;
     public static float Rag2Deg = 1 / Deg2Rad;
@@ -15,7 +15,7 @@ public static class Mathf
     
     public static float Lerp(float from, float to, float delta)
     {
-        return Lerp(from, to, Clamp(delta, 0, 1));
+        return LerpUnclamped(from, to, Clamp(delta, 0, 1));
     }
 
     public static float Clamp(float value, float min, float max)
@@ -40,5 +40,25 @@ public static class Mathf
     public static Vector3 Swizzle(Vector3 x, Vector3 y, Vector3 z)
     {
         return new Vector3(x.X, y.Y, z.Z);
+    }
+
+    public static System.Numerics.Vector3 System(this Vector3 vector)
+    {
+        return new System.Numerics.Vector3(vector.X, vector.Y, vector.Z);
+    }
+
+    public static Vector3 Tk(this System.Numerics.Vector3 vector)
+    {
+        return new Vector3(vector.X, vector.Y, vector.Z);
+    }
+    
+    public static System.Numerics.Vector2 System(this Vector2 vector)
+    {
+        return new System.Numerics.Vector2(vector.X, vector.Y);
+    }
+
+    public static Vector2 Tk(this System.Numerics.Vector2 vector)
+    {
+        return new Vector2(vector.X, vector.Y);
     }
 }
