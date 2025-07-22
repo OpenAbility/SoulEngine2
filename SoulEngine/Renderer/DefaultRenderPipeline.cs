@@ -218,7 +218,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 
             renderContext.Enable(EnableCap.DepthTest);
             renderContext.Enable(EnableCap.CullFace);
-            renderContext.DepthFunction(DepthFunction.Equal);
+            renderContext.DepthFunction(DepthFunction.Lequal);
             renderContext.DepthRange(-1, 1);
 
             foreach (var layer in renderLayers.Values)
