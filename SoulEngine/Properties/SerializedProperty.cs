@@ -1,6 +1,6 @@
 using SoulEngine.Data.NBT;
 
-namespace SoulEngine.Props;
+namespace SoulEngine;
 
 public abstract class SerializedProperty
 {
@@ -23,12 +23,12 @@ public abstract class SerializedProperty
 public abstract class SerializedProperty<T> : SerializedProperty
 {
     public T Value;
-    private T defaultValue;
     private T resetValue;
 
-    public SerializedProperty(string name, T defaultValue) : base(name)
+    protected SerializedProperty(string name, T defaultValue) : base(name)
     {
         Value = defaultValue;
+        resetValue = defaultValue;
     }
 
     public SerializedProperty<T> Set(T value)

@@ -4,8 +4,8 @@ namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes;
 
 public class SwitchStatement : SyntaxNode
 {
-    public ExpressionNode Expression;
-    public SwitchCase[] Cases;
+    public ExpressionNode Expression = null!;
+    public SwitchCase[] Cases = null!;
     public BodyNode? Default;
 }
 

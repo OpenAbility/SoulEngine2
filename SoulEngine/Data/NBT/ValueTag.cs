@@ -1,12 +1,8 @@
 namespace SoulEngine.Data.NBT;
 
-public abstract class ValueTag<T> : Tag
+public abstract class ValueTag<T>(string? name, TagType type) : Tag(name, type)
 {
-    public T Value;
-
-    protected ValueTag(string? name, TagType type) : base(name, type)
-    {
-    }
+    public T Value = default!;
 
     public override string ToString()
     {

@@ -5,7 +5,7 @@ namespace SoulEngine.Rendering;
 public struct RenderPass()
 {
     public string? Name;
-    public IRenderSurface Surface;
+    public IRenderSurface Surface = null!;
 
     public FramebufferAttachmentSettings DepthStencilSettings;
     //public FramebufferAttachmentSettings StencilSettings;

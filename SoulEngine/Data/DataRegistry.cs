@@ -46,12 +46,12 @@ public class DataRegistry : EngineObject
 
 			DataNode loaded = nodeType switch
 			{
-				DataNodeType.Int32 => new DataNode { int32 = child.Value!.Value<int>() },
-				DataNodeType.Int64 => new DataNode { int64 = child.Value!.Value<long>() },
-				DataNodeType.Float => new DataNode { float32 = child.Value!.Value<float>() },
-				DataNodeType.Double => new DataNode { double64 = child.Value!.Value<double>() },
-				DataNodeType.String => new DataNode { stringValue = child.Value!.Value<string>()! },
-				DataNodeType.Blob => new DataNode { blob = Convert.FromBase64String(child.Value!.Value<string>()!) },
+				DataNodeType.Int32 => new DataNode { Int32 = child.Value!.Value<int>() },
+				DataNodeType.Int64 => new DataNode { Int64 = child.Value!.Value<long>() },
+				DataNodeType.Float => new DataNode { Float32 = child.Value!.Value<float>() },
+				DataNodeType.Double => new DataNode { Double64 = child.Value!.Value<double>() },
+				DataNodeType.String => new DataNode { StringValue = child.Value!.Value<string>()! },
+				DataNodeType.Blob => new DataNode { Blob = Convert.FromBase64String(child.Value!.Value<string>()!) },
 				_ => throw new ArgumentOutOfRangeException()
 			};
 			loaded.NodeType = nodeType;
@@ -76,22 +76,22 @@ public class DataRegistry : EngineObject
 			switch (nodeType)
 			{
 				case DataNodeType.Int32:
-					writer.WriteValue(node.Value.int32);
+					writer.WriteValue(node.Value.Int32);
 					break;
 				case DataNodeType.Int64:
-					writer.WriteValue(node.Value.int64);
+					writer.WriteValue(node.Value.Int64);
 					break;
 				case DataNodeType.Float:
-					writer.WriteValue(node.Value.float32);
+					writer.WriteValue(node.Value.Float32);
 					break;
 				case DataNodeType.Double:
-					writer.WriteValue(node.Value.double64);
+					writer.WriteValue(node.Value.Double64);
 					break;
 				case DataNodeType.String:
-					writer.WriteValue(node.Value.stringValue);
+					writer.WriteValue(node.Value.StringValue);
 					break;
 				case DataNodeType.Blob:
-					writer.WriteValue(Convert.ToBase64String(node.Value.blob));
+					writer.WriteValue(Convert.ToBase64String(node.Value.Blob));
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
@@ -142,72 +142,72 @@ public class DataRegistry : EngineObject
 	
 	public int GetInt32(string name)
 	{
-		return VerifyType(name, DataNodeType.Int32).int32;
+		return VerifyType(name, DataNodeType.Int32).Int32;
 	}
 	
 	public long GetInt64(string name)
 	{
-		return VerifyType(name, DataNodeType.Int64).int64;
+		return VerifyType(name, DataNodeType.Int64).Int64;
 	}
 	
 	public float GetFloat(string name)
 	{
-		return VerifyType(name, DataNodeType.Float).float32;
+		return VerifyType(name, DataNodeType.Float).Float32;
 	}
 	
 	public double GetDouble(string name)
 	{
-		return VerifyType(name, DataNodeType.Double).double64;
+		return VerifyType(name, DataNodeType.Double).Double64;
 	}
 	
 	public string GetString(string name)
 	{
-		return VerifyType(name, DataNodeType.String).stringValue;
+		return VerifyType(name, DataNodeType.String).StringValue;
 	}
 	
 	public byte[] GetBlob(string name)
 	{
-		return VerifyType(name, DataNodeType.Blob).blob;
+		return VerifyType(name, DataNodeType.Blob).Blob;
 	}
 	
 	public DataRegistry SetInt32(string name, int value)
 	{
-		VerifyTypeS(name, DataNodeType.Int32).int32 = value;
+		VerifyTypeS(name, DataNodeType.Int32).Int32 = value;
 		Dirty = true;
 		return this;
 	}
 	
 	public DataRegistry SetInt64(string name, long value)
 	{
-		VerifyTypeS(name, DataNodeType.Int64).int64 = value;
+		VerifyTypeS(name, DataNodeType.Int64).Int64 = value;
 		Dirty = true;
 		return this;
 	}
 	
 	public DataRegistry SetFloat(string name, float value)
 	{
-		VerifyTypeS(name, DataNodeType.Float).float32 = value;
+		VerifyTypeS(name, DataNodeType.Float).Float32 = value;
 		Dirty = true;
 		return this;
 	}
 	
 	public DataRegistry SetDouble(string name, double value)
 	{
-		VerifyTypeS(name, DataNodeType.Double).double64 = value;
+		VerifyTypeS(name, DataNodeType.Double).Double64 = value;
 		Dirty = true;
 		return this;
 	}
 	
 	public DataRegistry SetString(string name, string value)
 	{
-		VerifyTypeS(name, DataNodeType.String).stringValue = value;
+		VerifyTypeS(name, DataNodeType.String).StringValue = value;
 		Dirty = true;
 		return this;
 	}
 	
 	public DataRegistry SetBlob(string name, byte[] value)
 	{
-		VerifyTypeS(name, DataNodeType.Blob).blob = value;
+		VerifyTypeS(name, DataNodeType.Blob).Blob = value;
 		Dirty = true;
 		return this;
 	}
@@ -216,12 +216,12 @@ public class DataRegistry : EngineObject
 	private class DataNode
 	{
 		public DataNodeType NodeType;
-		public int int32;
-		public long int64;
-		public float float32;
-		public double double64;
-		public string stringValue;
-		public byte[] blob;
+		public int Int32;
+		public long Int64;
+		public float Float32;
+		public double Double64;
+		public string StringValue = "";
+		public byte[] Blob = [];
 	}
 	
 }

@@ -13,7 +13,7 @@ public class BlurPass
     private readonly Shader upsampler;
 
     private Vector2i size = new Vector2i(-1, -1);
-    private Framebuffer[] framebuffers;
+    private Framebuffer[] framebuffers = null!;
     private int depth;
     
     public BlurPass(int depth)

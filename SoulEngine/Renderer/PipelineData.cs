@@ -6,10 +6,10 @@ namespace SoulEngine.Renderer;
 
 public struct PipelineData()
 {
-    public Game Game;
+    public Game Game = null!;
     
-    public RenderContext RenderContext;
-    public IRenderSurface TargetSurface;
+    public RenderContext RenderContext = null!;
+    public IRenderSurface TargetSurface = null!;
     public float DeltaTime;
     public CameraSettings CameraSettings;
 

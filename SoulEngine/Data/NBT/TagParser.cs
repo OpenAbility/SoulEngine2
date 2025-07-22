@@ -332,7 +332,6 @@ public static class TagParser
         private void LexID()
         {
             StringBuilder builder = new StringBuilder();
-            bool escaped = false;
 
             while (IsValidId(Current))
             {
@@ -346,7 +345,6 @@ public static class TagParser
         private void LexNumeric()
         {
             StringBuilder builder = new StringBuilder();
-            bool escaped = false;
 
             bool hasDecimal = false;
 

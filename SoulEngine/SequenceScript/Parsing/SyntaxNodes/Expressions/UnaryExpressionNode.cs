@@ -5,7 +5,7 @@ namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes.Expressions;
 
 public class UnaryExpressionNode : ExpressionNode
 {
-    public ExpressionNode Value;
+    public ExpressionNode Value = null!;
     public Token Operation;
     public override CodeLocation GetLocation() => Value.GetLocation();
 }

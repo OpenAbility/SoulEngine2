@@ -4,9 +4,9 @@ namespace SoulEngine.SequenceScript.Parsing.SyntaxNodes;
 
 public class ForStatement : SyntaxNode
 {
-    public SyntaxNode Initializer;
-    public ExpressionNode Comparison;
-    public SyntaxNode Incrementor;
+    public SyntaxNode Initializer = null!;
+    public ExpressionNode Comparison = null!;
+    public SyntaxNode Incrementor = null!;
 
-    public BodyNode Body;
+    public BodyNode Body = null!;
 }

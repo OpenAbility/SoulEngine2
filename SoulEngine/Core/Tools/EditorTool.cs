@@ -22,6 +22,8 @@ public abstract class EditorTool
         
         Game = game;
         Workspace = workspace;
+
+        ToolTypeID = "";
     }
     
     public abstract void Perform();

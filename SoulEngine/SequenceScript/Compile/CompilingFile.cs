@@ -6,15 +6,15 @@ namespace SoulEngine.SequenceScript.Compile;
 
 public class CompilingFile
 {
-    public Token[] Tokens;
-    public ProgramRootNode AST;
+    public Token[] Tokens = null!;
+    public ProgramRootNode AST  = null!;
 
-    public string ResolvePath;
-    public string InputPath;
-    public string OutputPath;
+    public string ResolvePath = null!;
+    public string InputPath = null!;
+    public string OutputPath = null!;
 
-    public readonly Dictionary<string, CompilingFunction> functions = new Dictionary<string, CompilingFunction>();
-    public readonly Dictionary<string, ValueType> globals = new Dictionary<string, ValueType>();
+    public readonly Dictionary<string, CompilingFunction> Functions = new Dictionary<string, CompilingFunction>();
+    public readonly Dictionary<string, ValueType> Globals = new Dictionary<string, ValueType>();
 }
 
 public struct CompilingFunction

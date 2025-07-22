@@ -8,13 +8,13 @@ namespace SoulEngine.Renderer;
 
 public struct MeshRenderProperties()
 {
-    public Mesh Mesh;
+    public Mesh Mesh = null!;
 
-    public Material Material;
+    public Material Material = null!;
     public Matrix4 ModelMatrix = Matrix4.Identity;
 
     public Matrix4[]? SkeletonBuffer;
-    public ArrayPool<Matrix4> SkeletonBufferPool;
+    public ArrayPool<Matrix4> SkeletonBufferPool = null!;
     public int SkeletonBufferSize;
 
     public GpuBuffer<Vertex>? DeformationCache;

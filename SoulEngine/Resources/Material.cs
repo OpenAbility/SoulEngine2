@@ -14,12 +14,12 @@ public class Material : Resource
 {
     
 
-    public Shader Shader { get; private set; }
-    public string Path { get; private set; }
+    public Shader Shader { get; private set; } = null!;
+    public string Path { get; private set; } = null!;
     private Dictionary<string, object> values = new Dictionary<string, object>();
 
     private static Texture? mipTexture;
-    private ResourceManager ResourceManager;
+    private ResourceManager resourceManager = null!;
 
     private const int TextureBindingPoint = 3;
 
@@ -68,7 +68,7 @@ public class Material : Resource
 
                 if (EngineVarContext.Global.GetBool("e_showmips", false))
                 {
-                    mipTexture ??= ResourceManager.Load<Texture>("tex/mipmap_display.dds");
+                    mipTexture ??= resourceManager.Load<Texture>("tex/mipmap_display.dds");
                     texture = mipTexture;
                 }
                 
@@ -84,7 +84,7 @@ public class Material : Resource
 
     private void Load(ResourceData data)
     {
-        ResourceManager = data.ResourceManager;
+        resourceManager = data.ResourceManager;
         
         Path = data.ResourcePath;
         MaterialDefinition materialDefinition = JsonConvert.DeserializeObject<MaterialDefinition>(data.ReadResourceString());

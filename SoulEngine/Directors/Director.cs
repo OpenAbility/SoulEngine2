@@ -35,7 +35,7 @@ public abstract class Director : EngineObject
     /// Loads this prop from the serialized tag
     /// </summary>
     /// <param name="tag">The tag to load from</param>
-    public void Load(CompoundTag tag)
+    public new void Load(CompoundTag tag)
     {
         foreach (var p in properties)
         {
@@ -49,7 +49,7 @@ public abstract class Director : EngineObject
     /// Saves this prop to a tag
     /// </summary>
     /// <returns>The tag to save this prop as</returns>
-    public CompoundTag Save()
+    public new CompoundTag Save()
     {
         CompoundTag tag = new CompoundTag("director");
 
@@ -88,7 +88,7 @@ public abstract class Director : EngineObject
     /// <summary>
     /// Edits this director
     /// </summary>
-    public void Edit()
+    public new void Edit()
     {
         foreach (var p in properties.Values)
         {

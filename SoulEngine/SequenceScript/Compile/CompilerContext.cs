@@ -15,9 +15,8 @@ public class CompilerContext
     private readonly List<CompileError> errors = new List<CompileError>();
 
     private readonly Dictionary<string, CompilingFile> working = new Dictionary<string, CompilingFile>();
-
-
-    private CompilingFile standardLibrary;
+    
+    private CompilingFile standardLibrary = null!;
     public void CreateStandardLib(string code)
     {
         standardLibrary = new CompilingFile();
@@ -40,7 +39,7 @@ public class CompilerContext
         {
             if (node is GlobalStatement globalStatement)
             {
-                standardLibrary.globals.Add(globalStatement.Identifier.Value, SequenceRules.KeywordToValueType(globalStatement.Type.TokenType));
+                standardLibrary.Globals.Add(globalStatement.Identifier.Value, SequenceRules.KeywordToValueType(globalStatement.Type.TokenType));
             } 
             else if (node is ProcedureDefinitionNode procedureDefinitionNode)
             {
@@ -52,7 +51,7 @@ public class CompilerContext
                     .Select(n => SequenceRules.KeywordToValueType(n.Type.TokenType)).ToArray();
                 function.SystemFunction = procedureDefinitionNode.Extern;
                 
-                standardLibrary.functions[function.Name] = function;
+                standardLibrary.Functions[function.Name] = function;
             }
         }
     }
@@ -82,7 +81,7 @@ public class CompilerContext
         {
             if (node is GlobalStatement globalStatement)
             {
-                compilingFile.globals.Add(globalStatement.Identifier.Value, SequenceRules.KeywordToValueType(globalStatement.Type.TokenType));
+                compilingFile.Globals.Add(globalStatement.Identifier.Value, SequenceRules.KeywordToValueType(globalStatement.Type.TokenType));
             } 
             else if (node is ProcedureDefinitionNode procedureDefinitionNode)
             {
@@ -93,7 +92,7 @@ public class CompilerContext
                 function.ParameterTypes = procedureDefinitionNode.Parameters
                     .Select(n => SequenceRules.KeywordToValueType(n.Type.TokenType)).ToArray();
 
-                compilingFile.functions[function.Name] = function;
+                compilingFile.Functions[function.Name] = function;
             }
         }
     }

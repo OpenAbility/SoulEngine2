@@ -7,13 +7,13 @@ namespace SoulEngine.UI.Text;
 [ExpectedExtensions(".fnt")]
 public partial class Font : Resource
 {
-    public string Name { get; private set; }
+    public string Name { get; private set; } = null!;
     public int FontSize { get; private set; }
     
     public int BaseLine { get; private set; }
     public int LineHeight { get; private set; }
 
-    private Texture[] pages;
+    private Texture[] pages = null!;
 
     private readonly Dictionary<char, Glyph> glyphs = new Dictionary<char, Glyph>();
 

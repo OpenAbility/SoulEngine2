@@ -54,7 +54,7 @@ public class AnimationCompiler : GLBContentCompiler
     
     private struct AnimDef()
     {
-        [JsonProperty("glb", Required = Required.Always)] public string Glb;
+        [JsonProperty("glb", Required = Required.Always)] public string Glb = "";
         [JsonProperty("animation", Required = Required.AllowNull)] public string? Animation;
         [JsonProperty("name", Required = Required.Default)] public string? AnimationName;
         [JsonProperty("streamed", Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)] public bool Streamed = false;

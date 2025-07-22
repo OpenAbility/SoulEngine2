@@ -73,7 +73,10 @@ public unsafe class AnimationClip : Resource
                         targetSpan = targetSpan.Slice(read);
                 }
             }
-
+        }
+        else
+        {
+            keyframes = [];
         }
     }
 

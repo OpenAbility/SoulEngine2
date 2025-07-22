@@ -47,9 +47,9 @@ public static class SequenceCompilation
 
 public struct DirectoryCompileOptions()
 {
-    public string DefaultLibrarySource;
-    public string InputDirectory;
-    public string OutputDirectory;
+    public string DefaultLibrarySource = null!;
+    public string InputDirectory = null!;
+    public string OutputDirectory = null!;
 
     public string Pattern = "*.ss";
     public string ExcludePattern = "";

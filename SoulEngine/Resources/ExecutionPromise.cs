@@ -5,7 +5,7 @@ public class ExecutionPromise
     public Exception? Exception { get; protected set; }
     public PromiseState State { get; protected set; }
     
-    public event OnPromiseReturnedEvent OnComplete;
+    public event OnPromiseReturnedEvent OnComplete = (promise) => {};
 
     protected virtual void TriggerComplete()
     {
@@ -82,7 +82,7 @@ public sealed class ExecutionPromise<T> : ExecutionPromise
 {
     public T? ReturnValue { get; private set; }
 
-    public new event OnPromiseCompleteEvent<T> OnComplete;
+    public new event OnPromiseCompleteEvent<T> OnComplete = (value) => { };
 
     private ExecutionPromise()
     {
@@ -112,7 +112,7 @@ public sealed class ExecutionPromise<T> : ExecutionPromise
         OnComplete?.Invoke(this);
     }
 
-    public static PromiseTrigger Create()
+    public new static PromiseTrigger Create()
     {
         ExecutionPromise<T> promise = new ExecutionPromise<T>();
         PromiseTrigger trigger = new PromiseTrigger(promise);
@@ -129,7 +129,7 @@ public sealed class ExecutionPromise<T> : ExecutionPromise
         return promise;
     }
     
-    public sealed class PromiseTrigger
+    public new sealed class PromiseTrigger
     {
         public readonly ExecutionPromise<T> Promise;
 

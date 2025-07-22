@@ -11,16 +11,20 @@ public class ContentBrowser<T> : EngineObject where T : Resource
     private readonly string[] extensions;
     private readonly Game game;
     
+    private bool shown = false;
+    public event Action<T?> Callback;
+    
     public ContentBrowser(Game game)
     {
         this.game = game;
         
 
         extensions = typeof(T).GetCustomAttribute<ExpectedExtensionsAttribute>()?.Extensions ?? [""];
+
+        Callback = _ => { };
     }
 
-    private bool shown = false;
-    public Action<T?> Callback;
+
     
     public void Show()
     {

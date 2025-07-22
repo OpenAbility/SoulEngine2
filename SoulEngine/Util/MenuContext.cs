@@ -109,7 +109,7 @@ public class MenuContext : EngineObject
 	{
 		public Dictionary<string, MenuObject> Children = new Dictionary<string, MenuObject>();
 		public object? Value;
-		public string ID;
+		public string ID = "";
 		public bool Hidden;
 		public MenuObjectType Type = MenuObjectType.Container;
 

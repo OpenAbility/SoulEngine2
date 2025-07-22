@@ -56,7 +56,7 @@ public struct Accessor
     public AccessorComponentType ComponentType;
     public bool Normalized = false;
     public int Count;
-    public string Type;
+    public string Type = "";
     public float[]? Max;
     public float[]? Min;
     
@@ -106,8 +106,8 @@ public struct Node
     public int[] Weights = [];
     public string? Name;
 
-    public JObject Extensions;
-    public JObject Extras;
+    public JObject Extensions = new JObject();
+    public JObject Extras = new JObject();
 }
 
 public struct Mesh
@@ -120,21 +120,18 @@ public struct Mesh
     public JObject Extras;
     
     
-    public struct Primitive
+    public struct Primitive()
     {
-        public Primitive()
-        {
-        }
-        
-        public Dictionary<string, int> Attributes;
+
+        public Dictionary<string, int> Attributes = new Dictionary<string, int>();
         public int Indices = -1;
-        public int? Material;
+        public int? Material = null;
         public PrimitiveMode? Mode = PrimitiveMode.Triangles;
 
-        public int[] Targets;
+        public int[] Targets = [];
 
-        public JObject Extensions;
-        public JObject Extras;
+        public JObject Extensions = new JObject();
+        public JObject Extras = new JObject();
     }
     
             

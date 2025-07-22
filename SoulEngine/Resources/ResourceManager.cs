@@ -28,7 +28,7 @@ public class ResourceManager : EngineObject
 
     public readonly TemporaryResourceSource Temporary;
 
-    public static ResourceManager Global { get; internal set; }
+    public static ResourceManager Global { get; internal set; } = null!;
 
     public ResourceManager(Game game)
     {
@@ -49,7 +49,7 @@ public class ResourceManager : EngineObject
         if (attribute == null)
             throw new Exception("No resource attribute found!");
 
-        if (!attribute.LoaderType.IsAssignableTo(typeof(IResourceLoader<T>)))
+        if (!attribute.LoaderType!.IsAssignableTo(typeof(IResourceLoader<T>)))
             throw new Exception("Loader type not compatible!");
 
         if (!attribute.LoaderType.CanInstance())
