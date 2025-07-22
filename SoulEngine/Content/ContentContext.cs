@@ -18,6 +18,7 @@ public class ContentContext
 
     public Stream? Load(string id)
     {
+        id = id.Replace('\\', '/');
         foreach (var source in contentSources)
         {
             Stream? stream = source.LoadContent(id);
@@ -30,6 +31,7 @@ public class ContentContext
 
     public Stream[] LoadAll(string id)
     {
+        id = id.Replace('\\', '/');
         List<Stream> streams = new List<Stream>();
         
         foreach (var source in contentSources)
@@ -93,6 +95,7 @@ public class ContentContext
 
     public bool Exists(string id)
     {
+        id = id.Replace('\\', '/');
         foreach (var source in contentSources)
         {
             if (source.HasContent(id))
@@ -104,7 +107,7 @@ public class ContentContext
 
     public IEnumerable<string> Search()
     {
-        return contentSources.SelectMany(s => s.Search());
+        return contentSources.SelectMany(s => s.Search().Select(c => c.Replace('\\', '/')));
     }
     
 }

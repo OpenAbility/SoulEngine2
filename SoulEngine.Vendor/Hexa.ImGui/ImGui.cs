@@ -26,7 +26,7 @@ namespace Hexa.NET.ImGui
 
         public static string GetLibraryName()
         {
-            return "cimgui";
+            return "imgui";
         }
 
         public const nint ImDrawCallbackResetRenderState = -8;

@@ -25,7 +25,7 @@ public class SequenceLexer
         while (!reader.EOF)
         {
             
-            if(reader.Current == '\n' || reader.Current == '\t' || reader.Current == ' ' || reader.Current == '\t' || reader.Current == '\0')
+            if(reader.Current == '\n' || reader.Current == '\t' || reader.Current == '\r' || reader.Current == ' ' || reader.Current == '\t' || reader.Current == '\0')
                 reader.Step();
             else if (reader.Current == '/' && reader.Peek(1) == '/')
                 ParseCommentOneLine();

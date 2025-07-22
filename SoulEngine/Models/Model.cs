@@ -35,7 +35,7 @@ public class Model : Resource
     
     private unsafe void Load(Stream stream)
     {
-        BinaryReader reader = new BinaryReader(stream);
+        BinaryReader reader = new BinaryReader(stream, Encoding.UTF8);
 
         if (Encoding.UTF8.GetString(reader.ReadBytes(4)) != "MODL")
             throw new Exception("File is not SoulEngine mdl!");

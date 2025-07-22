@@ -24,7 +24,7 @@ namespace Hexa.NET.ImGuizmo
 
         public static string GetLibraryName()
         {
-            return "cimguizmo";
+            return "imgui";
         }
     }
 }

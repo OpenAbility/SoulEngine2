@@ -5,8 +5,6 @@ I use .so but it might be .dll or something like that if you're a windows person
 
 ## Required Libraries/Folders
 ImGui binaries:
-- libcimgui.so
-- libcimguizmo.so
-- libcimnodes.so
-- libcimplot.so  
+- imgui.so/imgui.dll
+- 
 Just ask jimmy for how to build them. It's not pretty.

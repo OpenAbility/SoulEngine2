@@ -46,6 +46,8 @@ public class LexicalReader
             } else if (Current == '\t')
             {
                 location.Column += 4;
+            } else if (Current == '\r')
+            {
             }
             else
             {

@@ -24,7 +24,7 @@ namespace Hexa.NET.ImPlot
 
         public static string GetLibraryName()
         {
-            return "cimplot";
+            return "imgui";
         }
     }
 }
