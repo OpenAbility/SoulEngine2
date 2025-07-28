@@ -2,6 +2,7 @@ struct VertexData {
     vec3 position;
     vec4 uv01;
     vec3 normal;
+    vec3 tangent;
     vec4 colour;
 };
 
@@ -43,5 +44,6 @@ void main() {
     v_uv2 = v.uv01.zw;
     // We need to make sure all normals are applied world-space :D
     v_normal = normalize(mat3(transpose(inverse(um_model))) * v.normal);
+    
     v_colour = v.colour;
 }

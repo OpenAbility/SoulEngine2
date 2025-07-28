@@ -1,11 +1,6 @@
 <?xml version="1.0"?>
 
 <Shader>
-    
-    <Bindings backend="OPENGL">
-        <Binding name="ib_vertex_buffer">20</Binding>
-    </Bindings>
-    
     <Vertex backend="OPENGL" src="shader/shared/base.vert"/>
     <Fragment backend="OPENGL" src="shader/shared/simple_shaded.frag"/>  
 </Shader> 

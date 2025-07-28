@@ -45,6 +45,7 @@ public abstract class Game
     public readonly ThreadSafety ThreadSafety;
     public readonly DataRegistry GameRegistry;
     public readonly Localizator Localizator;
+    public readonly Primitives Primitives;
     
 #if DEVELOPMENT
     public readonly DataRegistry DevelopmentRegistry;
@@ -58,7 +59,7 @@ public abstract class Game
 
     public bool Visible => (WorkspaceGameWindow?.Visible ?? false) && WorkspaceGameWindow.Active;
 
-    public float AspectRatio => (WorkspaceGameWindow?.FramebufferSize.X ?? 0.0f) / (WorkspaceGameWindow?.FramebufferSize.Y ?? 1.0f);
+    public float AspectRatio => (WorkspaceGameWindow?.Framebuffer.FramebufferSize.X ?? 0.0f) / (WorkspaceGameWindow?.Framebuffer.FramebufferSize.Y ?? 1.0f);
 
 #else
     public bool Visible => true;
@@ -162,6 +163,7 @@ public abstract class Game
 
         MainWindow = new Window(this, 1280, 720, data.Name);
         RenderContext = new RenderContext(this, MainWindow);
+        Primitives = new Primitives(this);
         
         InputManager = new InputManager(this, InputBus);
 
@@ -188,6 +190,7 @@ public abstract class Game
 
         Workspace.Load(this);
 #endif
+        
 
     }
     
@@ -258,10 +261,10 @@ public abstract class Game
 
     private void MainLoop()
     {
+        Logger.Debug("Showing window");
         MainWindow.Show();
         
         Stopwatch stopwatch = Stopwatch.StartNew();
-
         while (!MainWindow.ShouldClose)
         {
             TimeSpan elapsed = stopwatch.Elapsed;
@@ -485,7 +488,7 @@ public abstract class Game
         ImGuizmo.Enable(true);
 
         InputManager.WindowOffset = WorkspaceGameWindow?.Position ?? Vector2.Zero;
-        InputManager.WindowSize = new Vector2(WorkspaceGameWindow?.FramebufferSize.X ?? 0, WorkspaceGameWindow?.FramebufferSize.Y ?? 0);
+        InputManager.WindowSize = new Vector2(WorkspaceGameWindow?.Framebuffer.FramebufferSize.X ?? 0, WorkspaceGameWindow?.Framebuffer.FramebufferSize.Y ?? 0);
 
         ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiCond.Always);
         ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize, ImGuiCond.Always);
@@ -547,12 +550,12 @@ public abstract class Game
         
 
 #if DEVELOPMENT
-        if (WorkspaceGameWindow?.Visible ?? false)
+        if (Scene != null && (WorkspaceGameWindow?.Visible ?? false))
         {
             SceneRenderInformation renderInformation = new SceneRenderInformation
             {
-                EntityCollection = Scene!,
-                TargetSurface = WorkspaceGameWindow,
+                EntityCollection = Scene,
+                TargetSurface = WorkspaceGameWindow.Framebuffer,
                 DeltaTime = DeltaTime,
                 UIContext = UIContext,
                 RenderPipeline = RenderPipeline,
@@ -564,25 +567,26 @@ public abstract class Game
                 PerformCullingPass = true,
 
                 PostProcessing = EngineVarContext.Global.GetBool("e_post"),
-                
-                RenderUI = Scene!.Director!.RenderUI
             };
+
+            if (Scene.Director != null)
+                renderInformation.RenderUI = Scene.Director.RenderUI;
 
             SceneRenderer.PerformGameRender(renderInformation);
         }
 
-        if (WorkspaceSceneWindow?.Visible ?? false)
+        if (Scene != null && (WorkspaceSceneWindow?.Visible ?? false))
         {
             SceneRenderInformation renderInformation = new SceneRenderInformation
             {
                 EntityCollection = Scene!,
-                TargetSurface = WorkspaceSceneWindow,
+                TargetSurface = WorkspaceSceneWindow.Framebuffer,
                 DeltaTime = DeltaTime,
                 UIContext = null,
                 RenderPipeline = RenderPipeline,
                 RenderContext = RenderContext,
                 
-                CameraSettings =  WorkspaceSceneCamera!.CreateCameraSettings(WorkspaceSceneWindow, MenuContext.IsFlagSet("View", "Gizmos"), Workspace.Current?.CurrentEntity),
+                CameraSettings =  WorkspaceSceneCamera!.CreateCameraSettings(WorkspaceSceneWindow.Framebuffer, MenuContext.IsFlagSet("View", "Gizmos"), Workspace.Current?.CurrentEntity),
                 
                 EnableCulling = EngineVarContext.Global.GetBool("e_cull"),
                 PerformCullingPass = WorkspaceSceneCamera.CameraMode == CameraMode.FlyCamera,

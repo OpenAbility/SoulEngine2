@@ -16,12 +16,12 @@ public class Material : Resource
 
     public Shader Shader { get; private set; } = null!;
     public string Path { get; private set; } = null!;
-    private Dictionary<string, object> values = new Dictionary<string, object>();
+    private readonly Dictionary<string, object> values = new Dictionary<string, object>();
 
     private static Texture? mipTexture;
     private ResourceManager resourceManager = null!;
 
-    private const int TextureBindingPoint = 3;
+    private const int TextureBindingPoint = 5;
 
     public void BindShader() => Shader.Bind();
     

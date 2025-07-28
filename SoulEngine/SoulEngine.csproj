@@ -72,5 +72,9 @@
       <HintPath>..\SoulEngine.Vendor\bin\Debug\net9.0\SoulEngine.Vendor.dll</HintPath>
     </Reference>
   </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="content_src\data_builtin\shader\shared\inc\" />
+  </ItemGroup>
 
 </Project>

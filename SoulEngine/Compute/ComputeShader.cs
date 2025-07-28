@@ -135,7 +135,7 @@ public class ComputeShaderLoader : IResourceLoader<ComputeShader>
         {
 
             string source = data.ReadResourceString();
-            source = ShaderProcessor.ProcessShader(source, data.ResourcePath, null, game.RenderContext.SupportsLineDirectives);
+            source = ShaderProcessor.ProcessShader(data.Content, source, data.ResourcePath, null, game.RenderContext.SupportsLineDirectives);
             
             handle = GL.CreateShaderProgram(ShaderType.ComputeShader, source);
             

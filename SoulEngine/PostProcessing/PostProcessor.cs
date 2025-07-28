@@ -23,7 +23,7 @@ public class PostProcessor : EngineObject
         
         this.renderSurface = renderSurface;
         
-        //EnableEffect(new BloomEffect());
+        EnableEffect(new BloomEffect());
         EnableEffect(new ColourEffects());
         
     

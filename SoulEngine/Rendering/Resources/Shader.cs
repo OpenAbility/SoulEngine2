@@ -48,11 +48,20 @@ public class Shader : Resource
 
     }
     
-    private int UniformLocation(string name)
+    public int UniformLocation(string name)
     {
         if (parameters.TryGetValue(name, out ShaderParameter value))
             return value.Location;
         return -1;
+    }
+    
+    public uint ShaderBufferLocation(string name)
+    {
+        if (blocks.TryGetValue(name, out uint value))
+            return value;
+        uint index = GL.GetProgramResourceIndex(handle, ProgramInterface.ShaderStorageBlock, name);
+        blocks[name] = index;
+        return index;
     }
     
 
@@ -104,10 +113,10 @@ public class Shader : Resource
 
     public unsafe void BindBuffer<T>(string name, GpuBuffer<T> buffer, int offset, int size) where T : unmanaged
     {
-        if(!blocks.TryGetValue(name, out var index))
-            return;
+        uint index = ShaderBufferLocation(name);
         GL.BindBufferRange(BufferTarget.ShaderStorageBuffer, index, buffer.Handle, offset * sizeof(T),
             size * sizeof(T));
+        GL.ShaderStorageBlockBinding(handle, index, index);
     }
     
 
@@ -129,6 +138,7 @@ public class Shader : Resource
             throw new Exception("Invalid shader XML: Wrong root object!");
 
         Dictionary<string, string> defines = new Dictionary<string, string>();
+        
 
         foreach (XmlNode _child in shaderElement.ChildNodes)
         {
@@ -150,25 +160,10 @@ public class Shader : Resource
             }
         }
         
-        foreach (XmlNode _child in shaderElement.ChildNodes)
-        {
-            if (_child is not XmlElement child)
-                continue;
-            
-            if(child.Name != "Bindings")
-                continue;
-            
-            if(child.GetAttribute("backend") != "SHARED" && child.GetAttribute("backend") != EngineData.Renderer)
-                continue;
+        Dictionary<string, string> vertexDefines = new Dictionary<string, string>(defines);
 
-            foreach (XmlElement binding in child.ChildNodes)
-            {
-                string name = binding.GetAttribute("name");
-                if (name.Length == 0)
-                    throw new Exception("Invalid shader XML: Define has no name!");
-                blocks[name] = UInt32.Parse(binding.InnerText);
-            }
-        }
+        vertexDefines.TryAdd("STAGE", "VERTEX");
+        vertexDefines.TryAdd("STAGE_VERTEX", "1");
 
         string? fragmentSource = null;
         string? vertexSource = null;
@@ -186,11 +181,23 @@ public class Shader : Resource
                     continue;
 
                 if (vertexElement.HasAttribute("src"))
-                    vertexSource = content.LoadString(vertexElement.GetAttribute("src"));
+                {
+                    string path = vertexElement.GetAttribute("src");
+                    string src = content.LoadString(path);
+                    vertexSource = ShaderProcessor.ProcessShader(content, src, path, vertexDefines, game.RenderContext.SupportsLineDirectives);
+                }
                 else
-                    vertexSource = vertexElement.GetAttribute("src_string");
+                {
+                    string src = vertexElement.GetAttribute("src_string");
+                    vertexSource = ShaderProcessor.ProcessShader(content, src, id, vertexDefines, game.RenderContext.SupportsLineDirectives);
+                }
             }
         }
+        
+        Dictionary<string, string> fragmentDefines = new Dictionary<string, string>(defines);
+        
+        fragmentDefines.TryAdd("STAGE", "FRAGMENT");
+        fragmentDefines.TryAdd("STAGE_FRAGMENT", "1");
         
         XmlNodeList? fragmentNodes = document.SelectNodes("Shader/Fragment");
         if (fragmentNodes != null)
@@ -204,25 +211,22 @@ public class Shader : Resource
                     continue;
 
                 if (fragmentElement.HasAttribute("src"))
-                    fragmentSource = content.LoadString(fragmentElement.GetAttribute("src"));
+                {
+                    string path = fragmentElement.GetAttribute("src");
+                    string src = content.LoadString(path);
+                    fragmentSource = ShaderProcessor.ProcessShader(content, src, path, fragmentDefines, game.RenderContext.SupportsLineDirectives);
+                }
                 else
-                    fragmentSource = fragmentElement.GetAttribute("src_string");
+                {
+                    string src = fragmentElement.GetAttribute("src_string");
+                    fragmentSource = ShaderProcessor.ProcessShader(content, src, id, fragmentDefines, game.RenderContext.SupportsLineDirectives);
+                }
+                    
             }
         }
-        
-        string prefix = "#version 450 core\n\n" + string.Join("\n", defines.Select(kvp => "#define " + kvp.Key + " " + kvp.Value)) + "\n";
 
-        if (game.RenderContext.SupportsLineDirectives)
-        {
-            prefix += "#extension GL_ARB_shading_language_include : require\n#line 0 \"" + id + "\"\n";
-        }
-        else
-        {
-            prefix += "#line 0 0\n";
-        }
-
-        vertexSource = ShaderProcessor.ProcessShader(vertexSource ?? "", id + "/vertex", defines, game.RenderContext.SupportsLineDirectives);
-        fragmentSource =ShaderProcessor.ProcessShader(fragmentSource ?? "", id + "/fragment", defines, game.RenderContext.SupportsLineDirectives);
+        fragmentSource ??= "";
+        vertexSource ??= "";
         
         game.ThreadSafety.EnsureMain(() =>
         {
@@ -254,6 +258,8 @@ public class Shader : Resource
                 Logger.Error("PRG: {}", programInfo);
                 Logger.Error("VTX: {}", vertexInfo);
                 Logger.Error("FRG: {}", fragmentInfo);
+
+                throw new Exception("Shader load failed!");
             }
             
             GL.DeleteShader(vertexHandle);
@@ -275,6 +281,8 @@ public class Shader : Resource
                 ShaderParameter parameter = new ShaderParameter(uniformName, GL.GetUniformLocation(handle, uniformName), size, (ShaderParameterType)type);
                 parameters[uniformName] = parameter;
             }
+
+
         });
     }
     

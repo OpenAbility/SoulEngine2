@@ -4,7 +4,7 @@ using SoulEngine.Rendering;
 
 namespace SoulEngine.PostProcessing;
 
-public class PostProcessedSurface : IRenderSurface
+public class PostProcessedSurface
 {
     public readonly Framebuffer Framebuffer;
     public readonly PostProcessor PostProcessor;

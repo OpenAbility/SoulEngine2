@@ -8,5 +8,5 @@ out vec4 f_color;
 
 void main() {
     f_color = texture(ut_colour0, v_uv);
-    f_color.rgb += texture(ut_blurred, v_uv).rgb * 0.05f;
+    f_color.rgb += texture(ut_blurred, v_uv).rgb * 0.1f;
 }

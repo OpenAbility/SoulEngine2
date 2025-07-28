@@ -32,6 +32,10 @@ public struct Vertex
 
     private float _pad1;
 
+    public Vector3 Tangent;
+
+    private float _pad2;
+
     /// <summary>
     /// The vertex colour
     /// </summary>

@@ -70,7 +70,7 @@ public unsafe partial class RenderContext : EngineObject, IDisposable
         if (minorVersion < 3)
             throw new Exception(outOfDateError);
 
-        SupportsLineDirectives = SDL.GLExtensionSupported("GL_ARB_shading_language_include");
+        SupportsLineDirectives = SDL.GLExtensionSupported("GL_ARB_shading_language_include") && false;
 
         if (minorVersion < 5 && !SDL.GLExtensionSupported("ARB_direct_state_access"))
         {

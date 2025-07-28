@@ -7,13 +7,16 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace SoulEngine.Rendering;
 
-public class ImGuiWindow : EngineObject, IRenderSurface
+public class ImGuiWindow : EngineObject
 {
 
     public string Name;
 
-    private Framebuffer framebuffer;
+    public Framebuffer Framebuffer { get; private set; }
     private readonly Game game;
+
+    public bool Visible;
+    public bool Active;
     
     public Vector2 Position { get; private set; }
     
@@ -24,7 +27,7 @@ public class ImGuiWindow : EngineObject, IRenderSurface
 
         this.game = game;
 
-        framebuffer = new Framebuffer(game, new Vector2i(1, 1));
+        Framebuffer = new Framebuffer(game, new Vector2i(1, 1));
     }
 
     public void Draw(bool padded, Action? beforeCallback, Action? afterCallback, ref bool closed)
@@ -37,16 +40,16 @@ public class ImGuiWindow : EngineObject, IRenderSurface
             Active = ImGui.IsWindowFocused();
             
             Visible = true;
-            if ((int)ImGui.GetContentRegionAvail().X != framebuffer.FramebufferSize.X || (int)ImGui.GetContentRegionAvail().Y != framebuffer.FramebufferSize.Y)
+            if ((int)ImGui.GetContentRegionAvail().X != Framebuffer.FramebufferSize.X || (int)ImGui.GetContentRegionAvail().Y != Framebuffer.FramebufferSize.Y)
             {
-                framebuffer = new Framebuffer(game, new Vector2i((int)ImGui.GetContentRegionAvail().X, (int)ImGui.GetContentRegionAvail().Y));
+                Framebuffer = new Framebuffer(game, new Vector2i((int)ImGui.GetContentRegionAvail().X, (int)ImGui.GetContentRegionAvail().Y));
             }
 
             Position = ImGui.GetCursorScreenPos();
             
             beforeCallback?.Invoke();
             
-            ImGui.Image(new ImTextureID(framebuffer.ColourBuffer), new Vector2(framebuffer.FramebufferSize.X, framebuffer.FramebufferSize.Y), new Vector2(0, 1), new Vector2(1, 0));
+            ImGui.Image(new ImTextureID(Framebuffer.ColourBuffer), new Vector2(Framebuffer.FramebufferSize.X, Framebuffer.FramebufferSize.Y), new Vector2(0, 1), new Vector2(1, 0));
             
             afterCallback?.Invoke();
         }
@@ -55,17 +58,4 @@ public class ImGuiWindow : EngineObject, IRenderSurface
             ImGui.PopStyleVar();
     }
     
-    public void BindFramebuffer()
-    {
-        framebuffer.BindFramebuffer();
-    }
-
-    public Vector2i FramebufferSize => framebuffer.FramebufferSize;
-    public bool Visible { get; private set; }
-    public bool Active { get; private set; }
-
-    public int GetSurfaceHandle()
-    {
-        return framebuffer.Handle;
-    }
 }

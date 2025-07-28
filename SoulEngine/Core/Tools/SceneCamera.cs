@@ -95,7 +95,7 @@ public class SceneCamera : EngineObject
         Position += movementVector * deltaTime;
     }
 
-    public CameraSettings CreateCameraSettings(IRenderSurface targetSurface, bool gizmos, Entity? selectedEntity)
+    public CameraSettings CreateCameraSettings(Framebuffer targetSurface, bool gizmos, Entity? selectedEntity)
     {
         CameraSettings settings = new CameraSettings
         {

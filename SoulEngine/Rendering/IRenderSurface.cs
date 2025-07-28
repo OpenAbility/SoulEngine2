@@ -8,6 +8,5 @@ public interface IRenderSurface
     
     public Vector2i FramebufferSize { get; }
     
-
     public int GetSurfaceHandle();
 }

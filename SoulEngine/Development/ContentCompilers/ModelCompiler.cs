@@ -131,6 +131,8 @@ public class ModelCompiler : GLBContentCompiler
                 Accessor? uvAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "TEXCOORD_0");
                 Accessor? uv2Accessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "TEXCOORD_1");
                 Accessor? colorAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "COLOR_0");
+                
+                Accessor? tangentAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "TANGENT");
 
                 Accessor? jointsAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "JOINTS_0");
                 Accessor? weightsAccessor = loader.GetMeshAttribute(meshIndex, primitiveIndex, "WEIGHTS_0");
@@ -184,28 +186,18 @@ public class ModelCompiler : GLBContentCompiler
                             1 - loader.GetAccessor(uv2Accessor.Value, i * 2 + 1).CastStruct<float, byte>()
                         );
                     }
-
-                    /*
-                    if (jointsAccessor.HasValue)
+                    
+                    if (tangentAccessor.HasValue)
                     {
-                        vertex.Indices = new JointIndices(
-                            loader.GetAccessor(jointsAccessor.Value, i * 4 + 0).CastStruct<byte, byte>(),
-                            loader.GetAccessor(jointsAccessor.Value, i * 4 + 1).CastStruct<byte, byte>(),
-                            loader.GetAccessor(jointsAccessor.Value, i * 4 + 2).CastStruct<byte, byte>(),
-                            loader.GetAccessor(jointsAccessor.Value, i * 4 + 3).CastStruct<byte, byte>()
+                        // The tangent is 4-long for "reasons"
+                        vertex.Tangent = new Vector3(
+                            loader.GetAccessor(tangentAccessor.Value, i * 4 + 0).CastStruct<float, byte>(),
+                            loader.GetAccessor(tangentAccessor.Value, i * 4 + 1).CastStruct<float, byte>(),
+                            loader.GetAccessor(tangentAccessor.Value, i * 4 + 2).CastStruct<float, byte>()
                         );
                     }
-
-                    if (weightsAccessor.HasValue)
-                    {
-                        vertex.Weights = new Vector4(
-                            loader.GetAccessor(weightsAccessor.Value, i * 4 + 0).CastStruct<float, byte>(),
-                            loader.GetAccessor(weightsAccessor.Value, i * 4 + 1).CastStruct<float, byte>(),
-                            loader.GetAccessor(weightsAccessor.Value, i * 4 + 2).CastStruct<float, byte>(),
-                            loader.GetAccessor(weightsAccessor.Value, i * 4 + 3).CastStruct<float, byte>()
-                        );
-                    }
-                    */
+                    
+                    
 
                     // TODO: COLOURS
 

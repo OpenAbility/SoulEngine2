@@ -4,6 +4,7 @@ struct VertexData {
     vec3 position;
     vec4 uv01;
     vec3 normal;
+    vec3 tangent;
     vec4 colour;
 };
 
@@ -12,20 +13,20 @@ struct WeightData {
     vec4 weights;
 };
 
-layout(std430, binding=10) restrict readonly buffer ib_joint_buffer
+layout(std430) restrict readonly buffer ib_joint_buffer
 {
     mat4 data[];
 } ib_joints;
 
-layout(std430, binding=11) restrict readonly buffer ib_vertex_buffer {
+layout(std430) restrict readonly buffer ib_vertex_buffer {
     VertexData vertices[];
 } ib_vertices;
 
-layout(std430, binding=12) restrict readonly buffer ib_weight_buffer {
+layout(std430) restrict readonly buffer ib_weight_buffer {
     WeightData weights[];
 } ib_weights;
 
-layout(std430, binding=20) restrict writeonly buffer ob_vertex_buffer {
+layout(std430) restrict writeonly buffer ob_vertex_buffer {
     VertexData vertices[];
 } ob_vertices;
 

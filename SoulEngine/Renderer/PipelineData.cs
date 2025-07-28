@@ -15,6 +15,8 @@ public struct PipelineData()
 
     public ShadowCameraSettings ShadowCameraSettings;
 
+    public Colour AmbientLight;
+    
     public bool EnableShadows = true;
     public bool RedrawShadows = true;
 

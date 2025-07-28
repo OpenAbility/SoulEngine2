@@ -32,7 +32,7 @@ public unsafe class Window : EngineObject, IRenderSurface, IDisposable
     private static readonly Dictionary<uint, Window> windowIds = new Dictionary<uint, Window>();
     
     public readonly IntPtr Handle;
-    
+
     private bool shouldClose;
 
     private readonly Game Game;
@@ -66,7 +66,7 @@ public unsafe class Window : EngineObject, IRenderSurface, IDisposable
         
         // TODO: This should be toggled by the game whenever needed
         TextInput = true;
-        
+
     }
 
     /// <summary>
