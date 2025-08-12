@@ -50,7 +50,7 @@ public class Depthbuffer : EngineObject, IRenderSurface
     
     ~Depthbuffer()
     {
-        ThreadSafety.Instance.EnsureMain(() =>
+        ThreadSafety.Instance.EnsureMainNonBlocking(() =>
         {
             if(Handle != -1)
                 GL.DeleteFramebuffer(Handle);

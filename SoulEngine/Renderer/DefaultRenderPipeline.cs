@@ -31,7 +31,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
     private readonly Dictionary<RenderLayer, RenderLayerData> renderLayers =
         new Dictionary<RenderLayer, RenderLayerData>();
 
-    private readonly List<LightRenderData> lights = new List<LightRenderData>();
+    private readonly List<LightSubmitInformation> lights = new List<LightSubmitInformation>();
     
     private GpuBuffer<Matrix4> skeletonBuffer;
     
@@ -86,6 +86,11 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         renderLayers[renderLayer].DrawLists.Add(drawListData);
     }
 
+    public void SubmitLightDraw(LightSubmitInformation light)
+    {
+        lights.Add(light);
+    }
+
     public IEnumerable<RenderLayer> GetLayers()
     {
         yield return DefaultRenderLayers.OpaqueLayer;
@@ -110,6 +115,8 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         PostProcessedSurface? postProcessableSurface = null;
         PostProcessor? postProcessor = null;
         
+        Framebuffer? targetFramebuffer = pipelineData.TargetSurface as Framebuffer;
+        
         if (pipelineData.PostProcessing)
         {
             if (!postProcessors.TryGetValue(pipelineData.TargetSurface, out postProcessor))
@@ -119,7 +126,13 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
             }
             
             postProcessableSurface = postProcessor.InitializeFrameSurface();
+            targetFramebuffer = postProcessableSurface.Framebuffer;
         }
+        
+        if(targetFramebuffer == null)
+            return;
+
+        
 
         RenderContext renderContext = pipelineData.RenderContext;
         
@@ -136,7 +149,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
             RenderPass gPass = new RenderPass
             {
                 Name = "G-Buffer Pass",
-                Surface = pipelineData.PostProcessing ? postProcessableSurface!.Framebuffer! : pipelineData.TargetSurface,
+                Surface = targetFramebuffer,
             };
             gPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
             gPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.Store;
@@ -166,7 +179,8 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
             renderContext.Enable(EnableCap.DepthTest);
             renderContext.Enable(EnableCap.CullFace);
             renderContext.DepthFunction(DepthFunction.Less);
-            renderContext.DepthRange(-1, 1);
+            renderContext.Disable(EnableCap.Blend);
+            renderContext.DepthRange(0, 1);
 
             foreach (var layer in renderLayers.Values)
             {
@@ -185,13 +199,16 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
                 
 
         #endregion
+        
+        #region LIGHT RENDER
 
         // Light source rendering
         {
+            
             RenderPass lightPass = new RenderPass
             {
                 Name = "Light Pass",
-                Surface = pipelineData.PostProcessing ? postProcessableSurface!.Framebuffer : pipelineData.TargetSurface,
+                Surface = targetFramebuffer,
             };
             lightPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Load;
             lightPass.DepthStencilSettings.StoreOp = AttachmentStoreOp.DontStore;
@@ -224,14 +241,66 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
 
             renderContext.Disable(EnableCap.DepthTest);
             renderContext.Enable(EnableCap.CullFace);
+            renderContext.Enable(EnableCap.Blend);
+            
+            renderContext.BlendFunction(2u, BlendingFactor.SrcAlpha, BlendingFactor.One);
 
             foreach (var light in lights)
             {
+                light.LightMesh.LockUpdates();
                 
+                
+                var vertexBuffer = light.LightMesh.GetVertexBuffer();
+                var indexBuffer = light.LightMesh.GetIndexBuffer();
+
+                if (vertexBuffer == null || indexBuffer == null)
+                {
+                    light.LightMesh.UnlockUpdates();
+                    continue;
+                }
+                
+                light.LightShader.Bind();
+                
+                light.LightShader.Matrix("um_model", light.ModelMatrix, false);
+                light.LightShader.Matrix("um_view", pipelineData.CameraSettings.ViewMatrix, false);
+                light.LightShader.Matrix("um_projection", pipelineData.CameraSettings.ProjectionMatrix, false);
+                
+                targetFramebuffer.BindColour(0);
+                targetFramebuffer.BindDepth(1);
+                targetFramebuffer.BindNormal(2);
+
+                light.LightShader.Uniform1i("ut_colour", 0);
+                light.LightShader.Uniform1i("ut_depth", 1);
+                light.LightShader.Uniform1i("ut_normal", 2);
+                
+                light.LightShader.Uniform1i("ub_shadows", pipelineData.EnableShadows ? 1 : 0);
+                light.LightShader.Matrix("um_shadow_projection", pipelineData.ShadowCameraSettings.ProjectionMatrix, false);
+                light.LightShader.Matrix("um_shadow_view", pipelineData.ShadowCameraSettings.ViewMatrix, false);
+                
+                light.LightShader.Uniform3f("uv_direction", light.Direction);
+                
+                light.LightShader.Matrix("um_inv_cam",  pipelineData.CameraSettings.ProjectionMatrix.Inverted() * pipelineData.CameraSettings.ViewMatrix.Inverted(), false);
+
+                for (uint i = 0; i < shadowBuffers.Length; i++)
+                {
+                    shadowBuffers[i].BindDepth(3 + i);
+                }
+        
+                light.LightShader.Uniform1i("ut_shadow_buffers[0]", [3, 4, 5]);
+                
+                light.ShaderBind?.Invoke(light);
+                
+                light.LightShader.BindBuffer("ib_vertex_buffer", vertexBuffer, 0, vertexBuffer.Length);
+                Mesh.Draw(vertexBuffer, indexBuffer, indexBuffer.Length, vertexArray);
+
+                
+                light.LightMesh.UnlockUpdates();
             }
 
             renderContext.EndRendering();
         }
+        
+        #endregion
 
         #region FINAL PASS
 
@@ -268,14 +337,17 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
             renderContext.Enable(EnableCap.DepthTest);
             renderContext.Enable(EnableCap.CullFace);
             renderContext.DepthFunction(DepthFunction.Lequal);
-            renderContext.DepthRange(-1, 1);
-
+            renderContext.DepthRange(0, 1);
+            renderContext.Disable(EnableCap.Blend);
+            
+            
             foreach (var layer in renderLayers.Values)
             {
                 RenderLayerDraw draw = new RenderLayerDraw();
                 draw.PipelineData = pipelineData;
                 draw.RenderMode = RenderMode.FinalPass;
                 draw.Layer = layer;
+                draw.Target = targetFramebuffer;
                 
                 DrawRenderLayer(draw);
             }
@@ -317,7 +389,8 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
             renderContext.Disable(EnableCap.CullFace);
             renderContext.Enable(EnableCap.Blend);
             //renderContext.Enable(EnableCap.FramebufferSrgb);
-            renderContext.DepthRange(-1, 1);
+            renderContext.DepthRange(0, 1);
+            renderContext.BlendFunction(0u, BlendingFactor.One, BlendingFactor.OneMinusSrcAlpha);
             
             pipelineData.DrawGizmos();
             
@@ -350,7 +423,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         renderContext.Disable(EnableCap.CullFace);
         renderContext.DepthFunction(DepthFunction.Always);
         renderContext.Enable(EnableCap.Blend);
-        renderContext.DepthRange(-1, 1);
+        renderContext.DepthRange(0, 1);
         
         renderContext.BlendFunction(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         
@@ -459,7 +532,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
         renderContext.Enable(EnableCap.DepthTest);
         renderContext.Enable(EnableCap.CullFace);
         renderContext.DepthFunction(DepthFunction.Less);
-        renderContext.DepthRange(-1, 1);
+        renderContext.DepthRange(0, 1);
         
         GL.CullFace(TriangleFace.Front);
 
@@ -516,21 +589,15 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
                 render.Material.Shader.Uniform1i("ui_shadow_index", 1 << draw.ShadowIndex);
             } else if (draw.RenderMode == RenderMode.FinalPass)
             {
-                bool shadows = draw.PipelineData.EnableShadows && draw.Layer.RenderLayer.ShadowReceiver;
-                
                 render.Material.BindCamera(draw.PipelineData.CameraSettings, render.ModelMatrix);
-                render.Material.BindShadows(draw.PipelineData.ShadowCameraSettings, shadowBuffers);
-                render.Material.Shader.Uniform1i("ub_shadows", shadows ? 1 : 0);
                 render.Material.Shader.Uniform1i("ui_shadow_index", 1);
                 render.Material.Shader.Uniform1i("ub_shaded", 1);
                 
+                draw.Target.BindLight(4);
                 render.Material.Shader.Uniform1i("ut_lightTexture", 4);
-                
-                
             } else if (draw.RenderMode == RenderMode.DeferredPass)
             {
                 render.Material.BindCamera(draw.PipelineData.CameraSettings, render.ModelMatrix);
-                render.Material.BindShadows(draw.PipelineData.ShadowCameraSettings, shadowBuffers);
                 render.Material.Shader.Uniform1i("ui_shadow_index", 1);
                 render.Material.Shader.Uniform1i("ub_shaded", 0);
             }

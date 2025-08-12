@@ -39,7 +39,7 @@ public class Shader : Resource
 
     ~Shader()
     {
-        game?.ThreadSafety.EnsureMain(() =>
+        game?.ThreadSafety.EnsureMainNonBlocking(() =>
         {
             if(handle != -1)
                 GL.DeleteProgram(handle);

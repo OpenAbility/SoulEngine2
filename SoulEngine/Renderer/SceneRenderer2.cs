@@ -65,7 +65,7 @@ public class SceneRenderer2 : EngineObject
         return cameraSettings;
     }
 
-    public void PushGizmoRendering(IEntityCollection scene, ref PipelineData pipelineData)
+    private void DrawGizmos(IEntityCollection scene,  PipelineData pipelineData, Predicate<Entity> predicate)
     {
         Entity? selectedEntity = pipelineData.CameraSettings.SelectedEntity;
 
@@ -74,13 +74,14 @@ public class SceneRenderer2 : EngineObject
 
         foreach (var entity in scene.EntityEnumerable)
         {
-            pipelineData.DrawGizmos += () =>
-            {
-                gizmoContext.Selected = selectedEntity == entity;
-                gizmoContext.ModelMatrix = entity.GlobalMatrix;
-                entity.RenderGizmo(gizmoContext);
-            };
+            if(!predicate(entity))
+                continue;
+            
+            gizmoContext.Selected = selectedEntity == entity;
+            gizmoContext.ModelMatrix = entity.GlobalMatrix;
+            entity.RenderGizmo(gizmoContext);
         }
+        
     }
 
     public void PerformEntityCulling(IEntityCollection scene, CameraSettings cameraSettings, IRenderSurface targetSurface)
@@ -138,8 +139,9 @@ public class SceneRenderer2 : EngineObject
         if(info.PerformCullingPass)
             PerformEntityCulling(info.EntityCollection, pipelineData.CameraSettings, info.TargetSurface);
         PerformEntityRender(info.EntityCollection, info.DeltaTime, info.RenderPipeline, info.EnableCulling);
-        
-        PushGizmoRendering(info.EntityCollection, ref pipelineData);
+
+        if (info.CameraSettings.ShowGizmos)
+            pipelineData.DrawGizmos = () => DrawGizmos(info.EntityCollection, pipelineData, info.GizmoPredicate);
         
         if (info.CameraSettings.ShowUI && info.UIContext != null)
         {

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using SoulEngine.Core;
 
 namespace SoulEngine.Util;
@@ -17,6 +18,14 @@ public class ThreadSafety
     {
         Game = game;
         Instance = this;
+    }
+
+    public void EnsureMainNonBlocking(Action action)
+    {
+        if (OnMain)
+            action();
+        else
+            tasks.Enqueue(action);
     }
 
     public T EnsureMain<T>(Func<T> func)
@@ -51,16 +60,17 @@ public class ThreadSafety
         }
     }
 
-    private Queue<Action> tasks = new Queue<Action>();
+    private ConcurrentQueue<Action> tasks = new ConcurrentQueue<Action>();
 
     public void RunTasks()
     {
         if (!OnMain)
             throw new Exception("Not on main thread!");
 
-        while (tasks?.Count > 0)
+        while (tasks.Count > 0)
         {
-            tasks?.Dequeue()?.Invoke();
+            if(tasks.TryDequeue(out var task)) 
+                task.Invoke();
         }
     }
 }

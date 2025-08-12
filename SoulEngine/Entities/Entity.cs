@@ -94,9 +94,17 @@ public class Entity : EngineObject, ITransformable
 
 
     private readonly Dictionary<string, SerializedProperty> properties = new Dictionary<string, SerializedProperty>();
-
-
     
+    // Events
+    public event Action<Entity> OnEnterScene = e => { };
+    public event Action<Entity> OnLeaveScene = e => { };
+    public event Action<Entity, IRenderPipeline, float> OnRender = (e, pipeline, dt) => { };
+    public event Action<Entity, float> OnUpdate = (e, dt) => { };
+    public event Action<Entity> OnReset = (e) => { };
+    public event Action<Entity> OnEdit = (e) => { };
+
+
+
     public Entity(Scene scene, string name)
     {
         Name = name;
@@ -223,6 +231,8 @@ public class Entity : EngineObject, ITransformable
         {
             component.Update(deltaTime);
         }
+
+        OnUpdate(this, deltaTime);
     }
 
     public void EnterScene()
@@ -231,6 +241,8 @@ public class Entity : EngineObject, ITransformable
         {
             component.EnterScene();
         }
+
+        OnEnterScene(this);
     }
     
     public void LeaveScene()
@@ -239,6 +251,8 @@ public class Entity : EngineObject, ITransformable
         {
             component.LeaveScene();
         }
+
+        OnLeaveScene(this);
     }
 
     
@@ -259,6 +273,8 @@ public class Entity : EngineObject, ITransformable
         {
             component.Edit();
         }
+
+        OnEdit(this);
         
         if (ImGui.BeginPopupContextWindow())
         {
@@ -285,6 +301,8 @@ public class Entity : EngineObject, ITransformable
         {
             component.Reset();
         }
+
+        OnReset(this);
     }
     
     /// <summary>

@@ -108,9 +108,15 @@ public class Scene : IEntityCollection
         return Entities.Find(e => e.Name == name);
     }
     
+    public bool HasEntity(Entity entity)
+    {
+        return Entities.Contains(entity);
+    }
+    
     public IEnumerable<T> GetComponents<T>() where T : Component
     {
         return EntityEnumerable.SelectMany(e => e.GetComponents<T>());
     }
+
 
 }

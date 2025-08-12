@@ -248,6 +248,38 @@ public unsafe class QuaternionInspector : Inspector<Quaternion>, INBTSerializer<
 }
 
 [Serializable]
+[Inspector(typeof(Colour))]
+[NBTSerializer(typeof(Colour))]
+public unsafe class ColourInspector : Inspector<Colour>, INBTSerializer<Colour>
+{
+    public override Colour Edit(Colour instance, InspectionContext context)
+    {
+        if (ImGui.ColorEdit4(context.AssociatedName ?? "", (float*)&instance))
+            context.MarkEdited();
+        return instance;
+    }
+
+    public Tag Serialize(Colour value, NBTSerializationContext context)
+    {
+        CompoundTag compound = new CompoundTag(null);
+        compound.SetFloat("r", value.R);
+        compound.SetFloat("g", value.G);
+        compound.SetFloat("b", value.B);
+        compound.SetFloat("a", value.A);
+        return compound;
+    }
+
+    public Colour Deserialize(Tag tag, NBTSerializationContext context)
+    {
+        if (tag is CompoundTag compound)
+            return new Colour(compound.GetFloat("r") ?? 0, compound.GetFloat("g") ?? 0, compound.GetFloat("b") ?? 0,
+                compound.GetFloat("a") ?? 0);
+        return Colour.Blank;
+    }
+    
+}
+
+[Serializable]
 public unsafe class InvalidInspector : Inspector, INBTSerializer<object>
 {
     public override object? Edit(object? instance, InspectionContext context)

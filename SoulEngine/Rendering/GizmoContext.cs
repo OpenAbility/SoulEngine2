@@ -61,10 +61,6 @@ public class GizmoContext : EngineObject
         this.shader = shader;
         shader.Bind();
         textureBindPoint = 0;
-
-        shader.Matrix("um_model", ModelMatrix, false);
-        shader.Matrix("um_projection", ProjectionMatrix, false);
-        shader.Matrix("um_view", ViewMatrix, false);
     }
     
     public Shader Shader => shader;
@@ -114,9 +110,13 @@ public class GizmoContext : EngineObject
         
         GL.VertexArrayVertexBuffer(vertexArray, 0, vertexBuffer, 0, sizeof(Vertex));
         
+        shader.Matrix("um_model", ModelMatrix, false);
+        shader.Matrix("um_projection", ProjectionMatrix, false);
+        shader.Matrix("um_view", ViewMatrix, false);
+        
         GL.BindVertexArray(vertexArray);
         GL.DrawArrays(primitiveType, 0, currentVertex);
-
+        
         currentVertex = 0;
     }
 

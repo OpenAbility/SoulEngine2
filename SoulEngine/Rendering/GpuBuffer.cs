@@ -1,5 +1,6 @@
 using OpenTK.Graphics.OpenGL;
 using SoulEngine.Core;
+using SoulEngine.Util;
 
 namespace SoulEngine.Rendering;
 
@@ -80,7 +81,7 @@ public unsafe class GpuBuffer<T> : EngineObject, IDisposable where T : unmanaged
 
     ~GpuBuffer()
     {
-        Dispose();
+        ThreadSafety.Instance.EnsureMainNonBlocking(Dispose);
     }
 }
 

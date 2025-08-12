@@ -1,4 +1,5 @@
 using SoulEngine.Core;
+using SoulEngine.Entities;
 using SoulEngine.Rendering;
 using SoulEngine.UI;
 
@@ -20,5 +21,8 @@ public struct SceneRenderInformation()
 
     public bool PostProcessing;
 
-    public Action<UIContext> RenderUI = (context) => { };
+
+    public Predicate<Entity> GizmoPredicate = _ => true;
+
+    public Action<UIContext> RenderUI = _ => { };
 }

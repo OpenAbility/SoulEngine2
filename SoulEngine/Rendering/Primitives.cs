@@ -36,8 +36,13 @@ public class Primitives
         
         new Vertex(new Vector3(0, 1, 0), new Vector2(0, 0), new Vector3(0, 1, 0)),
         new Vertex(new Vector3(0, 1, 1), new Vector2(0, 1), new Vector3(0, 1, 0)),
-        new Vertex(new Vector3(1, 1, 1), new Vector2(0, 0), new Vector3(0, 1, 0)),
-        new Vertex(new Vector3(0, 1, 0), new Vector2(0, 0), new Vector3(0, 1, 0)),
+        new Vertex(new Vector3(1, 1, 1), new Vector2(1, 1), new Vector3(0, 1, 0)),
+        new Vertex(new Vector3(1, 1, 0), new Vector2(1, 0), new Vector3(0, 1, 0)),
+        
+        new Vertex(new Vector3(0, 0, 0), new Vector2(0, 1), new Vector3(0, -1, 0)),
+        new Vertex(new Vector3(0, 0, 1), new Vector2(0, 0), new Vector3(0, -1, 0)),
+        new Vertex(new Vector3(1, 0, 1), new Vector2(1, 0), new Vector3(0, -1, 0)),
+        new Vertex(new Vector3(1, 0, 0), new Vector2(1, 1), new Vector3(0, -1, 0)),
     ];
 
     private static readonly uint[] CubeIndices =
@@ -50,7 +55,9 @@ public class Primitives
         
         14, 13, 12, 15, 14, 12,
         
-        16, 17, 18, 16, 18, 19
+        16, 17, 18, 16, 18, 19,
+        
+        22, 21, 20, 23, 22, 20
     ];
 
     public Mesh GenerateCube(Vector3 size, Vector3 offset)

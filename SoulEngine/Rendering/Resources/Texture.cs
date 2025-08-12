@@ -50,7 +50,7 @@ public class Texture : Resource
     
     ~Texture()
     {
-        game?.ThreadSafety.EnsureMain(() =>
+        game?.ThreadSafety.EnsureMainNonBlocking(() =>
         {
             if(Handle != -1)
                 GL.DeleteTexture(Handle);
@@ -126,46 +126,9 @@ public class Texture : Resource
 
             int handle = -1;
             Vector3i size = new Vector3i();
-            if (id == "null" || id == "__TEXTURE_AUTOGEN/null")
+            if (id == "null" || id == "__TEXTURE_AUTOGEN/null" || data.ResourceStream == null! || data.ResourceStream == Stream.Null)
             {
-                float[] textureData = new float[16 * 16 * 4];
-                bool coloured = true;
-                int i = 0;
-                for (int y = 0; y < 16; y++)
-                {
-                    for (int x = 0; x < 16; x++)
-                    {
-                        Colour colour = coloured ? Colour.DeepPink : Colour.Black;
-                        coloured = !coloured;
-
-                        textureData[i * 4 + 0] = colour.R;
-                        textureData[i * 4 + 1] = colour.G;
-                        textureData[i * 4 + 2] = colour.B;
-                        textureData[i * 4 + 3] = colour.A;
-                        i++;
-                    }
-
-                    coloured = !coloured;
-                }
-
-                game.ThreadSafety.EnsureMain(() =>
-                {
-                    handle = GL.CreateTexture(TextureTarget.Texture2d);
-                    GL.TextureStorage2D(handle, 1, SizedInternalFormat.Rgba8, 16, 16);
-
-                    GL.TextureSubImage2D(handle, 0, 0, 0, 16, 16, PixelFormat.Rgba, PixelType.Float, textureData);
-                    GL.GenerateTextureMipmap(handle);
-
-                    GL.TextureParameteri(handle, TextureParameterName.TextureMinFilter,
-                        (int)TextureMinFilter.LinearMipmapLinear);
-                    GL.TextureParameteri(handle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
-                    GL.TextureParameteri(handle, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
-                    GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-                    GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-
-                });
-
-                return (handle, new Vector3i(16, 16, 1));
+                return GenerateNullTexture(game);
             }
 
             if (id == "__TEXTURE_AUTOGEN/white")
@@ -297,6 +260,50 @@ public class Texture : Resource
 
             return (handle, size);
         }
+    }
+
+    private static (int, Vector3i) GenerateNullTexture(Game game)
+    {
+        int handle = 0;
+        
+        float[] textureData = new float[16 * 16 * 4];
+        bool coloured = true;
+        int i = 0;
+        for (int y = 0; y < 16; y++)
+        {
+            for (int x = 0; x < 16; x++)
+            {
+                Colour colour = coloured ? Colour.DeepPink : Colour.Black;
+                coloured = !coloured;
+
+                textureData[i * 4 + 0] = colour.R;
+                textureData[i * 4 + 1] = colour.G;
+                textureData[i * 4 + 2] = colour.B;
+                textureData[i * 4 + 3] = colour.A;
+                i++;
+            }
+
+            coloured = !coloured;
+        }
+
+        game.ThreadSafety.EnsureMain(() =>
+        {
+            handle = GL.CreateTexture(TextureTarget.Texture2d);
+            GL.TextureStorage2D(handle, 1, SizedInternalFormat.Rgba8, 16, 16);
+
+            GL.TextureSubImage2D(handle, 0, 0, 0, 16, 16, PixelFormat.Rgba, PixelType.Float, textureData);
+            GL.GenerateTextureMipmap(handle);
+
+            GL.TextureParameteri(handle, TextureParameterName.TextureMinFilter,
+                (int)TextureMinFilter.LinearMipmapLinear);
+            GL.TextureParameteri(handle, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+            GL.TextureParameteri(handle, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
+            GL.TextureParameteri(handle, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TextureParameteri(handle, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+
+        });
+
+        return (handle, new Vector3i(16, 16, 1));
     }
 }
 

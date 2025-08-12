@@ -1,8 +1,9 @@
-in vec3 a_position;
-in vec2 a_uv;
-in vec2 a_uv2;
-in vec3 a_normal;
-in vec4 a_colour;
+layout(location=0) in vec3 a_position;
+layout(location=1) in vec2 a_uv0;
+layout(location=2) in vec2 a_uv1;
+layout(location=3) in vec3 a_normal;
+layout(location=4) in vec3 a_tangent;
+layout(location=5) in vec4 a_colour;
 
 in uvec4 a_indices;
 in vec4 a_weights;
@@ -65,8 +66,8 @@ void main() {
     gl_Position = p;
     
     v_position = a_position;
-    v_uv = a_uv;
-    v_uv2 = a_uv2;
+    v_uv = a_uv0;
+    v_uv2 = a_uv1;
     // We need to make sure all normals are applied world-space :D
     v_normal = mat3(transpose(inverse(um_model))) * a_normal;
     v_colour = a_colour;

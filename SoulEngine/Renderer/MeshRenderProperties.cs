@@ -2,7 +2,6 @@ using System.Buffers;
 using OpenTK.Mathematics;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
-using SoulEngine.Util;
 
 namespace SoulEngine.Renderer;
 

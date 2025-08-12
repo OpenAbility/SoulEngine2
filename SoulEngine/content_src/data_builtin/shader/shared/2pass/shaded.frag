@@ -15,67 +15,11 @@ uniform vec4 uc_albedoColour = vec4(1);
 
 uniform sampler2D ut_normalTexture;
 
-uniform sampler2D ut_shadow_buffers[3];
-uniform vec3 um_shadow_direction;
-uniform bool ub_shadows;
-
 uniform bool ub_shaded;
 
-
-float sampleShadows() {
-    
-    if(!ub_shadows)
-        return 0.0f;
-
-    vec3 coords_ndc = v_shadow_positon.xyz / v_shadow_positon.w;
-
-    
-    float maxExtent = max(abs(coords_ndc.x), abs(coords_ndc.y));
-
-    int buffer_index = int(floor(log2(maxExtent))) + 1;
-    if(maxExtent < 1.0f)
-        buffer_index = 0;
-    
-    if(buffer_index >= 3)
-        return 0.0f;
-    
-    coords_ndc /= pow(2, buffer_index);
-
-    vec3 coords_uv = coords_ndc * 0.5f + 0.5f;
-    
-    #define shadowSampler ut_shadow_buffers[buffer_index]
-    
-    vec2 texelSize = vec2(1.0) / textureSize(shadowSampler, 0);
-   
-    float currentDepth = coords_uv.z;
-
-    float bias = max(0.0005 * (1.0 - dot(v_normal, um_shadow_direction)), 0.0005);
-
-    
-    
-    float shadow = 0.0f;
-
-    float sampleDepth = texture(shadowSampler, coords_uv.xy).r;
-    shadow += currentDepth - bias > sampleDepth  ? 1.0f : 0.0;
-    
-    #undef shadowSampler
-
-    return shadow;
-}
-
 void shade() {
-    vec3 lighting = vec3(0.8f); // texture(ut_lightTexture, (gl_FragCoord.xy + 1.0f) / 2.0f).rgb;
+    vec3 lighting = vec3(1); // = texelFetch(ut_lightTexture, ivec2(gl_FragCoord.xy), 0).rgb;
     
-    vec3 normal = v_normal;
-    if(!gl_FrontFacing)
-        normal *= -1;
-
-
-    vec3 sunDir = -um_shadow_direction;
-    
-    float sunLightStrength = clamp(dot(normal, sunDir), 0, 1 - sampleShadows()) * 10;
-    
-    lighting += sunLightStrength;
     
     f_colour = texture(ut_albedoTexture, v_uv) * v_colour * uc_albedoColour * vec4(lighting, 1);
 
@@ -85,11 +29,12 @@ void shade() {
 
 void gbuffer() {
 
-    vec3 normal = v_normal;
-    if(!gl_FrontFacing)
-        normal *= -1;
+    vec3 normal = normalize(v_normal);
     
     f_normal = normal;
+    f_colour = texture(ut_albedoTexture, v_uv);
+    if(f_colour.a <= 0.0f)
+        discard;
 }
 
 

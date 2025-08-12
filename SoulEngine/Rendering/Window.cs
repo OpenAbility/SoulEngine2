@@ -35,7 +35,7 @@ public unsafe class Window : EngineObject, IRenderSurface, IDisposable
 
     private bool shouldClose;
 
-    private readonly Game Game;
+    public EventBus<InputEvent>? InputEventBus;
 
     /// <summary>
     /// Create a new window
@@ -44,9 +44,8 @@ public unsafe class Window : EngineObject, IRenderSurface, IDisposable
     /// <param name="width">The window width</param>
     /// <param name="height">The window height</param>
     /// <param name="title">The window title</param>
-    public Window(Game game, int width, int height, string title)
+    public Window(int width, int height, string title)
     {
-        Game = game;
 
         SDL.WindowFlags windowFlags = SDL.WindowFlags.Hidden | SDL.WindowFlags.OpenGL;
 
@@ -110,28 +109,28 @@ public unsafe class Window : EngineObject, IRenderSurface, IDisposable
             shouldClose = true;
         else if (sdlEvent.Type == (uint)SDL.EventType.MouseMotion)
         {
-            Game.InputBus.Event(new CursorEvent(new Vector2(sdlEvent.Motion.X, sdlEvent.Motion.Y)));
+            InputEventBus?.Event(new CursorEvent(new Vector2(sdlEvent.Motion.X, sdlEvent.Motion.Y)));
         } else if (sdlEvent.Type == (uint)SDL.EventType.KeyDown)
         {
-            Game.InputBus.Event(new KeyEvent(FromSDL(sdlEvent.Key.Mod), FromSDL(sdlEvent.Key.Scancode), sdlEvent.Key.Repeat ? ButtonAction.Repeat : ButtonAction.Press));
+            InputEventBus?.Event(new KeyEvent(FromSDL(sdlEvent.Key.Mod), FromSDL(sdlEvent.Key.Scancode), sdlEvent.Key.Repeat ? ButtonAction.Repeat : ButtonAction.Press));
             
         } else if (sdlEvent.Type == (uint)SDL.EventType.KeyUp)
         {
-            Game.InputBus.Event(new KeyEvent(FromSDL(sdlEvent.Key.Mod), FromSDL(sdlEvent.Key.Scancode), ButtonAction.Release));
+            InputEventBus?.Event(new KeyEvent(FromSDL(sdlEvent.Key.Mod), FromSDL(sdlEvent.Key.Scancode), ButtonAction.Release));
         } else if (sdlEvent.Type == (uint)SDL.EventType.TextInput)
         {
             string writtenString = Unsafe.GetString((byte*)sdlEvent.Text.Text);
             
-            Game.InputBus.Event(new TypeEvent(writtenString));
+            InputEventBus?.Event(new TypeEvent(writtenString));
         } else if (sdlEvent.Type == (uint)SDL.EventType.MouseWheel)
         {
-            Game.InputBus.Event(new ScrollEvent(new Vector2(sdlEvent.Wheel.X, sdlEvent.Wheel.Y)));
+            InputEventBus?.Event(new ScrollEvent(new Vector2(sdlEvent.Wheel.X, sdlEvent.Wheel.Y)));
         } else if (sdlEvent.Type == (uint)SDL.EventType.MouseButtonDown)
         {
-            Game.InputBus.Event(new MouseEvent(0, FromSDLButton(sdlEvent.Button.Button), ButtonAction.Press));
+            InputEventBus?.Event(new MouseEvent(0, FromSDLButton(sdlEvent.Button.Button), ButtonAction.Press));
         } else if (sdlEvent.Type == (uint)SDL.EventType.MouseButtonUp)
         {
-            Game.InputBus.Event(new MouseEvent(0, FromSDLButton(sdlEvent.Button.Button), ButtonAction.Release));
+            InputEventBus?.Event(new MouseEvent(0, FromSDLButton(sdlEvent.Button.Button), ButtonAction.Release));
         } else if (sdlEvent.Type == (uint)SDL.EventType.GamepadAdded)
         {
             Console.WriteLine("Plugged in gamepad!");

@@ -9,6 +9,7 @@ using SoulEngine.Entities;
 using SoulEngine.Events;
 using SoulEngine.Input;
 using SoulEngine.Localization;
+using SoulEngine.Physics;
 using SoulEngine.PostProcessing;
 using SoulEngine.Renderer;
 using SoulEngine.Rendering;
@@ -46,6 +47,7 @@ public abstract class Game
     public readonly DataRegistry GameRegistry;
     public readonly Localizator Localizator;
     public readonly Primitives Primitives;
+    public readonly PhysicsSimulator Physics;
     
 #if DEVELOPMENT
     public readonly DataRegistry DevelopmentRegistry;
@@ -161,7 +163,9 @@ public abstract class Game
         ResourceManager = new ResourceManager(this);
         ResourceManager.Global = ResourceManager;
 
-        MainWindow = new Window(this, 1280, 720, data.Name);
+        MainWindow = new Window(1280, 720, data.Name);
+        MainWindow.InputEventBus = InputBus;
+        
         RenderContext = new RenderContext(this, MainWindow);
         Primitives = new Primitives(this);
         
@@ -183,6 +187,8 @@ public abstract class Game
         UIContext = new UIContext(this);
         
         SceneRenderer = new SceneRenderer2(this);
+
+        Physics = new PhysicsSimulator(this);
         
 #if DEVELOPMENT
 

@@ -230,5 +230,10 @@ public partial class RenderContext
         GL.BlendFunc(sfactor, dfactor);
     }
     
+    public void BlendFunction(uint index, BlendingFactor sfactor, BlendingFactor dfactor)
+    {
+        GL.BlendFunci(index, sfactor, dfactor);
+    }
+    
     
 }

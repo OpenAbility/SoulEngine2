@@ -38,9 +38,8 @@ public class Framebuffer : EngineObject, IRenderSurface
         
         GL.TextureStorage2D(ColourBuffer, 1, SizedInternalFormat.Rgb16f, size.X, size.Y);
         GL.TextureStorage2D(NormalBuffer, 1, SizedInternalFormat.Rgb8, size.X, size.Y);
-        GL.TextureStorage2D(LightBuffer, 1, SizedInternalFormat.Rgb8, size.X, size.Y);
+        GL.TextureStorage2D(LightBuffer, 1, SizedInternalFormat.Rgb16f, size.X, size.Y);
         GL.TextureStorage2D(DepthBuffer, 1, SizedInternalFormat.Depth24Stencil8, size.X, size.Y);
-        
 
         GL.TextureParameteri(ColourBuffer, TextureParameterName.TextureWrapR, (int)TextureWrapMode.ClampToEdge);
         GL.TextureParameteri(ColourBuffer, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
@@ -78,7 +77,7 @@ public class Framebuffer : EngineObject, IRenderSurface
     
     ~Framebuffer()
     {
-        game?.ThreadSafety.EnsureMain(() =>
+        game?.ThreadSafety.EnsureMainNonBlocking(() =>
         {
             if(Handle != -1)
                 GL.DeleteFramebuffer(Handle);

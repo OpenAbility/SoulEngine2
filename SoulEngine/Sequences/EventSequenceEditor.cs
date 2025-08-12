@@ -18,8 +18,8 @@ namespace SoulEngine.Sequences;
 
 public class EventSequenceEditor : EditorTool
 {
-    private Scene? baseScene;
-    private SceneInfo? baseSceneInfo;
+    private Scene? previewScene;
+    private SceneInfo? previewSceneInfo;
     private readonly List<Entity> additionalEntities = new List<Entity>();
 
     private readonly List<SequenceEvent> events = new List<SequenceEvent>();
@@ -46,15 +46,18 @@ public class EventSequenceEditor : EditorTool
         
         events.Add(seq);
         events.Sort();
+        
+        SetScene(Game.ResourceManager.Load<SceneInfo>("scenes/dev_grid.scene"));
 
     }
 
     public override void Perform()
     {
+        
   
-            DrawView();
-            DrawTimeline();
-            DrawOutline();
+        DrawView();
+        DrawTimeline();
+        DrawOutline();
     }
 
     private void DrawView()
@@ -78,7 +81,7 @@ public class EventSequenceEditor : EditorTool
             Vector2 position = ImGui.GetCursorScreenPos();
 
 
-            if (baseScene == null)
+            if (previewScene == null)
             {
                 ImGui.Text("No Scene Loaded! Provide a base scene in the outline!");
                 goto ViewEnd;
@@ -95,15 +98,17 @@ public class EventSequenceEditor : EditorTool
             renderInformation.CameraSettings = editCamera ? sceneCamera.CreateCameraSettings(viewportBuffer, true, selectedEntity) : CameraSettings.Game;
             renderInformation.DeltaTime = Game.DeltaTime;
             renderInformation.EnableCulling = false;
-            renderInformation.EntityCollection = baseScene;
+            renderInformation.EntityCollection = previewScene;
             renderInformation.PerformCullingPass = false;
             renderInformation.PostProcessing = true;
             renderInformation.RenderContext = Game.RenderContext;
-            if (baseScene.Director != null)
-                renderInformation.RenderUI = baseScene.Director.RenderUI;
             renderInformation.RenderPipeline = Game.RenderPipeline;
             renderInformation.TargetSurface = viewportBuffer;
             renderInformation.UIContext = Game.UIContext;
+            renderInformation.CameraSettings.ShowGizmos = editCamera;
+
+            renderInformation.GizmoPredicate = entity => entity.Marked("actor_added");
+            
             Game.SceneRenderer.PerformGameRender(renderInformation);
 
             ImGui.Image(new ImTextureID(viewportBuffer.ColourBuffer),
@@ -154,15 +159,15 @@ public class EventSequenceEditor : EditorTool
             {
                 if (Game.Keys.LeftShift.Down || Game.Keys.RightShift.Down)
                 {
-                    timelineScroll += io.MouseWheel;
+                    timelineScroll -= io.MouseWheel * 10.0f * timelineZoomFactor;
                 }
                 else if (Game.Keys.LeftControl.Down || Game.Keys.RightControl.Down)
                 {
-                    timelineZoomFactor += io.MouseWheel * 0.1f * timelineZoomFactor;
+                    timelineZoomFactor += io.MouseWheel * 0.5f * timelineZoomFactor;
                 }
                 else
                 {
-                    timelineRowScroll += io.MouseWheel;
+                    timelineRowScroll += io.MouseWheel * 0.5f;
                 }
                 
                 timelineScroll += io.MouseWheelH;
@@ -273,10 +278,10 @@ public class EventSequenceEditor : EditorTool
     {
         if (ImGui.Begin("Outline##" + ID))
         {
-            string baseSceneID = baseSceneInfo?.ResourceID ?? "";
-            if (ImGui.InputText("Base Scene", ref baseSceneID, 1024, ImGuiInputTextFlags.EnterReturnsTrue))
+            string previewSceneID = previewSceneInfo?.ResourceID ?? "";
+            if (ImGui.InputText("Preview Scene", ref previewSceneID, 1024, ImGuiInputTextFlags.EnterReturnsTrue))
             {
-                SetScene(Game.ResourceManager.Load<SceneInfo>(baseSceneID));
+                SetScene(Game.ResourceManager.Load<SceneInfo>(previewSceneID));
             }
 
             ImGui.SameLine();
@@ -285,7 +290,7 @@ public class EventSequenceEditor : EditorTool
                 browser.Show();
             }
 
-            if (baseScene != null && ImGui.BeginChild("Additional Actors",
+            if (previewScene != null && ImGui.BeginChild("Additional Actors",
                     new Vector2(ImGui.GetContentRegionAvail().X, 0),
                     ImGuiChildFlags.AutoResizeX | ImGuiChildFlags.AutoResizeY | ImGuiChildFlags.Borders))
             {
@@ -310,7 +315,7 @@ public class EventSequenceEditor : EditorTool
                         if (ImGui.Selectable(type))
                         {
                             Entity? e = EntityTemplateFactory
-                                .Initialize(type, type + " (" + Random.Shared.Next(1000, 9999) + ")", baseScene);
+                                .Initialize(type, type + " (" + Random.Shared.Next(1000, 9999) + ")", previewScene);
 
                             if (e != null)
                             {
@@ -326,7 +331,7 @@ public class EventSequenceEditor : EditorTool
                 ImGui.EndChild();
             }
 
-            if (baseScene != null && selectedEntity != null && ImGui.BeginChild("Actor Setup",
+            if (previewScene != null && selectedEntity != null && ImGui.BeginChild("Actor Setup",
                     new Vector2(ImGui.GetContentRegionAvail().X, 0),
                     ImGuiChildFlags.Borders | ImGuiChildFlags.AutoResizeY))
             {
@@ -335,11 +340,12 @@ public class EventSequenceEditor : EditorTool
                 
                 if (ImGui.Button("Delete"))
                 {
-                    baseScene.DeleteEntity(selectedEntity);
+                    previewScene.DeleteEntity(selectedEntity);
+                    additionalEntities.Remove(selectedEntity);
                     selectedEntity = null;
                 }
                 
-                ImGui.EndPopup();
+                ImGui.EndChild();
             }
 
         }
@@ -349,22 +355,22 @@ public class EventSequenceEditor : EditorTool
 
     private void SetScene(SceneInfo? info)
     {
-        if (baseScene != null)
+        if (previewScene != null)
         {
             foreach (var entity in additionalEntities)
             {
-                baseScene.DeleteEntity(entity);
+                previewScene.DeleteEntity(entity);
             }
         }
 
-        baseSceneInfo = info;
-        baseScene = info?.Instantiate();
+        previewSceneInfo = info;
+        previewScene = info?.Instantiate();
 
-        if (baseScene != null)
+        if (previewScene != null)
         {
             foreach (var entity in additionalEntities)
             {
-                baseScene.AddEntity(entity);
+                previewScene.AddEntity(entity);
             }
         }
 

@@ -10,6 +10,7 @@ public interface IRenderPipeline
 {
     public void SubmitMeshRender(RenderLayer renderLayer, MeshRenderProperties renderProperties);
     public void SubmitDrawList(RenderLayer renderLayer, DrawListData drawListData);
+    public void SubmitLightDraw(LightSubmitInformation light);
     public IEnumerable<RenderLayer> GetLayers();
     
     public void DrawFrame(PipelineData pipelineData);

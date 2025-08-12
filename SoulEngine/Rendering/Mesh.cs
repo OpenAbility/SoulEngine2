@@ -119,7 +119,7 @@ public unsafe class Mesh : EngineObject
 
     ~Mesh()
     {
-        game.ThreadSafety.EnsureMain(() =>
+        game.ThreadSafety.EnsureMainNonBlocking(() =>
         {
             bakedVertexBuffer?.Dispose();
             bakedIndexBuffer?.Dispose();
