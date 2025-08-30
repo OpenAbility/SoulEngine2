@@ -2,7 +2,9 @@
 // provides a good basis for how light shader code ought to be written
 // it's intentionally very simple
 
-layout(location=0) out vec4 f_light;
+layout(location=0) out vec4 f_albedo;
+layout(location=1) out vec4 f_normal;
+layout(location=2) out vec4 f_light;
 
 uniform sampler2D ut_normal;
 uniform sampler2D ut_depth;
@@ -15,10 +17,11 @@ uniform vec3 uv_direction;
 uniform mat4 um_inv_cam;
 
 // For shadow sampling 
-uniform mat4 um_shadow_projection;
-uniform mat4 um_shadow_view;
+uniform mat4 um_shadow_projections[3];
+uniform mat4 um_shadow_views[3];
 uniform bool ub_shadows;
-uniform sampler2D ut_shadow_buffers[3];
+uniform sampler2DArray ut_shadow_buffer;
+uniform int ut_shadow_buffer_count;
 
 // Light parameters
 uniform vec4 uc_colour;
@@ -26,7 +29,7 @@ uniform vec4 uc_colourAmbient;
 
 
 float sampleShadow(vec4 shadowPosition, vec3 surfaceNormal) {
-    if(!ub_shadows)
+    if(!ub_shadows || ut_shadow_buffer_count <= 0)
         return 0.0f;
     
     vec3 coordsNDC = shadowPosition.xyz / shadowPosition.w;
@@ -35,26 +38,23 @@ float sampleShadow(vec4 shadowPosition, vec3 surfaceNormal) {
     float maxExtent = max(abs(coordsNDC.x), abs(coordsNDC.y));
 
     // Calculate the buffer index - if we're inside buffer 0 it'll not return properly so we override it
-    int bufferIndex = int(floor(log2(maxExtent))) + 1;
+    // We add a small epsilon to prevent sampling outside the shadow buffer (as that does happen)
+    int bufferIndex = int(floor(log2(maxExtent + 0.01f))) + 1;
     if(maxExtent < 1.0f)
         bufferIndex = 0;
     // We only have 3 buffers.
     if(bufferIndex >= 3)
         return 0.0f;
 
-    // Cast down to proper buffer scale
-    coordsNDC /= pow(2, bufferIndex);
+    // Cast down to proper buffer scale (z-axis should remain as-is tho)
+    coordsNDC.xy /= pow(2, bufferIndex);
 
     vec3 coordsUV = coordsNDC * 0.5f + 0.5f;
     
     float currentDepth = coordsUV.z;
     float shadowBias = 0.0f; //mix(clamp(dot(uv_direction, surfaceNormal), 0, 1), 0.0005f, 0.00005f);
     
-    #define shadowSampler ut_shadow_buffers[bufferIndex]
-    
-    float sampleDepth = texture(shadowSampler, coordsUV.xy).r;
-    
-    #undef shadowSampler
+    float sampleDepth = texture(ut_shadow_buffer, vec3(coordsUV.xy, bufferIndex)).r;
     
     return currentDepth - shadowBias > sampleDepth ? 1.0f : 0.0;
 }
@@ -74,7 +74,7 @@ void main() {
     vec3 position = positionClipped.xyz / positionClipped.w;
     
     // Project from the shadow POV
-    vec4 shadowProject = um_shadow_projection * um_shadow_view * vec4(position, 1);
+    vec4 shadowProject = um_shadow_projections[0] * um_shadow_views[0] * vec4(position, 1);
     
     
     float shadowStrength = sampleShadow(shadowProject, normal);

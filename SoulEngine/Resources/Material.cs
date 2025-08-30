@@ -25,60 +25,70 @@ public class Material : Resource
 
     public void BindShader() => Shader.Bind();
     
-    public void BindCamera(CameraSettings cameraSettings, Matrix4 modelMatrix)
+    public void BindCamera(ShaderBinder binder, CameraSettings cameraSettings, Matrix4 modelMatrix)
     {
-        Shader.Matrix("um_projection", cameraSettings.ProjectionMatrix, false);
-        Shader.Matrix("um_view", cameraSettings.ViewMatrix, false);
-        Shader.Matrix("um_model", modelMatrix, false);
-        Shader.Uniform3f("um_camera_direction", cameraSettings.CameraDirection);
+        binder.BindUniform("um_projection", cameraSettings.ProjectionMatrix, false);
+        binder.BindUniform("um_view", cameraSettings.ViewMatrix, false);
+        binder.BindUniform("um_model", modelMatrix, false);
+        binder.BindUniform("um_camera_direction", cameraSettings.CameraDirection);
     }
 
-    public void BindShadowPassCamera(ShadowCameraSettings shadowCameraSettings, Matrix4 modelMatrix)
+    public void BindShadowPassCamera(ShaderBinder binder, Matrix4 view, Matrix4 projection, Matrix4 modelMatrix)
     {
-        Shader.Matrix("um_projection", shadowCameraSettings.ProjectionMatrix, false);
-        Shader.Matrix("um_view", shadowCameraSettings.ViewMatrix, false);
-        Shader.Matrix("um_model", modelMatrix, false);
-        Shader.Uniform3f("um_camera_direction", shadowCameraSettings.Direction);
+        binder.BindUniform("um_projection", projection, false);
+        binder.BindUniform("um_view", view, false);
+        binder.BindUniform("um_model", modelMatrix, false);
     }
-
-    public void BindShadows(ShadowCameraSettings shadowCameraSettings, Depthbuffer[] shadowBuffers)
-    {
-        Shader.Matrix("um_shadow_projection", shadowCameraSettings.ProjectionMatrix, false);
-        Shader.Matrix("um_shadow_view", shadowCameraSettings.ViewMatrix, false);
-        
-        Shader.Uniform3f("um_shadow_direction", shadowCameraSettings.Direction);
-
-        for (uint i = 0; i < shadowBuffers.Length; i++)
-        {
-            shadowBuffers[i].BindDepth(i);
-        }
-        
-        Shader.Uniform1i("ut_shadow_buffers[0]", [0, 1, 2]);
-
-    }
-
-    public void BindUniforms()
+    
+    public void BindUniforms(ShaderBinder binder)
     {
         uint textureBindingPoint = TextureBindingPoint;
-        
-        foreach (var value in values)
-        {
-            if (value.Value is Texture texture)
-            {
 
-                if (EngineVarContext.Global.GetBool("e_showmips", false))
-                {
-                    mipTexture ??= resourceManager.Load<Texture>("tex/mipmap_display.dds");
-                    texture = mipTexture;
-                }
-                
-                uint idx = textureBindingPoint++;
-                texture.Bind(idx);
-                Shader.Uniform1i(value.Key, (int)idx);
-            } else if (value.Value is Vector4 vec4)
+        bool showMips = EngineVarContext.Global.GetBool("e_showmips", false);
+        
+        if (showMips)
+            mipTexture ??= resourceManager.Load<Texture>("tex/mipmap_display.dds");
+
+        Texture nullTexture = resourceManager.Load<Texture>("__TEXTURE_AUTOGEN/null");
+        foreach (var parameter in Shader.Parameters)
+        {
+
+            if (!values.TryGetValue(parameter.Name, out var value))
             {
-                Shader.Uniform4f(value.Key, vec4);
+                if (parameter.IsSampler)
+                {
+                    binder.BindTexture(parameter.Name, nullTexture);
+                    binder.BindUniform(parameter.Name + "_assigned", 0);
+                }
+             
+                continue;
             }
+
+            if (parameter.IsSampler)
+            {
+                binder.BindTexture(parameter.Name, showMips ? mipTexture! : (Texture)value);
+                binder.BindUniform(parameter.Name + "_assigned", 1);
+            } 
+            else if (parameter.Type == ShaderParameterType.Float && value is float fvec1)
+                binder.BindUniform(parameter.Name, fvec1);
+            else if (parameter.Type == ShaderParameterType.FloatVec2 && value is Vector2 fvec2)
+                binder.BindUniform(parameter.Name, fvec2);
+            else if (parameter.Type == ShaderParameterType.FloatVec3 && value is Vector3 fvec3)
+                binder.BindUniform(parameter.Name, fvec3);
+            else if (parameter.Type == ShaderParameterType.FloatVec4 && value is Vector4 fvec4)
+                binder.BindUniform(parameter.Name, fvec4);
+            else if (parameter.Type == ShaderParameterType.FloatVec4 && value is Colour fcolour4)
+                binder.BindUniform(parameter.Name, fcolour4);
+            
+            else if (parameter.Type == ShaderParameterType.Int && value is int ivec1)
+                binder.BindUniform(parameter.Name, ivec1);
+            else if (parameter.Type == ShaderParameterType.IntVec2 && value is Vector2i ivec2)
+                binder.BindUniform(parameter.Name, ivec2);
+            else if (parameter.Type == ShaderParameterType.IntVec3 && value is Vector3i ivec3)
+                binder.BindUniform(parameter.Name, ivec3);
+            else if (parameter.Type == ShaderParameterType.IntVec4 && value is Vector4i ivec4)
+                binder.BindUniform(parameter.Name, ivec4);
+
         }
     }
 
@@ -120,10 +130,6 @@ public class Material : Resource
                 
                 if (parameter.IsSampler)
                     values[parameter.Name] = data.ResourceManager.Load<Texture>(jsonValue.Value<string>()!);
-
-            } else if (parameter.IsSampler)
-            {
-                values[parameter.Name] = data.ResourceManager.Load<Texture>("__TEXTURE_AUTOGEN/white");
             }
         }
     }

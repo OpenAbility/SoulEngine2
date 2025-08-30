@@ -15,10 +15,19 @@ public class Profiler : EngineObject
     private Dictionary<string, TimeSpan> measuredTimespans = new Dictionary<string, TimeSpan>();
     private Dictionary<string, TimeSpan> lastFrameBuffer = new Dictionary<string, TimeSpan>();
 
+    private Dictionary<string, long> measuredCounters = new Dictionary<string, long>();
+    private Dictionary<string, long> lastCounterBuffer = new Dictionary<string, long>();
+
     public void SubmitTime(string segment, TimeSpan timeSpan)
     {
         measuredTimespans.TryAdd(segment, TimeSpan.Zero);
         measuredTimespans[segment] += timeSpan;
+    }
+
+    public void Count(string counter, long amount)
+    {
+        lastCounterBuffer.TryAdd(counter, 0);
+        lastCounterBuffer[counter] += amount;
     }
 
     public ProfilerSegment Segment(string name)
@@ -36,10 +45,16 @@ public class Profiler : EngineObject
     public void Reset()
     {
         (measuredTimespans, lastFrameBuffer) = (lastFrameBuffer, measuredTimespans);
+        (measuredCounters, lastCounterBuffer) = (lastCounterBuffer, measuredCounters);
         
         foreach (var timespan in measuredTimespans.Keys)
         {
             measuredTimespans[timespan] = TimeSpan.Zero;
+        }
+
+        foreach (var counter in measuredCounters.Keys)
+        {
+            measuredCounters[counter] = 0;
         }
 
         

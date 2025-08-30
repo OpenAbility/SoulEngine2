@@ -25,6 +25,7 @@ public class PostProcessor : EngineObject
         
         EnableEffect(new BloomEffect());
         EnableEffect(new ColourEffects());
+        EnableEffect(new DepthOfFieldEffect(1));
         
     
 

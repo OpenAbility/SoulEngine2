@@ -45,7 +45,7 @@ public class BlurPass
         framebuffers = buffers.ToArray();
     }
 
-    public Framebuffer Perform(Framebuffer framebuffer, Game game)
+    public Framebuffer Perform(IColourBufferProvider framebuffer, Game game)
     {
         if (framebuffer.FramebufferSize != size)
         {

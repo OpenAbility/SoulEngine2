@@ -58,11 +58,6 @@ public class Depthbuffer : EngineObject, IRenderSurface
         });
 
     }
-    
-    public void BindDepth(uint index)
-    {
-        GL.BindTextureUnit(index, DepthBuffer);
-    }
 
     public void BindFramebuffer()
     {

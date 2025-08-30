@@ -108,21 +108,7 @@ public class SceneRenderer2 : EngineObject
             entity.Render(pipeline, deltaTime);
         }
     }
-
-    public void PushShadowInformation(IEntityCollection scene, ref PipelineData pipelineData)
-    {
-        pipelineData.EnableShadows = false;
-
-        ShadowCameraComponent? shadowCamera = scene.ShadowCamera;
-        if (shadowCamera != null)
-        {
-            pipelineData.ShadowCameraSettings.ViewMatrix = shadowCamera.GetView();
-            pipelineData.ShadowCameraSettings.ProjectionMatrix = shadowCamera.GetProjection();
-            pipelineData.ShadowCameraSettings.Direction = shadowCamera.Entity.Forward;
-            
-            pipelineData.EnableShadows = EngineVarContext.Global.GetBool("e_shadows", true);
-        }
-    }
+    
 
     public void PerformGameRender(SceneRenderInformation info)
     {
@@ -134,8 +120,8 @@ public class SceneRenderer2 : EngineObject
         pipelineData.TargetSurface = info.TargetSurface;
         pipelineData.UIContext = info.UIContext;
         pipelineData.PostProcessing = EngineVarContext.Global.GetBool("e_post", true) && info.PostProcessing;
-
-        PushShadowInformation(info.EntityCollection, ref pipelineData);
+        pipelineData.EnableShadows = EngineVarContext.Global.GetBool("e_shadows", true);
+        
         if(info.PerformCullingPass)
             PerformEntityCulling(info.EntityCollection, pipelineData.CameraSettings, info.TargetSurface);
         PerformEntityRender(info.EntityCollection, info.DeltaTime, info.RenderPipeline, info.EnableCulling);
@@ -148,8 +134,19 @@ public class SceneRenderer2 : EngineObject
             Vector2i targetResolution = new Vector2i(3840, 2160);
 
             float ratio = (float)info.TargetSurface.FramebufferSize.X / info.TargetSurface.FramebufferSize.Y;
+            float originalRatio = (float)targetResolution.X / targetResolution.Y;
             
-            info.UIContext.OnBegin(new Vector2i(targetResolution.X, (int)(targetResolution.X / ratio)));
+            // Scale based on the smallest resolution (ideally we'd always render at regular 2160p, but that would
+            //  just leave us with ugly-ass UI spacing on top or sides)
+            Vector2i resolution;
+            if (originalRatio > ratio) // Weird comparison, but if it's greater that means the screen is wider than the target
+                resolution = new Vector2i(targetResolution.X, (int)(targetResolution.X / ratio));
+            else
+                resolution = new Vector2i((int)(targetResolution.Y * ratio), targetResolution.Y);
+
+
+            
+            info.UIContext.OnBegin(resolution);
 
             info.RenderUI(info.UIContext);
             

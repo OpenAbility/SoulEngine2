@@ -342,6 +342,18 @@ public abstract class Game
             imguiPass.Name = "imgui";
             imguiPass.Surface = MainWindow;
             imguiPass.DepthStencilSettings.LoadOp = AttachmentLoadOp.Clear;
+            imguiPass.ColorSettings =
+            [
+                new FramebufferAttachmentSettings()
+                {
+                    StoreOp = AttachmentStoreOp.Store,
+                    LoadOp = AttachmentLoadOp.Clear,
+                    ClearValue =
+                    {
+                        Colour = Colour.Black
+                    }
+                }
+            ];
 
             RenderContext.BeginRendering(imguiPass);
 
@@ -508,6 +520,15 @@ public abstract class Game
             if (ImGui.BeginMenuBar())
             {
                 MenuContext.Draw();
+
+                /*
+                if (Workspace.Current != null)
+                {
+                    ImGui.SetNextItemWidth(ImGui.GetFontSize() * 32);
+                    ImGui.InputText("Workspace Name", ref Workspace.Current.Name, 1024);
+                }
+                */
+
                 ImGui.EndMenuBar();
             }
             

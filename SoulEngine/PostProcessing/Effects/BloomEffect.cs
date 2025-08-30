@@ -1,4 +1,5 @@
 using SoulEngine.Core;
+using SoulEngine.Data;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
 
@@ -6,7 +7,7 @@ namespace SoulEngine.PostProcessing.Effects;
 
 public class BloomEffect : PostEffect
 {
-    private readonly BlurPass blurPass = new BlurPass(2);
+    private readonly BlurPass blurPass = new BlurPass(4);
 
     private Framebuffer framebuffer = null!;
     private readonly Shader mix;
@@ -32,6 +33,7 @@ public class BloomEffect : PostEffect
         mix.Bind();
         mix.Uniform1i("ut_colour0", 0);
         mix.Uniform1i("ut_blurred", 1);
+        mix.Uniform1f("uf_strength", EngineVarContext.Global.GetFloat("bloom_strength", 0.1f));
         
         DrawQuad();
         

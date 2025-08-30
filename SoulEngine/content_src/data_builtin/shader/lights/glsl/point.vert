@@ -10,10 +10,12 @@ layout(std430, binding=20) restrict readonly buffer ib_vertex_buffer {
     VertexData vertices[];
 } ib_vertices;
 
+uniform mat4 um_projection;
+uniform mat4 um_view;
+uniform mat4 um_model;
 
 void main() {
     VertexData v = ib_vertices.vertices[gl_VertexID];
     
-    gl_Position = vec4(v.position, 1.0);
-    gl_Position.z = 0.0f;
+    gl_Position = um_projection * um_view * um_model * vec4(v.position, 1);
 }

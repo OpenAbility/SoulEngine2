@@ -50,8 +50,29 @@ public class Shader : Resource
     
     public int UniformLocation(string name)
     {
+        // Array index
+        if (name.Contains("#"))
+        {
+            string[] parts = name.Split("#");
+            if (parts.Length != 2)
+                throw new Exception("Array index wrong size");
+            
+            if (!parameters.TryGetValue(parts[0], out ShaderParameter arrayValue))
+                return -1;
+
+            int index = int.Parse(parts[1]);
+
+            if (index >= arrayValue.Count)
+                return -1;
+
+            return arrayValue.Location + index;
+
+
+        }
+        
         if (parameters.TryGetValue(name, out ShaderParameter value))
             return value.Location;
+        
         return -1;
     }
     
@@ -79,6 +100,8 @@ public class Shader : Resource
     
     public void Uniform1i(string name, int[] value)
     {
+        if(value.Length == 0)
+            return;
         int loc = UniformLocation(name);
         GL.ProgramUniform1i(handle, loc, value.Length, ref value[0]);
     }
@@ -109,6 +132,12 @@ public class Shader : Resource
     {
         int loc = UniformLocation(name);
         GL.ProgramUniform4f(handle, loc, value.X, value.Y, value.Z, value.W);
+    }
+    
+    public void Uniform4f(string name, Colour value)
+    {
+        int loc = UniformLocation(name);
+        GL.ProgramUniform4f(handle, loc, value.R, value.G, value.B, value.A);
     }
 
     public unsafe void BindBuffer<T>(string name, GpuBuffer<T> buffer, int offset, int size) where T : unmanaged

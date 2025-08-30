@@ -21,7 +21,6 @@ public class Scene : IEntityCollection
     public IEnumerable<Entity> EntityEnumerable => Entities;
     
     public CameraComponent? Camera => GetComponents<CameraComponent>().OrderDescending().FirstOrDefault();
-    public ShadowCameraComponent? ShadowCamera => GetComponents<ShadowCameraComponent>().FirstOrDefault();
     
 
     public Scene(Game game)

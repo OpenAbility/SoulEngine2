@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<Shader>
+    <Vertex backend="OPENGL" src="shader/lights/glsl/point.vert"/>
+    <Fragment backend="OPENGL" src="shader/lights/glsl/point.frag"/>
+</Shader> 

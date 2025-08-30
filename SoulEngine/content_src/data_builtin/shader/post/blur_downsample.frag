@@ -16,7 +16,6 @@ void main() {
     + samplePixel(v_uv + vec2(-texelSize.x, 0.0))
     + samplePixel(v_uv + vec2(0.0,  texelSize.y))
     + samplePixel(v_uv + vec2(0.0, -texelSize.y))) / 5.0;
-    f_colour.a = 1;
 }
 
 /*

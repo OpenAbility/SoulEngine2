@@ -89,38 +89,35 @@ public partial class RenderContext
     
     private int currentSurface;
 
-    private void PushPassState(RenderPass pass)
+    private unsafe void PushPassState(RenderPass pass)
     {
         int fbo = pass.Surface.GetSurfaceHandle();
         
         currentSurface = fbo;
-        pass.Surface.BindFramebuffer();
         
+        ColorBuffer[] drawBuffers = new ColorBuffer[pass.ColorSettings.Length];
         
-       
-        if (pass.DepthStencilSettings.LoadOp == AttachmentLoadOp.Clear)
+        for (int i = 0; i < pass.ColorSettings.Length; i++)
         {
-            GL.ClearDepthf(pass.DepthStencilSettings.ClearValue.Depth);
-            GL.ClearStencil(pass.DepthStencilSettings.ClearValue.Stencil);
-            GL.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-            //GL.ClearNamedFramebufferfi(fbo, Buffer.Stenci, 0, pass.DepthStencilSettings.ClearValue.Depth, pass.DepthStencilSettings.ClearValue.Stencil);
+            if (pass.ColorSettings[i].StoreOp == AttachmentStoreOp.Store)
+                drawBuffers[i] = (ColorBuffer)((uint)ColorBuffer.ColorAttachment0 + i);
+            else if (pass.ColorSettings[i].StoreOp == AttachmentStoreOp.DontStore)
+                drawBuffers[i] = ColorBuffer.None;
         }
-        else if (pass.DepthStencilSettings.LoadOp == AttachmentLoadOp.DontCare)
-        {
-            GL.InvalidateNamedFramebufferData(fbo, 1, [FramebufferAttachment.DepthStencilAttachment]);
-        }
+        
+        if(fbo != 0) // We can't configure FB0
+            GL.NamedFramebufferDrawBuffers(fbo, drawBuffers.Length, drawBuffers);
+        
 
         if (pass.DepthStencilSettings.StoreOp == AttachmentStoreOp.Store)
         {
             GL.DepthMask(true);
-        } else if (pass.DepthStencilSettings.StoreOp == AttachmentStoreOp.Store)
+        } else if (pass.DepthStencilSettings.StoreOp == AttachmentStoreOp.DontStore)
         {
             GL.DepthMask(false);
         }
-        
 
-
-        Span<float> cBuf = stackalloc float[4];
+        float* cBuf = stackalloc float[4];
         
         for (int i = 0; i < pass.ColorSettings.Length; i++)
         {
@@ -132,22 +129,25 @@ public partial class RenderContext
                 cBuf[2] = pass.ColorSettings[i].ClearValue.Colour.B;
                 cBuf[3] = pass.ColorSettings[i].ClearValue.Colour.A;
                 
-                GL.ClearNamedFramebufferf(fbo, Buffer.Color, i, cBuf);
+                GL.ClearNamedFramebufferfv(fbo, Buffer.Color, i, cBuf);
             }
             else if (pass.ColorSettings[i].LoadOp == AttachmentLoadOp.DontCare)
             {
                 GL.InvalidateNamedFramebufferData(fbo, 1, [(FramebufferAttachment)((uint)FramebufferAttachment.ColorAttachment0 + i)]);
             }
-            
-            
-            if (pass.ColorSettings[i].StoreOp == AttachmentStoreOp.Store)
-            {
-                GL.ColorMaski((uint)i, true, true, true, true);
-            }
-            else if (pass.ColorSettings[i].StoreOp == AttachmentStoreOp.DontStore)
-            {
-                GL.ColorMaski((uint)i, false, false, false, false);
-            }
+        }
+        
+        pass.Surface.BindFramebuffer();
+        
+        if (pass.DepthStencilSettings.LoadOp == AttachmentLoadOp.Clear)
+        {
+            GL.ClearDepthf(pass.DepthStencilSettings.ClearValue.Depth);
+            GL.ClearStencil(pass.DepthStencilSettings.ClearValue.Stencil);
+            GL.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+        }
+        else if (pass.DepthStencilSettings.LoadOp == AttachmentLoadOp.DontCare)
+        {
+            GL.InvalidateNamedFramebufferData(fbo, 1, [FramebufferAttachment.DepthStencilAttachment]);
         }
 
     }

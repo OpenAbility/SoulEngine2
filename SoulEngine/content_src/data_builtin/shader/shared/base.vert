@@ -25,7 +25,6 @@ uniform mat4 um_model;
 uniform mat4 um_shadow_projection;
 uniform mat4 um_shadow_view;
 
-uniform int ui_shadow_index;
 
 
 void main() {
@@ -36,7 +35,6 @@ void main() {
     
     vec3 p = (um_model * vec4(v.position, 1)).xyz;
     gl_Position = um_projection * um_view * vec4(p, 1.0);
-    gl_Position.xyz /= ui_shadow_index;
     
     v_shadow_positon = um_shadow_projection * um_shadow_view * vec4(p, 1);
     v_position = p;

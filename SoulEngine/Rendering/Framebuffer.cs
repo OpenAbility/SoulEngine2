@@ -7,7 +7,7 @@ namespace SoulEngine.Rendering;
 /// <summary>
 /// A default framebuffer
 /// </summary>
-public class Framebuffer : EngineObject, IRenderSurface
+public class Framebuffer : EngineObject, IColourBufferProvider
 {
     private readonly Game game;
     public readonly int Handle;
@@ -36,8 +36,8 @@ public class Framebuffer : EngineObject, IRenderSurface
         NormalBuffer = GL.CreateTexture(TextureTarget.Texture2d);
         LightBuffer = GL.CreateTexture(TextureTarget.Texture2d);
         
-        GL.TextureStorage2D(ColourBuffer, 1, SizedInternalFormat.Rgb16f, size.X, size.Y);
-        GL.TextureStorage2D(NormalBuffer, 1, SizedInternalFormat.Rgb8, size.X, size.Y);
+        GL.TextureStorage2D(ColourBuffer, 1, SizedInternalFormat.Rgba16f, size.X, size.Y);
+        GL.TextureStorage2D(NormalBuffer, 1, SizedInternalFormat.Rgb16f, size.X, size.Y);
         GL.TextureStorage2D(LightBuffer, 1, SizedInternalFormat.Rgb16f, size.X, size.Y);
         GL.TextureStorage2D(DepthBuffer, 1, SizedInternalFormat.Depth24Stencil8, size.X, size.Y);
 
@@ -82,6 +82,8 @@ public class Framebuffer : EngineObject, IRenderSurface
             if(Handle != -1)
                 GL.DeleteFramebuffer(Handle);
             GL.DeleteTexture(ColourBuffer);
+            GL.DeleteTexture(NormalBuffer);
+            GL.DeleteTexture(LightBuffer);
             GL.DeleteTexture(DepthBuffer);
         });
 

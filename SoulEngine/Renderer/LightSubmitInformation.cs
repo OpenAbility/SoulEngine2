@@ -11,11 +11,15 @@ public struct LightSubmitInformation
     public LightComponent Component;
 
     public Vector3 Direction;
+    public Vector3 Position;
     
     public Shader LightShader;
 
     public LightShaderBind? ShaderBind;
     public object? UserData;
+
+    public CSMShadowBuffer? ShadowBuffer;
+    public ShadowLevelInformation[] ShadowMaps = [];
 
     public LightSubmitInformation(Mesh mesh, Matrix4 modelMatrix, LightComponent component, Shader lightShader)
     {
@@ -23,7 +27,15 @@ public struct LightSubmitInformation
         ModelMatrix = modelMatrix;
         Component = component;
         LightShader = lightShader;
+
+        ShadowMaps = [];
     }
+}
+
+public struct ShadowLevelInformation
+{
+    public Matrix4 ViewMatrix;
+    public Matrix4 ProjectionMatrix;
 }
 
 public delegate void LightShaderBind(in LightSubmitInformation submitInfo);
