@@ -23,14 +23,13 @@ public abstract class PostEffect : EngineObject, IComparable<PostEffect>
         return Priority.CompareTo(other.Priority);
     }
 
-    private static DrawList drawList = new DrawList(PrimitiveType.TriangleFan);
+    private static DrawList drawList = new DrawList(PrimitiveType.Triangles);
     
     protected void DrawQuad()
     {
         drawList.Vertex(0, 0, 0, 0, Colour.Blank);
-        drawList.Vertex(1, 0, 0, 0, Colour.Blank);
-        drawList.Vertex(1, 1, 0, 0, Colour.Blank);
-        drawList.Vertex(0, 1, 0, 0, Colour.Blank);
+        drawList.Vertex(3, 0, 0, 0, Colour.Blank);
+        drawList.Vertex(0, 3, 0, 0, Colour.Blank);
             
         drawList.Submit();
     }

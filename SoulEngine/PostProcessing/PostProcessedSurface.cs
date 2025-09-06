@@ -1,5 +1,6 @@
 using OpenTK.Mathematics;
 using SoulEngine.Core;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 
 namespace SoulEngine.PostProcessing;
@@ -9,6 +10,8 @@ public class PostProcessedSurface
     public readonly Framebuffer Framebuffer;
     public readonly PostProcessor PostProcessor;
     public readonly IRenderSurface UnderlyingSurface;
+    
+    public CameraSettings CameraSettings { get; private set; }
 
     public bool RebuildFrameResources => frameCount <= 1;
     private int frameCount;
@@ -32,10 +35,11 @@ public class PostProcessedSurface
     public Framebuffer LastUsedBuffer { get; private set; }
     
 
-    internal void InitializeFrame()
+    internal void InitializeFrame(CameraSettings cameraSettings)
     {
         frameCount++;
         LastUsedBuffer = Framebuffer;
+        CameraSettings = cameraSettings;
     }
     
 

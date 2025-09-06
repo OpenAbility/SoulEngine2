@@ -159,6 +159,7 @@ public class Workspace
             compound.Add(workspace.Save());
         }
         
-        File.WriteAllText("workspaces.snbt", TagIO.WriteSNBT(compound));
+        File.WriteAllText("_workspaces.snbt", TagIO.WriteSNBT(compound));
+        File.Copy("_workspaces.snbt", "workspaces.snbt", true);
     }
 }

@@ -1,3 +1,4 @@
+using OpenTK.Mathematics;
 using SoulEngine.Data;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
@@ -15,6 +16,7 @@ public class DepthOfFieldEffect : PostEffect
     
     private readonly Shader separateDepth;
     private readonly Shader mix;
+    private readonly Shader voxagon;
     
     private Framebuffer target = null!;
     
@@ -22,12 +24,36 @@ public class DepthOfFieldEffect : PostEffect
     {
         separateDepth = ResourceManager.Global.Load<Shader>("shader/post/dof_separate.program");
         mix = ResourceManager.Global.Load<Shader>("shader/post/dof_mix.program");
-        
+        voxagon = ResourceManager.Global.Load<Shader>("shader/post/dof_voxagon.program");
     }
 
 
-    
-    
+
+    private void VoxagonEffect(PostProcessedSurface surface)
+    {
+        surface.LastUsedBuffer.BindColour(0);
+        surface.Framebuffer.BindDepth(1); // Bind original framebuffer depth (out of safety)
+        
+        voxagon.Uniform1i("ut_colour0", 0);
+        voxagon.Uniform1i("ut_depth", 1);
+        
+        voxagon.Uniform1f("uf_camNear", surface.CameraSettings.NearPlane);
+        voxagon.Uniform1f("uf_camFar", surface.CameraSettings.FarPlane);
+        
+        voxagon.Uniform1f("uf_focus", EngineVarContext.Global.GetFloat("dof_focus", 0.90f) / surface.CameraSettings.FarPlane);
+        voxagon.Uniform1f("uf_scale", EngineVarContext.Global.GetFloat("dof_scale", 1.0f));
+        voxagon.Uniform2f("uf_pixelSize", new Vector2(1f / surface.FramebufferSize.X, 1f / surface.FramebufferSize.Y));
+
+        
+        voxagon.Bind();
+        
+        target.BindFramebuffer();
+        
+        DrawQuad();
+
+        surface.MarkLatest(target);
+
+    }
 
     public override void PerformEffect(PostProcessedSurface surface)
     {
@@ -39,6 +65,15 @@ public class DepthOfFieldEffect : PostEffect
 
             target = new Framebuffer(surface.Game, surface.FramebufferSize);
         }
+        
+        if (EngineVarContext.Global.GetBool("dof_voxagon", true))
+        {
+            VoxagonEffect(surface);
+            return;
+        }
+        
+        
+
         
 
         surface.LastUsedBuffer.BindColour(0);

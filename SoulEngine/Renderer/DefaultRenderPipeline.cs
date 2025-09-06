@@ -108,7 +108,7 @@ public class DefaultRenderPipeline : EngineObject, IRenderPipeline
                 postProcessors[pipelineData.TargetSurface] = postProcessor;
             }
 
-            postProcessableSurface = postProcessor.InitializeFrameSurface();
+            postProcessableSurface = postProcessor.InitializeFrameSurface(pipelineData.CameraSettings);
             targetFramebuffer = postProcessableSurface.Framebuffer;
         }
 

@@ -2,6 +2,7 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using SoulEngine.Core;
 using SoulEngine.PostProcessing.Effects;
+using SoulEngine.Renderer;
 using SoulEngine.Rendering;
 using SoulEngine.Resources;
 using SoulEngine.UI.Rendering;
@@ -25,7 +26,7 @@ public class PostProcessor : EngineObject
         
         EnableEffect(new BloomEffect());
         EnableEffect(new ColourEffects());
-        EnableEffect(new DepthOfFieldEffect(1));
+        //EnableEffect(new DepthOfFieldEffect(1));
         
     
 
@@ -42,14 +43,14 @@ public class PostProcessor : EngineObject
         effects.Remove(effect);
     }
     
-    public PostProcessedSurface InitializeFrameSurface()
+    public PostProcessedSurface InitializeFrameSurface(CameraSettings cameraSettings)
     {
         if (postProcessedSurface == null || postProcessedSurface.FramebufferSize != renderSurface.FramebufferSize)
         {
             postProcessedSurface = new PostProcessedSurface(renderSurface, this, game, renderSurface.FramebufferSize);
         }
         
-        postProcessedSurface.InitializeFrame();
+        postProcessedSurface.InitializeFrame(cameraSettings);
         return postProcessedSurface;
     }
 
